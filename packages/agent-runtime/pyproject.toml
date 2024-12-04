@@ -1,0 +1,18 @@
+[project]
+name = "agent-runtime"
+version = "0.0.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+package = true
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["agent"]
+
+[tool.uv.sources]
