@@ -1,14 +1,10 @@
 {
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.terminal.activateEnvironment": true,
-    "python.terminal.activateEnvInCurrentTerminal": true,
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
-    "python.analysis.typeCheckingMode": "strict",
-    "python.analysis.useLibraryCodeForTypes": true,
-    "python.analysis.extraPaths": [
-        "./packages/agent-runtime"
-    ]
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.testing.pytestArgs": ["tests"],
+  "python.analysis.typeCheckingMode": "strict",
+  "python.analysis.useLibraryCodeForTypes": true,
+  "python.analysis.extraPaths": ["${workspaceFolder}"]
 }
