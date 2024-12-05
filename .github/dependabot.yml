@@ -1,0 +1,26 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+ - package-ecosystem: pip
+    directory: /
+    commit-message:
+      prefix: "Bump: "
+      include: scope
+    labels:
+      - dependencies
+    reviewers:
+      - "microsoft/atdp"
+    schedule:
+      interval: weekly
+    groups:
+      production:
+        dependency-type: production
+      development:
+        dependency-type: development
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
