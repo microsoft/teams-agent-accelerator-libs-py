@@ -104,6 +104,4 @@ async def test_simple_conversation(memory_module):
     # contains pie
     assert any("pie" in message.content for message in stored_messages)
     # contains one of the messages at least in its attributions
-    assert any(
-        message.id in stored_messages[0].message_attributions for message in messages
-    )
+    assert any(message.id in stored_messages[0].message_attributions for message in messages)

@@ -23,9 +23,7 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def retrieve_memories(
-        self, query: str, user_id: str, limit: Optional[int] = None
-    ) -> List[Memory]:
+    async def retrieve_memories(self, query: str, user_id: str, limit: Optional[int] = None) -> List[Memory]:
         """Retrieve memories based on a query.
 
         Args:

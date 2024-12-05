@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -27,6 +28,11 @@ class MemoryAttribution(BaseModel):
     message_id: str
 
 
+class MemoryType(str, Enum):
+    SEMANTIC = "semantic"
+    EPISODIC = "episodic"
+
+
 class Memory(BaseModel):
     """Represents a processed memory."""
 
@@ -35,5 +41,6 @@ class Memory(BaseModel):
     id: Optional[int] = None
     content: str
     created_at: datetime
+    memory_type: MemoryType
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default_factory=list)

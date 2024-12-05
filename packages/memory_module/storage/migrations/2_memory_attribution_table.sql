@@ -3,4 +3,4 @@ CREATE TABLE IF NOT EXISTS memory_attributions (
     message_id TEXT NOT NULL,
     PRIMARY KEY (memory_id, message_id),
     FOREIGN KEY (memory_id) REFERENCES memories(id)
-)
+) 

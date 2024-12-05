@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 import aiosqlite
 
-from .migrations_manager import MigrationManager
+from memory_module.storage.migrations_manager import MigrationManager
 
 
 class SQLiteStorage:
@@ -33,9 +33,7 @@ class SQLiteStorage:
             await conn.executemany(query, parameters)
             await conn.commit()
 
-    async def fetch_one(
-        self, query: str, parameters: tuple = ()
-    ) -> Optional[Dict[str, Any]]:
+    async def fetch_one(self, query: str, parameters: tuple = ()) -> Optional[Dict[str, Any]]:
         """Fetch a single row from the database."""
         async with aiosqlite.connect(self.db_path) as conn:
             async with conn.execute(query, parameters) as cursor:
@@ -45,9 +43,7 @@ class SQLiteStorage:
                 columns = [description[0] for description in cursor.description]
                 return dict(zip(columns, row))
 
-    async def fetch_all(
-        self, query: str, parameters: tuple = ()
-    ) -> List[Dict[str, Any]]:
+    async def fetch_all(self, query: str, parameters: tuple = ()) -> List[Dict[str, Any]]:
         """Fetch all matching rows from the database."""
         async with aiosqlite.connect(self.db_path) as conn:
             async with conn.execute(query, parameters) as cursor:

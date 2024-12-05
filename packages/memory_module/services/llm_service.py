@@ -3,6 +3,7 @@ from typing import Any, Coroutine, List, Optional, Union
 from litellm import BaseModel, CustomStreamWrapper, EmbeddingResponse, ModelResponse
 import litellm
 
+
 # TODO:
 # * Implement retrying logic
 # * Implement basic costs tracking/logging
@@ -23,7 +24,9 @@ class LLMService:
     To use an Azure OpenAI gpt-4o-mini deployment with an API key, you would do:
 
     ```
-    lm = LLMService(model="azure/gpt-4o-mini", api_key="the api key", api_base="the api base", api_version="the api version")
+    lm = LLMService(
+        model="azure/gpt-4o-mini", api_key="the api key", api_base="the api base", api_version="the api version"
+    )
     ```
 
     For configuration examples of list of providers see: https://docs.litellm.ai/docs/providers
@@ -54,18 +57,43 @@ class LLMService:
         self.api_version = api_version
         self._kwargs = kwargs
 
-    async def completion(self, messages: List, response_format: Optional[dict | BaseModel] = None, override_model: Optional[str] = None, **kwargs) -> Coroutine[Any, Any, ModelResponse | CustomStreamWrapper]:
+    async def completion(
+        self,
+        messages: List,
+        response_format: Optional[dict | BaseModel] = None,
+        override_model: Optional[str] = None,
+        **kwargs,
+    ) -> Coroutine[Any, Any, ModelResponse | CustomStreamWrapper]:
         """Generate completion from the model. This method is a wrapper around litellm's `acompletion` method."""
         model = override_model or self.model
         if not model:
             raise ValueError("No LM model provided.")
 
-        return await litellm.acompletion(messages=messages, model=model, api_key=self.api_key, api_version=self.api_version, api_base=self.api_base, response_format=response_format, **self._kwargs, **kwargs)
+        return await litellm.acompletion(
+            messages=messages,
+            model=model,
+            api_key=self.api_key,
+            api_version=self.api_version,
+            api_base=self.api_base,
+            response_format=response_format,
+            **self._kwargs,
+            **kwargs,
+        )
 
-    async def embedding(self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs) -> Coroutine[Any, Any, EmbeddingResponse]:
+    async def embedding(
+        self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs
+    ) -> Coroutine[Any, Any, EmbeddingResponse]:
         """Get embeddings from the model. This method is a wrapper around litellm's `aembedding` method."""
         model = override_model or self.embedding_model
         if not model:
             raise ValueError("No embedding model provided.")
 
-        return await litellm.aembedding(model=model, input=input, api_key=self.api_key, api_version=self.api_version, api_base=self.api_base, **self._kwargs, **kwargs)
+        return await litellm.aembedding(
+            model=model,
+            input=input,
+            api_key=self.api_key,
+            api_version=self.api_version,
+            api_base=self.api_base,
+            **self._kwargs,
+            **kwargs,
+        )

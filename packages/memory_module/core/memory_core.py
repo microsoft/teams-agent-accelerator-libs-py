@@ -7,6 +7,7 @@ from memory_module.interfaces.types import Memory, Message
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 
+
 class MessageMemoryExtraction(BaseModel):
     """Model for LLM extraction of memories from messages."""
 
@@ -24,9 +25,7 @@ class SemanticFact(BaseModel):
 
 
 class SemanticMemoryExtraction(BaseModel):
-    action: Literal["add", "ignore"] = Field(
-        ..., description="Action to take on the extracted fact"
-    )
+    action: Literal["add", "ignore"] = Field(..., description="Action to take on the extracted fact")
     reason_for_action: Optional[str] = Field(
         ...,
         description="Reason for the action taken on the extracted fact or the reason it was ignored.",
@@ -47,13 +46,8 @@ class MemoryCore(BaseMemoryCore):
         self.lm = llm_service
         self.storage = storage if storage is not None else SQLiteMemoryStorage()
 
-    async def process_messages(self, messages: List[Message]) -> None:
-        """Process multiple messages into memories.
-
-        Steps:
-        1. Process each message to extract semantic facts
-        2. Store valid extractions in the database
-        """
+    async def process_semantic_messages(self, messages: List[Message]) -> None:
+        """Process multiple messages into semantic memories (general facts, preferences)."""
         for message in messages:
             extraction = await self._extract_semantic_fact_from_message(message)
 
@@ -63,8 +57,14 @@ class MemoryCore(BaseMemoryCore):
                         content=fact.text,
                         created_at=message.created_at,
                         message_attributions=[message.id],
+                        memory_type="semantic",
                     )
                     await self.storage.store_memory(memory)
+
+    async def process_episodic_messages(self, messages: List[Message]) -> None:
+        """Process multiple messages into episodic memories (specific events, experiences)."""
+        # TODO: Implement episodic memory processing
+        await self._extract_episodic_memory_from_message(messages)
 
     async def retrieve(self, query: str) -> List[Memory]:
         """Retrieve memories based on a query.
@@ -77,9 +77,7 @@ class MemoryCore(BaseMemoryCore):
         # TODO: Implement memory retrieval logic
         pass
 
-    async def _extract_memory_from_messages(
-        self, messages: List[Message]
-    ) -> MessageMemoryExtraction:
+    async def _extract_memory_from_messages(self, messages: List[Message]) -> MessageMemoryExtraction:
         """Extract meaningful information from messages using LLM."""
         # TODO: Implement LLM-based extraction
         pass
@@ -110,7 +108,7 @@ Long-Term Facts: Extract facts that describe long-term information about the use
 Ignore Short-Term Details: Avoid storing short-term specifics like dates or locations unless they reflect a recurring activity or long-term plan.
 
 {memory_message}
-Here is the latest message that was sent:
+Here is the latest message that was sent: 
 User: {message.content}
 """
 
@@ -122,9 +120,13 @@ User: {message.content}
             },
         ]
 
-        res = await self.lm.completion(
-            messages=messages, response_format=SemanticMemoryExtraction
-        )
+        res = await self.lm.completion(messages=messages, response_format=SemanticMemoryExtraction)
 
-        # TODO: Do we want to put this in the `completion` method?
         return SemanticMemoryExtraction.model_validate_json(res.choices[0].message.content)
+
+    async def _extract_episodic_memory_from_message(
+        self, message: Message, memory_message: str = ""
+    ) -> SemanticMemoryExtraction:
+        """Extract episodic memories from a message using LLM."""
+        # TODO: Implement episodic memory extraction
+        raise NotImplementedError("Episodic memory extraction not yet implemented")
