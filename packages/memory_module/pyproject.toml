@@ -1,7 +1,7 @@
 [project]
 name = "memory-module"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.0"
+description = "Memory module for creating intelligent agents within Microsoft Teams"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
