@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import aiosqlite
-
 from memory_module.storage.migrations_manager import MigrationManager
 
 
@@ -41,7 +40,7 @@ class SQLiteStorage:
                 if row is None:
                     return None
                 columns = [description[0] for description in cursor.description]
-                return dict(zip(columns, row))
+                return dict(zip(columns, row, strict=False))
 
     async def fetch_all(self, query: str, parameters: tuple = ()) -> List[Dict[str, Any]]:
         """Fetch all matching rows from the database."""
@@ -49,4 +48,4 @@ class SQLiteStorage:
             async with conn.execute(query, parameters) as cursor:
                 rows = await cursor.fetchall()
                 columns = [description[0] for description in cursor.description]
-                return [dict(zip(columns, row)) for row in rows]
+                return [dict(zip(columns, row, strict=False)) for row in rows]

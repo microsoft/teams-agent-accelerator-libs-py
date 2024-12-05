@@ -36,7 +36,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer."""
         query = """
-            INSERT INTO buffered_messages 
+            INSERT INTO buffered_messages
             (message_id, content, author_id, conversation_ref, created_at)
             VALUES (?, ?, ?, ?, ?)
         """
@@ -54,13 +54,13 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
     async def get_buffered_messages(self, conversation_ref: str) -> List[Message]:
         """Retrieve all buffered messages for a conversation."""
         query = """
-            SELECT 
+            SELECT
                 message_id as id,
                 content,
                 author_id,
                 conversation_ref,
                 created_at
-            FROM buffered_messages 
+            FROM buffered_messages
             WHERE conversation_ref = ?
             ORDER BY created_at ASC
         """
@@ -75,8 +75,8 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
     async def count_buffered_messages(self, conversation_ref: str) -> int:
         """Count the number of buffered messages for a conversation."""
         query = """
-            SELECT COUNT(*) as count 
-            FROM buffered_messages 
+            SELECT COUNT(*) as count
+            FROM buffered_messages
             WHERE conversation_ref = ?
         """
         result = await self.storage.fetch_one(query, (conversation_ref,))

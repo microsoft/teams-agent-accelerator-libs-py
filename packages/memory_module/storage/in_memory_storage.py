@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 
 import numpy as np
-
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,

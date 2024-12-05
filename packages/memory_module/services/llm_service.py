@@ -1,7 +1,7 @@
 from typing import Any, Coroutine, List, Optional, Union
 
-from litellm import BaseModel, CustomStreamWrapper, EmbeddingResponse, ModelResponse
 import litellm
+from litellm import BaseModel, CustomStreamWrapper, EmbeddingResponse, ModelResponse
 
 
 # TODO:
@@ -30,7 +30,7 @@ class LLMService:
     ```
 
     For configuration examples of list of providers see: https://docs.litellm.ai/docs/providers
-    """
+    """  # noqa: E501
 
     def __init__(
         self,

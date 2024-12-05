@@ -108,15 +108,15 @@ Long-Term Facts: Extract facts that describe long-term information about the use
 Ignore Short-Term Details: Avoid storing short-term specifics like dates or locations unless they reflect a recurring activity or long-term plan.
 
 {memory_message}
-Here is the latest message that was sent: 
+Here is the latest message that was sent:
 User: {message.content}
-"""
+"""  # noqa: E501
 
         messages = [
             {"role": "system", "content": system_message},
             {
                 "role": "user",
-                "content": "Please analyze this message and decide whether to extract facts or ignore it. If extracting facts, provide one or more semantic facts focusing on long-term, meaningful information.",
+                "content": "Please analyze this message and decide whether to extract facts or ignore it. If extracting facts, provide one or more semantic facts focusing on long-term, meaningful information.",  # noqa: E501
             },
         ]
 

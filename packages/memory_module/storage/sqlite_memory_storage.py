@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import List, Optional
 
 import aiosqlite
-
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import Memory
 from memory_module.storage.sqlite_storage import SQLiteStorage
@@ -36,8 +35,8 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 try:
                     # Store the memory
                     await cursor.execute(
-                        """INSERT INTO memories 
-                           (content, created_at, user_id, memory_type) 
+                        """INSERT INTO memories
+                           (content, created_at, user_id, memory_type)
                            VALUES (?, ?, ?, ?)""",
                         (
                             memory.content,
@@ -65,7 +64,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     async def retrieve_memories(self, query: str, user_id: str, limit: Optional[int] = None) -> List[Memory]:
         """Retrieve memories based on a query."""
         sql_query = """
-            SELECT * FROM memories 
+            SELECT * FROM memories
             WHERE (user_id = ? OR user_id IS NULL)
             AND content LIKE ?
             ORDER BY created_at DESC
@@ -84,9 +83,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
         """Retrieve a memory with its message attributions."""
         query = """
-            SELECT 
-                m.id, 
-                m.content, 
+            SELECT
+                m.id,
+                m.content,
                 m.created_at,
                 m.user_id,
                 m.memory_type,
@@ -116,9 +115,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
         """Retrieve all memories with their message attributions."""
         query = """
-            SELECT 
-                m.id, 
-                m.content, 
+            SELECT
+                m.id,
+                m.content,
                 m.created_at,
                 m.user_id,
                 m.memory_type,
