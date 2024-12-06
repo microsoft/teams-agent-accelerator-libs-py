@@ -6,10 +6,10 @@ import pytest
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from utils import create_test_message
-
 from memory_module.core.memory_core import MemoryCore
 from memory_module.services.llm_service import LLMService
+
+from .utils import create_test_message
 
 
 def includes(text: str, phrase):
