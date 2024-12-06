@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Optional, TypedDict
 
 from dotenv import load_dotenv
-
 from memory_module.interfaces.types import Message
 
 
