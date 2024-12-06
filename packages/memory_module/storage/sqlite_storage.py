@@ -1,16 +1,24 @@
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import aiosqlite
+from memory_module.storage.migrations_manager import MigrationManager
 
-from .migrations_manager import MigrationManager
+logger = logging.getLogger(__name__)
 
 
 class SQLiteStorage:
     """Base class for SQLite storage operations."""
 
+    @staticmethod
+    def ensure_db_folder(db_path: Path) -> None:
+        """Create the database folder if it doesn't exist."""
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+
     def __init__(self, db_path: str | Path):
         """Initialize SQLite storage."""
+        self.ensure_db_folder(db_path)
         self.db_path = str(Path(db_path).resolve())
         # Run migrations once at startup
         self._run_migrations()
@@ -33,9 +41,7 @@ class SQLiteStorage:
             await conn.executemany(query, parameters)
             await conn.commit()
 
-    async def fetch_one(
-        self, query: str, parameters: tuple = ()
-    ) -> Optional[Dict[str, Any]]:
+    async def fetch_one(self, query: str, parameters: tuple = ()) -> Optional[Dict[str, Any]]:
         """Fetch a single row from the database."""
         async with aiosqlite.connect(self.db_path) as conn:
             async with conn.execute(query, parameters) as cursor:
@@ -43,14 +49,12 @@ class SQLiteStorage:
                 if row is None:
                     return None
                 columns = [description[0] for description in cursor.description]
-                return dict(zip(columns, row))
+                return dict(zip(columns, row, strict=False))
 
-    async def fetch_all(
-        self, query: str, parameters: tuple = ()
-    ) -> List[Dict[str, Any]]:
+    async def fetch_all(self, query: str, parameters: tuple = ()) -> List[Dict[str, Any]]:
         """Fetch all matching rows from the database."""
         async with aiosqlite.connect(self.db_path) as conn:
             async with conn.execute(query, parameters) as cursor:
                 rows = await cursor.fetchall()
                 columns = [description[0] for description in cursor.description]
-                return [dict(zip(columns, row)) for row in rows]
+                return [dict(zip(columns, row, strict=False)) for row in rows]

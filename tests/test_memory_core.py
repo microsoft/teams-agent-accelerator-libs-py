@@ -6,10 +6,10 @@ import pytest
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from utils import create_test_message
-
 from memory_module.core.memory_core import MemoryCore
 from memory_module.services.llm_service import LLMService
+
+from .utils import create_test_message
 
 
 def includes(text: str, phrase):
@@ -49,6 +49,4 @@ async def test_extract_memory_from_messages(config):
     message = create_test_message(content="Hey, I'm a software developer.")
     res = await memory_core._extract_semantic_fact_from_message(message=message)
 
-    assert any(
-        includes(fact.text, "software developer") for fact in res.interesting_facts
-    )
+    assert any(includes(fact.text, "software developer") for fact in res.interesting_facts)

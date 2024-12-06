@@ -43,9 +43,7 @@ def get_env_llm_config() -> EnvLLMConfig:
     openai_deployment = os.getenv("OPENAI_DEPLOYMENT", None)
     azure_openai_api_key = os.getenv("AZURE_OPENAI_API_KEY", None)
     azure_openai_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", None)
-    azure_openai_embedding_deployment = os.getenv(
-        "AZURE_OPENAI_EMBEDDING_DEPLOYMENT", None
-    )
+    azure_openai_embedding_deployment = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", None)
     azure_openai_api_base = os.getenv("AZURE_OPENAI_API_BASE", None)
     azure_openai_api_version = os.getenv("AZURE_OPENAI_API_VERSION", None)
 
@@ -64,8 +62,7 @@ def build_llm_config(override_config: Optional[LLMConfig] = None) -> LLMConfig:
     env_config = get_env_llm_config()
 
     config = {
-        "model": env_config["openai_deployment"]
-        or env_config["azure_openai_deployment"],
+        "model": env_config["openai_deployment"] or env_config["azure_openai_deployment"],
         "api_key": env_config["openai_api_key"] or env_config["azure_openai_api_key"],
         "api_base": env_config["azure_openai_api_base"],
         "api_version": env_config["azure_openai_api_version"],

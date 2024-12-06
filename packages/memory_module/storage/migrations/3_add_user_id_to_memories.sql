@@ -1,1 +1,1 @@
-ALTER TABLE memories ADD COLUMN user_id TEXT;
+ALTER TABLE memories ADD COLUMN user_id TEXT; 

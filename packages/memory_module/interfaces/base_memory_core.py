@@ -8,8 +8,13 @@ class BaseMemoryCore(ABC):
     """Base class for the memory core component."""
 
     @abstractmethod
-    async def process_messages(self, messages: List[Message]) -> None:
-        """Process multiple messages into memories."""
+    async def process_semantic_messages(self, messages: List[Message]) -> None:
+        """Process multiple messages into semantic memories (general facts, preferences)."""
+        pass
+
+    @abstractmethod
+    async def process_episodic_messages(self, messages: List[Message]) -> None:
+        """Process multiple messages into episodic memories (specific events, experiences)."""
         pass
 
     @abstractmethod

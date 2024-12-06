@@ -47,9 +47,7 @@ async def test_completion_calls_litellm_acompletion(mock_completion):
     args = {"test key": "test value"}
     local_args = {"local test key": "local test value"}
 
-    lm = LLMService(
-        model=model, api_base=api_base, api_version=api_version, api_key=api_key, **args
-    )
+    lm = LLMService(model=model, api_base=api_base, api_version=api_version, api_key=api_key, **args)
 
     res = await lm.completion(messages, **local_args)
 
@@ -97,9 +95,7 @@ async def test_completion_openai(config):
         pytest.skip("OpenAI API key is missing")
 
     lm = LLMService(model="gpt-4o", api_key=config["openai_api_key"])
-    messages = [
-        {"role": "system", "content": "Which country has a maple leaf in its flag?"}
-    ]
+    messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
     res = await lm.completion(messages)
     text = res.choices[0].message.content
@@ -113,9 +109,7 @@ async def test_completion_openai_structured_outputs(config):
         pytest.skip("OpenAI API key is missing")
 
     lm = LLMService(model="gpt-4o", api_key=config["openai_api_key"])
-    messages = [
-        {"role": "system", "content": "Which country has a maple leaf in its flag?"}
-    ]
+    messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
     class Country(BaseModel):
         name: str
@@ -132,9 +126,7 @@ async def test_embeddings_openai(config):
     if not config["openai_api_key"]:
         pytest.skip("OpenAI API key is missing")
 
-    lm = LLMService(
-        embedding_model="text-embedding-3-small", api_key=config["openai_api_key"]
-    )
+    lm = LLMService(embedding_model="text-embedding-3-small", api_key=config["openai_api_key"])
     query = "Which country has a maple leaf in its flag?"
 
     res = await lm.embedding(input=[query])

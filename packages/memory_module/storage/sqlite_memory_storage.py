@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import List, Optional
 
 import aiosqlite
-
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import Memory
 from memory_module.storage.sqlite_storage import SQLiteStorage
@@ -16,15 +15,7 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteMemoryStorage(BaseMemoryStorage):
     """SQLite implementation of memory storage."""
 
-    @staticmethod
-    def ensure_db_folder(db_path: Path) -> None:
-        """Create the database folder if it doesn't exist."""
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-
     def __init__(self, db_path: Optional[str | Path] = None):
-        if not db_path:
-            logger.info(f"No database path provided, using default: {DEFAULT_DB_PATH}")
-            self.ensure_db_folder(DEFAULT_DB_PATH)
         self.db_path = db_path or DEFAULT_DB_PATH
         self.storage = SQLiteStorage(self.db_path)
 
@@ -36,8 +27,15 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 try:
                     # Store the memory
                     await cursor.execute(
-                        "INSERT INTO memories (content, created_at, user_id) VALUES (?, ?, ?)",
-                        (memory.content, memory.created_at, memory.user_id),
+                        """INSERT INTO memories
+                           (content, created_at, user_id, memory_type)
+                           VALUES (?, ?, ?, ?)""",
+                        (
+                            memory.content,
+                            memory.created_at,
+                            memory.user_id,
+                            memory.memory_type.value,
+                        ),
                     )
 
                     memory_id = cursor.lastrowid
@@ -46,10 +44,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     if memory.message_attributions:
                         await cursor.executemany(
                             "INSERT INTO memory_attributions (memory_id, message_id) VALUES (?, ?)",
-                            [
-                                (memory_id, msg_id)
-                                for msg_id in memory.message_attributions
-                            ],
+                            [(memory_id, msg_id) for msg_id in memory.message_attributions],
                         )
 
                     await conn.commit()
@@ -58,9 +53,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     await conn.rollback()
                     raise
 
-    async def retrieve_memories(
-        self, query: str, user_id: str, limit: Optional[int] = None
-    ) -> List[Memory]:
+    async def retrieve_memories(self, query: str, user_id: str, limit: Optional[int] = None) -> List[Memory]:
         """Retrieve memories based on a query."""
         sql_query = """
             SELECT * FROM memories
@@ -87,6 +80,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 m.content,
                 m.created_at,
                 m.user_id,
+                m.memory_type,
                 ma.message_id
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
@@ -104,9 +98,8 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             "content": rows[0]["content"],
             "created_at": rows[0]["created_at"],
             "user_id": rows[0]["user_id"],
-            "message_attributions": [
-                row["message_id"] for row in rows if row["message_id"]
-            ],
+            "memory_type": rows[0]["memory_type"],
+            "message_attributions": [row["message_id"] for row in rows if row["message_id"]],
         }
 
         return Memory(**memory_data)
@@ -119,6 +112,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 m.content,
                 m.created_at,
                 m.user_id,
+                m.memory_type,
                 ma.message_id
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
@@ -143,12 +137,11 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     "content": row["content"],
                     "created_at": row["created_at"],
                     "user_id": row["user_id"],
+                    "memory_type": row["memory_type"],
                     "message_attributions": [],
                 }
 
             if row["message_id"]:
-                memories_dict[memory_id]["message_attributions"].append(
-                    row["message_id"]
-                )
+                memories_dict[memory_id]["message_attributions"].append(row["message_id"])
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
