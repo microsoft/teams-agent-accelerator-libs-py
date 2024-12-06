@@ -120,9 +120,9 @@ User: {message.content}
             },
         ]
 
-        res = await self.lm.completion(messages=messages, response_format=SemanticMemoryExtraction)
+        res = await self.lm.completion(messages=messages, response_model=SemanticMemoryExtraction)
 
-        return SemanticMemoryExtraction.model_validate_json(res.choices[0].message.content)
+        return res
 
     async def _extract_episodic_memory_from_message(
         self, message: Message, memory_message: str = ""

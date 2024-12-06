@@ -16,6 +16,7 @@ dev-dependencies = [
     "ruff>=0.6.5",
     "termcolor>=2.4.0",
     "watchdog>=5.0.3",
+    "azure-identity"
 ]
 
 [tool.uv.sources]
