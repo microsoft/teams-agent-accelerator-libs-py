@@ -29,10 +29,6 @@ def memory_module(monkeypatch):
     """Fixture to create a fresh MemoryModule instance for each test"""
     # path should be relative to the project root
     db_path = Path(__file__).parent / "data" / "tests" / "memory_module.db"
-    # delete the db file if it exists
-    if db_path.exists():
-        db_path.unlink()
-    SQLiteMemoryStorage.ensure_db_folder(db_path)
     storage = SQLiteMemoryStorage(db_path)
     config = build_llm_config({"model": "gpt-4o-mini"})
 
