@@ -33,7 +33,7 @@ class MigrationManager:
             self.conn.execute("INSERT INTO migrations (migration_name) VALUES (?)", (migration_name,))
 
     def run_migrations(self):
-        logger.info("Migrations", "Running migrations")
+        logger.info("Migrations", f"Running migrations for {self.db_path}")
         applied_migrations = set(self.get_applied_migrations())
         migrations_dir = os.path.join(os.path.dirname(__file__), "migrations")
 

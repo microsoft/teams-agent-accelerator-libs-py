@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from memory_module.interfaces.types import Message
 
 
-class BaseMemoryProcessor(ABC):
+class BaseMessageQueue(ABC):
     """Base class for the message queue component."""
 
     @abstractmethod

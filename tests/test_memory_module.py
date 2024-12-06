@@ -7,7 +7,7 @@ from uuid import uuid4
 import litellm
 import pytest
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
 from memory_module import MemoryModule
 from memory_module.core.memory_core import (
@@ -15,9 +15,12 @@ from memory_module.core.memory_core import (
     SemanticFact,
     SemanticMemoryExtraction,
 )
+from memory_module.core.message_queue import MessageQueue
 from memory_module.interfaces.types import Message
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
+from memory_module.storage.sqlite_message_buffer_storage import SQLiteMessageBufferStorage
+
 from tests.utils import build_llm_config
 
 
@@ -72,7 +75,9 @@ def memory_module(monkeypatch):
 
     llm_service = LLMService(**config)
     memory_core = MemoryCore(llm_service=llm_service, storage=storage)
-    return MemoryModule(llm_service=llm_service, memory_core=memory_core)
+    message_queue_storage = SQLiteMessageBufferStorage(db_path)
+    message_queue = MessageQueue(memory_core=memory_core, message_queue_storage=message_queue_storage)
+    return MemoryModule(llm_service=llm_service, memory_core=memory_core, message_queue=message_queue)
 
 
 @pytest.mark.asyncio

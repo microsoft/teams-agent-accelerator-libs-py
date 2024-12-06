@@ -2,28 +2,32 @@ from typing import List, Optional
 
 from memory_module.core.message_buffer import MessageBuffer
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
-from memory_module.interfaces.base_memory_queue import BaseMemoryProcessor
-from memory_module.interfaces.base_message_buffer_storage import (
-    BaseMessageBufferStorage,
-)
+from memory_module.interfaces.base_message_buffer_storage import BaseMessageBufferStorage
+from memory_module.interfaces.base_message_queue import BaseMessageQueue
 from memory_module.interfaces.types import Message
 
 
-class MemoryQueue(BaseMemoryProcessor):
-    """Implementation of the memory queue component."""
+class MessageQueue(BaseMessageQueue):
+    """Implementation of the message queue component."""
 
     def __init__(
         self,
         memory_core: BaseMemoryCore,
         buffer_size: int = 5,
-        message_buffer_storage: Optional[BaseMessageBufferStorage] = None,
+        message_queue_storage: Optional[BaseMessageBufferStorage] = None,
     ):
-        """Initialize the memory queue with an optional memory core instance."""
+        """Initialize the message queue with a memory core and optional message buffer.
+
+        Args:
+            memory_core: Core memory processing component
+            buffer_size: Number of messages to buffer (used if message_buffer not provided)
+            message_buffer: Optional custom message buffer implementation
+        """
         self.memory_core = memory_core
         self.message_buffer = MessageBuffer(
             buffer_size=buffer_size,
             process_callback=self._process_for_episodic_messages,
-            storage=message_buffer_storage,
+            storage=message_queue_storage,
         )
 
     async def enqueue(self, message: Message) -> None:
