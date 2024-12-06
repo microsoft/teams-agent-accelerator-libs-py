@@ -22,7 +22,7 @@ from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 from memory_module.storage.sqlite_message_buffer_storage import SQLiteMessageBufferStorage
 
 from tests.utils import build_llm_config
-
+litellm.set_verbose = True
 
 @pytest.fixture
 def memory_module(monkeypatch):
@@ -30,7 +30,7 @@ def memory_module(monkeypatch):
     # path should be relative to the project root
     db_path = Path(__file__).parent / "data" / "memory_module.db"
     storage = SQLiteMemoryStorage(db_path)
-    config = build_llm_config({"model": "gpt-4o-mini"})
+    config = build_llm_config({"model": "azure/gpt-4o"})
 
     # Only mock if api_key is not available
     if not config.get("api_key"):

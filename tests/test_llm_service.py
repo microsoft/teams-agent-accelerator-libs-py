@@ -5,11 +5,11 @@ import litellm
 import pytest
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from utils import EnvLLMConfig, get_env_llm_config
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
-from packages.memory_module.services.llm_service import LLMService
+from .utils import EnvLLMConfig, get_env_llm_config
+from memory_module.services.llm_service import LLMService
 
 # from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
