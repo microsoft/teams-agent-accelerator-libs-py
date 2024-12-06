@@ -7,7 +7,7 @@ from uuid import uuid4
 import litellm
 import pytest
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module import MemoryModule
 from memory_module.core.memory_core import (
@@ -19,7 +19,9 @@ from memory_module.core.message_queue import MessageQueue
 from memory_module.interfaces.types import Message
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
-from memory_module.storage.sqlite_message_buffer_storage import SQLiteMessageBufferStorage
+from memory_module.storage.sqlite_message_buffer_storage import (
+    SQLiteMessageBufferStorage,
+)
 
 from tests.utils import build_llm_config
 
@@ -28,7 +30,10 @@ from tests.utils import build_llm_config
 def memory_module(monkeypatch):
     """Fixture to create a fresh MemoryModule instance for each test"""
     # path should be relative to the project root
-    db_path = Path(__file__).parent / "data" / "memory_module.db"
+    db_path = Path(__file__).parent / "data" / "tests" / "memory_module.db"
+    # delete the db file if it exists
+    if db_path.exists():
+        db_path.unlink()
     storage = SQLiteMemoryStorage(db_path)
     config = build_llm_config({"model": "gpt-4o-mini"})
 
@@ -71,8 +76,8 @@ def memory_module(monkeypatch):
 
     llm_service = LLMService(**config)
     memory_core = MemoryCore(llm_service=llm_service, storage=storage)
-    message_queue_storage = SQLiteMessageBufferStorage(db_path)
-    message_queue = MessageQueue(memory_core=memory_core, message_queue_storage=message_queue_storage)
+    message_buffer_storage = SQLiteMessageBufferStorage(db_path)
+    message_queue = MessageQueue(memory_core=memory_core, message_buffer_storage=message_buffer_storage)
     return MemoryModule(llm_service=llm_service, memory_core=memory_core, message_queue=message_queue)
 
 
@@ -106,3 +111,36 @@ async def test_simple_conversation(memory_module):
     assert any("pie" in message.content for message in stored_messages)
     # contains one of the messages at least in its attributions
     assert any(message.id in stored_messages[0].message_attributions for message in messages)
+    # all stored_memories are memory_type == "semantic"
+    assert all(memory.memory_type == "semantic" for memory in stored_messages)
+
+
+@pytest.mark.asyncio
+async def test_episodic_memory_creation(memory_module):
+    """Test that episodic memory creation raises NotImplementedError"""
+    conversation_id = str(uuid4())
+
+    # Create 5 messages (default buffer size) for the same conversation
+    messages = [
+        Message(
+            id=str(uuid4()),
+            content=f"Message {i} about pie",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+            role="user",
+        )
+        for i in range(5)
+    ]
+
+    # Add messages one by one, expecting the last one to raise NotImplementedError
+    # when it tries to process the episodic memory
+    for i, message in enumerate(messages):
+        if i < 4:
+            await memory_module.add_message(message)
+        else:
+            with pytest.raises(
+                NotImplementedError,
+                match="Episodic memory extraction not yet implemented",
+            ):
+                await memory_module.add_message(message)

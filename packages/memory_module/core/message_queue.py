@@ -14,7 +14,7 @@ class MessageQueue(BaseMessageQueue):
         self,
         memory_core: BaseMemoryCore,
         buffer_size: int = 5,
-        message_queue_storage: Optional[BaseMessageBufferStorage] = None,
+        message_buffer_storage: Optional[BaseMessageBufferStorage] = None,
     ):
         """Initialize the message queue with a memory core and optional message buffer.
 
@@ -27,7 +27,7 @@ class MessageQueue(BaseMessageQueue):
         self.message_buffer = MessageBuffer(
             buffer_size=buffer_size,
             process_callback=self._process_for_episodic_messages,
-            storage=message_queue_storage,
+            storage=message_buffer_storage,
         )
 
     async def enqueue(self, message: Message) -> None:
