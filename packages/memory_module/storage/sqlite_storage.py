@@ -18,9 +18,7 @@ class SQLiteStorage:
 
     def __init__(self, db_path: str | Path):
         """Initialize SQLite storage."""
-        if not db_path:
-            logger.info(f"No database path provided, using default: {db_path}")
-            self.ensure_db_folder(db_path)
+        self.ensure_db_folder(db_path)
         self.db_path = str(Path(db_path).resolve())
         # Run migrations once at startup
         self._run_migrations()

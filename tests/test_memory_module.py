@@ -28,7 +28,7 @@ from tests.utils import build_llm_config
 def memory_module(monkeypatch):
     """Fixture to create a fresh MemoryModule instance for each test"""
     # path should be relative to the project root
-    db_path = Path(__file__).parent / "data" / "tests" / "memory_module.db"
+    db_path = Path(__file__).parent / "data" / "memory_module.db"
     storage = SQLiteMemoryStorage(db_path)
     config = build_llm_config({"model": "gpt-4o-mini"})
 
