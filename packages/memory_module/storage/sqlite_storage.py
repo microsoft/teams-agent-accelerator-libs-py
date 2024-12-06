@@ -1,15 +1,26 @@
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import aiosqlite
 from memory_module.storage.migrations_manager import MigrationManager
 
+logger = logging.getLogger(__name__)
+
 
 class SQLiteStorage:
     """Base class for SQLite storage operations."""
 
+    @staticmethod
+    def ensure_db_folder(db_path: Path) -> None:
+        """Create the database folder if it doesn't exist."""
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+
     def __init__(self, db_path: str | Path):
         """Initialize SQLite storage."""
+        if not db_path:
+            logger.info(f"No database path provided, using default: {db_path}")
+            self.ensure_db_folder(db_path)
         self.db_path = str(Path(db_path).resolve())
         # Run migrations once at startup
         self._run_migrations()

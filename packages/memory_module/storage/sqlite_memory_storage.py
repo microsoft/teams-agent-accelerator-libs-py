@@ -15,15 +15,7 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteMemoryStorage(BaseMemoryStorage):
     """SQLite implementation of memory storage."""
 
-    @staticmethod
-    def ensure_db_folder(db_path: Path) -> None:
-        """Create the database folder if it doesn't exist."""
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-
     def __init__(self, db_path: Optional[str | Path] = None):
-        if not db_path:
-            logger.info(f"No database path provided, using default: {DEFAULT_DB_PATH}")
-            self.ensure_db_folder(DEFAULT_DB_PATH)
         self.db_path = db_path or DEFAULT_DB_PATH
         self.storage = SQLiteStorage(self.db_path)
 
