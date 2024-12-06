@@ -1,8 +1,8 @@
 from typing import Any, Coroutine, List, Optional, Union
 
-from litellm import BaseModel, EmbeddingResponse, Router
-import litellm
 import instructor
+import litellm
+from litellm import BaseModel, EmbeddingResponse, Router
 
 
 # TODO:
@@ -15,7 +15,8 @@ class LLMService:
     """Service for handling LM operations.
 
     You can use any of the dozens of LM providers supported by LiteLLM.
-    Simply follow their instructions for how to pass the `{provider_name}/{model_name}` and the authentication configurations to the constructor.
+    Simply follow their instructions for how to pass the `{provider_name}/{model_name}` and the authentication
+    configurations to the constructor.
 
     For example, to use OpenAI's gpt-4o model with an API key, you would do:
 

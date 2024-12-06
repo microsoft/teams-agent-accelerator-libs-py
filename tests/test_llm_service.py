@@ -1,14 +1,16 @@
 import os
 import sys
+
+import litellm
 import pytest
 from dotenv import load_dotenv
-import litellm
 from pydantic import BaseModel
-from utils import get_env_llm_config, EnvLLMConfig
+from utils import EnvLLMConfig, get_env_llm_config
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from packages.memory_module.services.llm_service import LLMService
+
 # from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
 litellm.set_verbose = True
