@@ -9,6 +9,7 @@ from pydantic import BaseModel
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.services.llm_service import LLMService
+
 from tests.utils import get_env_llm_config
 
 load_dotenv()

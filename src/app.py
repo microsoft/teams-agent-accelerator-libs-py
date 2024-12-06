@@ -9,6 +9,7 @@ from aiohttp import web
 from botbuilder.core.integration import aiohttp_error_middleware
 
 from bot import bot_app
+from config import Config
 
 routes = web.RouteTableDef()
 
@@ -26,7 +27,6 @@ async def on_messages(req: web.Request) -> web.Response:
 app = web.Application(middlewares=[aiohttp_error_middleware])
 app.add_routes(routes)
 
-from config import Config
 
 if __name__ == "__main__":
     web.run_app(app, host="localhost", port=Config.PORT)

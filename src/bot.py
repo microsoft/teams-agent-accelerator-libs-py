@@ -5,7 +5,7 @@ import traceback
 from botbuilder.core import MemoryStorage, TurnContext
 from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.ai import AIOptions
-from teams.ai.models import AzureOpenAIModelOptions, OpenAIModel, OpenAIModelOptions
+from teams.ai.models import OpenAIModel, OpenAIModelOptions
 from teams.ai.planners import ActionPlanner, ActionPlannerOptions
 from teams.ai.prompts import PromptManager, PromptManagerOptions
 from teams.state import TurnState
