@@ -32,7 +32,7 @@ class Event(BaseModel):
                 json.dumps(v)
                 return v
         except (TypeError, ValueError) as e:
-            raise ValueError(f"Object must be JSON serializable: {e}")
+            raise ValueError(f"Object must be JSON serializable: {e}") from e
 
 
 class BaseScheduledEventsService(ABC):
