@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from memory_module.config import MemoryModuleConfig
 from memory_module.core.message_buffer import MessageBuffer
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.base_message_buffer_storage import BaseMessageBufferStorage
@@ -12,20 +13,20 @@ class MessageQueue(BaseMessageQueue):
 
     def __init__(
         self,
+        config: MemoryModuleConfig,
         memory_core: BaseMemoryCore,
-        buffer_size: int = 5,
         message_buffer_storage: Optional[BaseMessageBufferStorage] = None,
     ):
         """Initialize the message queue with a memory core and optional message buffer.
 
         Args:
+            config: Memory module configuration
             memory_core: Core memory processing component
-            buffer_size: Number of messages to buffer (used if message_buffer not provided)
-            message_buffer: Optional custom message buffer implementation
+            message_buffer_storage: Optional custom message buffer storage implementation
         """
         self.memory_core = memory_core
         self.message_buffer = MessageBuffer(
-            buffer_size=buffer_size,
+            config=config,
             process_callback=self._process_for_episodic_messages,
             storage=message_buffer_storage,
         )
