@@ -39,6 +39,9 @@ async def test_add_event(service):
     assert len(service.pending_events) == 1
     assert any(task.get_name() == "test1" for task in service.pending_events)
 
+    await asyncio.sleep(0.1)
+    assert len(service.pending_events) == 0
+
 
 @pytest.mark.asyncio
 async def test_callback_execution(config):

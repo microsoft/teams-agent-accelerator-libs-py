@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MemoryModuleConfig(BaseModel):
@@ -8,6 +8,8 @@ class MemoryModuleConfig(BaseModel):
 
     All values are optional and will be merged with defaults if not provided.
     """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     db_path: Path = Field(
         default_factory=lambda: Path(__file__).parent / "data" / "memory.db", description="Path to SQLite database file"
@@ -17,8 +19,3 @@ class MemoryModuleConfig(BaseModel):
         default=300,  # 5 minutes
         description="Seconds to wait before processing a conversation",
     )
-
-    class Config:
-        """Pydantic config."""
-
-        arbitrary_types_allowed = True

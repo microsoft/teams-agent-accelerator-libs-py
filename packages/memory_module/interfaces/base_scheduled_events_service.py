@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Awaitable, Callable, List, Optional
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 
 class Event(BaseModel):
@@ -13,7 +13,8 @@ class Event(BaseModel):
     object: Any
     time: datetime
 
-    @validator("object")
+    @field_validator("object")
+    @classmethod
     def validate_object_serializable(cls, v: Any) -> Any:
         """Ensure the object is JSON serializable.
 
@@ -24,13 +25,10 @@ class Event(BaseModel):
         """
         try:
             if isinstance(v, BaseModel):
-                # Handle Pydantic models
                 return v.model_dump()
             elif hasattr(v, "to_json"):
-                # Handle objects with to_json method
                 return v.to_json()
             else:
-                # Try regular JSON serialization
                 json.dumps(v)
                 return v
         except (TypeError, ValueError) as e:

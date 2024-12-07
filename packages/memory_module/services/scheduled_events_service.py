@@ -83,7 +83,7 @@ class ScheduledEventsService(BaseScheduledEventsService):
             await self.storage.delete_event(event.id)
 
         except Exception as e:
-            print("Error scheduling event", e)
+            logger.error("Error scheduling event", e)
 
     async def cancel_event(self, id: str) -> None:
         """Cancel a scheduled event.
