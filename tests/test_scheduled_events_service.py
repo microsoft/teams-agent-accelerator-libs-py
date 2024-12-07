@@ -1,15 +1,33 @@
 import asyncio
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
-from memory_module.interfaces.base_scheduled_events_service import Event
+import pytest_asyncio
+from memory_module.config import MemoryModuleConfig
 from memory_module.services.scheduled_events_service import ScheduledEventsService
 
 
 @pytest.fixture
-def service():
+def config():
+    """Fixture that provides a MemoryModuleConfig instance."""
+    return MemoryModuleConfig(db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db", timeout_seconds=1)
+
+
+@pytest.fixture
+def service(config):
     """Fixture that provides a ScheduledEventsService instance."""
-    return ScheduledEventsService()
+    # Delete the db file if it exists
+    if config.db_path.exists():
+        config.db_path.unlink()
+    return ScheduledEventsService(config=config)
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup_scheduled_events(service):
+    """Fixture to cleanup scheduled events after each test."""
+    yield
+    await service.cleanup()
 
 
 @pytest.mark.asyncio
@@ -19,35 +37,40 @@ async def test_add_event(service):
     await service.add_event("test1", {"data": "test"}, now)
 
     assert len(service.pending_events) == 1
-    assert "test1" in service.pending_events
-    assert isinstance(service.pending_events["test1"], Event)
+    assert any(task.get_name() == "test1" for task in service.pending_events)
 
 
 @pytest.mark.asyncio
-async def test_callback_execution():
+async def test_callback_execution(config):
     """Test that callbacks are executed when events trigger."""
-    service = ScheduledEventsService()
-    callback_called = False
-    callback_data = None
+    service = ScheduledEventsService(config=config)
+    try:
+        callback_called = False
+        callback_data = None
 
-    async def test_callback(id: str, obj: any, time: datetime):
-        nonlocal callback_called, callback_data
-        callback_called = True
-        callback_data = obj
+        async def test_callback(id: str, obj: any, time: datetime):
+            nonlocal callback_called, callback_data
+            callback_called = True
+            callback_data = obj
 
-    service.callback = test_callback
+        service.callback = test_callback
 
-    # Schedule event for 0.1 seconds from now
-    now = datetime.now()
-    test_data = {"test": "data"}
-    await service.add_event("test1", test_data, now + timedelta(seconds=0.1))
+        # Schedule event for 0.1 seconds from now
+        now = datetime.now()
+        test_data = {"test": "data"}
+        await service.add_event("test1", test_data, now + timedelta(seconds=0.1))
 
-    # Wait a bit longer than the scheduled time
-    await asyncio.sleep(0.2)
+        # Wait a bit longer than the scheduled time
+        await asyncio.sleep(0.2)
 
-    assert callback_called
-    assert callback_data == test_data
-    assert len(service.pending_events) == 0  # Event should be removed after execution
+        assert callback_called
+        assert callback_data == test_data
+        assert len(service.pending_events) == 0  # Event should be removed after execution
+    finally:
+        # Clean up any remaining tasks
+        for task in service.pending_events:
+            task.cancel()
+        service.pending_events.clear()
 
 
 @pytest.mark.asyncio
@@ -63,7 +86,7 @@ async def test_cancel_existing_event(service):
     # Add event with same ID
     await service.add_event("test1", {"data": "updated"}, future)
     assert len(service.pending_events) == 1
-    assert service.pending_events["test1"].object == {"data": "updated"}
+    assert any(task.get_name() == "test1" for task in service.pending_events)
 
 
 @pytest.mark.asyncio
@@ -99,5 +122,6 @@ async def test_multiple_events(service):
     await service.add_event("test2", {"data": "2"}, future)
 
     assert len(service.pending_events) == 2
-    assert "test1" in service.pending_events
-    assert "test2" in service.pending_events
+    event_names = [task.get_name() for task in service.pending_events]
+    assert "test1" in event_names
+    assert "test2" in event_names
