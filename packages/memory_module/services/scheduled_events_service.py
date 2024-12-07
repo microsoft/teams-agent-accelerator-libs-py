@@ -83,7 +83,7 @@ class ScheduledEventsService(BaseScheduledEventsService):
             await self.storage.delete_event(event.id)
 
         except Exception as e:
-            logger.error("Error scheduling event", e)
+            logger.error("Error scheduling event: %s", str(e))
 
     async def cancel_event(self, id: str) -> None:
         """Cancel a scheduled event.
@@ -109,4 +109,4 @@ class ScheduledEventsService(BaseScheduledEventsService):
                 await asyncio.gather(*pending_tasks, return_exceptions=True)
                 self._tasks.clear()
             except Exception as e:
-                logger.error("Error cleaning up scheduled events", e)
+                logger.error("Error cleaning up scheduled events: %s", str(e))
