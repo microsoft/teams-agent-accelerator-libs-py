@@ -13,8 +13,16 @@ provided by the bot. You will only need to do this once across all repos using o
 ## Quick start
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
-2. `uv sync` - it installs the virtual env and dependencies
-3. Activate virtual env - `source .venv/bin/activate` _(for Windows it is `.venv\Scripts\Activate`)_
+1. `uv sync` - it installs the virtual env and dependencies
+1. Activate virtual env - `source .venv/bin/activate` _(for Windows it is `.venv\Scripts\Activate`)_
+
+## Code coverage report
+
+**Note:** You must have completed the [Quick start](#quick-start) to generate the code coverage report.
+
+1. Navigate to the root level of the repository
+1. Run `coverage run -m pytest && coverage html` to generate the coverage report in html format in the `htmlcov/` folder
+1. Open `htmlcov/index.html` to review the code coverage in your browser
 
 ## See related
 

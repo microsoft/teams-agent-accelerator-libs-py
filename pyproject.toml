@@ -9,6 +9,7 @@ dependencies = ["agent-runtime", "memory-module", "litellm"]
 [tool.uv]
 package = false
 dev-dependencies = [
+    "coverage>=7.6.9",
     "poethepoet>=0.28.0",
     "pre-commit>=4.0.1",
     "pytest-asyncio>=0.24.0",
@@ -24,6 +25,14 @@ memory-module = { workspace = true }
 
 [tool.uv.workspace]
 members = ["packages/*"]
+
+[tool.coverage.run]
+omit = [
+    # omit the Basic AI Chatbot template
+    "*/src/*",
+    # omit the tests from the coverage report
+    "*/tests/*"
+]
 
 [tool.ruff]
 line-length = 120
