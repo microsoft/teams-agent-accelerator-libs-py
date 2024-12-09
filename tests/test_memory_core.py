@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
 from memory_module.core.memory_core import MemoryCore
 from memory_module.services.llm_service import LLMService

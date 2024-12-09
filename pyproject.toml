@@ -15,7 +15,7 @@ dev-dependencies = [
     "pytest>=8.3.3",
     "ruff>=0.6.5",
     "termcolor>=2.4.0",
-    "watchdog>=5.0.3",
+    "watchdog>=5.0.3"
 ]
 
 [tool.uv.sources]

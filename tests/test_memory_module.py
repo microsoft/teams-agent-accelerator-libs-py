@@ -22,6 +22,8 @@ from memory_module.services.llm_service import LLMService
 
 from tests.utils import build_llm_config
 
+litellm.set_verbose = True
+
 
 @pytest.fixture
 def config():
@@ -41,45 +43,24 @@ def memory_module(config, monkeypatch):
         config.db_path.unlink()
 
     config_dict = build_llm_config({"model": "gpt-4o-mini"})
+    llm_service = LLMService(**config_dict)
 
     # Only mock if api_key is not available
     if not config_dict.get("api_key"):
-
         async def _mock_completion(**kwargs):
-            return type(
-                "MockModelResponse",
-                (),
-                {
-                    "choices": [
-                        type(
-                            "MockChoices",
-                            (),
-                            {
-                                "message": type(
-                                    "MockChoiceMessage",
-                                    (),
-                                    {
-                                        "content": SemanticMemoryExtraction(
-                                            action="add",
-                                            reason_for_action="Mocked LLM response about pie",
-                                            interesting_facts=[
-                                                SemanticFact(
-                                                    text="Mocked LLM response about pie",
-                                                    tags=[],
-                                                )
-                                            ],
-                                        ).model_dump_json()
-                                    },
-                                )
-                            },
-                        )
-                    ]
-                },
+            return SemanticMemoryExtraction(
+                action="add",
+                reason_for_action="Mocked LLM response about pie",
+                interesting_facts=[
+                    SemanticFact(
+                        text="Mocked LLM response about pie",
+                        tags=[],
+                    )
+                ],
             )
 
-        monkeypatch.setattr(litellm, "acompletion", _mock_completion)
+        monkeypatch.setattr(llm_service, "completion", _mock_completion)
 
-    llm_service = LLMService(**config_dict)
     return MemoryModule(config=config, llm_service=llm_service)
 
 

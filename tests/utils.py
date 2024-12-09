@@ -1,8 +1,12 @@
 import os
+import sys
 from datetime import datetime
 from typing import Optional, TypedDict
 
 from dotenv import load_dotenv
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
+
 from memory_module.interfaces.types import Message
 
 
@@ -50,8 +54,8 @@ def get_env_llm_config() -> EnvLLMConfig:
         openai_api_key=openai_api_key,
         openai_deployment=openai_deployment,
         azure_openai_api_key=azure_openai_api_key,
-        azure_openai_deployment=azure_openai_deployment,
-        azure_openai_embedding_deployment=azure_openai_embedding_deployment,
+        azure_openai_deployment=f"azure/{azure_openai_deployment}",  # litellm requires prefix
+        azure_openai_embedding_deployment=f"azure/{azure_openai_embedding_deployment}",  # litellm requires prefix
         azure_openai_api_base=azure_openai_api_base,
         azure_openai_api_version=azure_openai_api_version,
     )
@@ -61,8 +65,8 @@ def build_llm_config(override_config: Optional[LLMConfig] = None) -> LLMConfig:
     env_config = get_env_llm_config()
 
     config = {
-        "model": env_config["openai_deployment"] or env_config["azure_openai_deployment"],
-        "api_key": env_config["openai_api_key"] or env_config["azure_openai_api_key"],
+        "model": env_config["azure_openai_deployment"] or env_config["openai_deployment"],
+        "api_key": env_config["azure_openai_api_key"] or env_config["openai_api_key"],
         "api_base": env_config["azure_openai_api_base"],
         "api_version": env_config["azure_openai_api_version"],
         "embedding_model": env_config["azure_openai_embedding_deployment"],
