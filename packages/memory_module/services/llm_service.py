@@ -91,7 +91,7 @@ class LLMService:
         return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs) # type: ignore
 
     async def embedding(
-        self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs: object
+        self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs
     ) -> EmbeddingResponse:
         """Get embeddings from the model. This method is a wrapper around litellm's `aembedding` method."""
         model = override_model or self.embedding_model
