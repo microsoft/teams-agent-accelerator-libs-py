@@ -1,9 +1,10 @@
-from typing import Any, Coroutine, List, Optional, Type, Union
+from typing import List, Optional, Union
 
 import instructor
 import litellm
-from litellm import BaseModel, CustomStreamWrapper
-from litellm.types.utils import EmbeddingResponse, ModelResponse
+from litellm import BaseModel
+from litellm.router import Router
+from litellm.types.utils import EmbeddingResponse
 
 
 # TODO:
@@ -70,34 +71,37 @@ class LLMService:
             raise ValueError("No LM model provided.")
 
         # TODO: This is hacky. Fix it later.
+        router = Router(
+            model_list=[
+                {
+                    "model_name": model,
+                    "litellm_params": {
+                        "model": model,
+                        "api_key": self.api_key,
+                        "api_base": self.api_base,
+                        "api_version": self.api_version,
+                        **self._litellm_params,
+                    },
+                }
+            ]
+        )
+
+        #BUG: Router cannot be used as AsyncOpenAI type
         client = instructor.apatch(
-            litellm.Router(
-                model_list=[
-                    {
-                        "model_name": model,
-                        "litellm_params": {
-                            "model": model,
-                            "api_key": self.api_key,
-                            "api_base": self.api_base,
-                            "api_version": self.api_version,
-                            **self._litellm_params,
-                        },
-                    }
-                ]
-            )
+            router
         )
 
         return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)
 
     async def embedding(
         self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs: object
-    ) -> Coroutine[Any, Any, EmbeddingResponse]:
+    ) -> EmbeddingResponse:
         """Get embeddings from the model. This method is a wrapper around litellm's `aembedding` method."""
         model = override_model or self.embedding_model
         if not model:
             raise ValueError("No embedding model provided.")
 
-        return litellm.aembedding(
+        return await litellm.aembedding(
             model=model,
             input=input,
             api_key=self.api_key,
