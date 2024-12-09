@@ -1,7 +1,8 @@
 import os
+import sys
 from datetime import datetime
 from typing import Optional, TypedDict
-import sys
+
 from dotenv import load_dotenv
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
@@ -53,8 +54,8 @@ def get_env_llm_config() -> EnvLLMConfig:
         openai_api_key=openai_api_key,
         openai_deployment=openai_deployment,
         azure_openai_api_key=azure_openai_api_key,
-        azure_openai_deployment=f'azure/{azure_openai_deployment}', # this is the format that litellm expects azure deployment name
-        azure_openai_embedding_deployment=f'azure/{azure_openai_embedding_deployment}', # this is the format that litellm expects azure deployment name
+        azure_openai_deployment=f"azure/{azure_openai_deployment}",  # litellm requires prefix
+        azure_openai_embedding_deployment=f"azure/{azure_openai_embedding_deployment}",  # litellm requires prefix
         azure_openai_api_base=azure_openai_api_base,
         azure_openai_api_version=azure_openai_api_version,
     )

@@ -1,14 +1,15 @@
 import os
 import sys
+from unittest import mock
 
+import instructor
 import litellm
 import pytest
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from .utils import EnvLLMConfig, get_env_llm_config
 from memory_module.services.llm_service import LLMService
 
 # from azure.identity import DefaultAzureCredential, get_bearer_token_provider
@@ -19,14 +20,28 @@ load_dotenv()
 
 
 @pytest.fixture()
-def config() -> EnvLLMConfig:
-    return get_env_llm_config()
+def config():
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    azure_openai_api_key = os.getenv("AZURE_OPENAI_API_KEY")
+    azure_openai_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+    azure_openai_embedding_deployment = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
+    azure_openai_api_base = os.getenv("AZURE_OPENAI_API_BASE")
+    azure_openai_api_version = os.getenv("AZURE_OPENAI_API_VERSION")
+
+    return {
+        "openai_api_key": openai_api_key,
+        "azure_openai_api_key": azure_openai_api_key,
+        "azure_openai_api_base": azure_openai_api_base,
+        "azure_openai_api_version": azure_openai_api_version,
+        "azure_openai_deployment": azure_openai_deployment,
+        "azure_openai_embedding_deployment": azure_openai_embedding_deployment,
+    }
 
 
 @pytest.fixture()
-def azure_config(config: EnvLLMConfig):
-    if not config["azure_openai_api_key"]:
-        pytest.skip("Azure OpenAI API key is missing")
+def azure_config(config):
+    # if not config["azure_openai_api_key"]:
+    #     pytest.skip("Azure OpenAI API key is missing")
 
     if not config["azure_openai_api_base"]:
         pytest.skip("Azure OpenAI API base is missing")
@@ -49,7 +64,12 @@ async def _return_arguments(**kwargs):
 
 @pytest.fixture()
 def mock_completion(monkeypatch):
-    monkeypatch.setattr(litellm, "acompletion", _return_arguments)
+    client = mock.Mock()
+    router = mock.Mock()
+    monkeypatch.setattr(instructor, "apatch", client)
+    monkeypatch.setattr(litellm, "Router", router)
+
+    return client, router
 
 
 @pytest.fixture()
@@ -62,26 +82,33 @@ def includes(text: str, phrase):
 
 
 @pytest.mark.asyncio
-async def test_completion_calls_litellm_acompletion(mock_completion):
+async def test_completion_calls_litellm_client(mock_completion):
     model = "test-model"
     api_base = "api base"
     api_version = "api version"
     api_key = "api key"
     messages = []
-    args = {"test key": "test value"}
+    litellm_params = {"test key": "test value"}
     local_args = {"local test key": "local test value"}
 
-    lm = LLMService(model=model, api_base=api_base, api_version=api_version, api_key=api_key, **args)
+    lm = LLMService(model=model, api_base=api_base, api_version=api_version, api_key=api_key, **litellm_params)
 
-    res = await lm.completion(messages, **local_args)
+    await lm.completion(messages, **local_args)
 
+    client_mock, router_mock = mock_completion
+    res = client_mock.mock_calls[1].kwargs
     assert res["model"] == model
     assert res["messages"] == messages
-    assert res["api_base"] == api_base
-    assert res["api_version"] == api_version
-    assert res["api_key"] == api_key
-    assert res["test key"] == args["test key"]
+    assert res["response_model"] is None
     assert res["local test key"] == local_args["local test key"]
+
+    config = router_mock.mock_calls[0].kwargs["model_list"][0]
+    assert config["model_name"] == model
+    assert config["litellm_params"]["model"] == model
+    assert config["litellm_params"]["api_key"] == api_key
+    assert config["litellm_params"]["api_base"] == api_base
+    assert config["litellm_params"]["api_version"] == api_version
+    assert config["litellm_params"]["test key"] == litellm_params["test key"]
 
 
 @pytest.mark.asyncio
@@ -249,6 +276,8 @@ async def test_completion_model_override(mock_completion):
 
     lm = LLMService(model=model)
 
-    res = await lm.completion(messages=[], override_model=override_model)
+    await lm.completion(messages=[], override_model=override_model)
 
+    client_mock, _ = mock_completion
+    res = client_mock.mock_calls[1].kwargs
     assert res["model"] == override_model

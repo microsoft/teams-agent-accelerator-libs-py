@@ -2,7 +2,7 @@ from typing import Any, Coroutine, List, Optional, Union
 
 import instructor
 import litellm
-from litellm import BaseModel, EmbeddingResponse, Router
+from litellm import BaseModel, EmbeddingResponse
 
 
 # TODO:
@@ -42,7 +42,7 @@ class LLMService:
         api_base: Optional[str] = None,
         api_version: Optional[str] = None,
         embedding_model: Optional[str] = None,
-        **kwargs,
+        **litellm_params,
     ):
         """Creates a new LLMService instance.
 
@@ -58,48 +58,35 @@ class LLMService:
         self.embedding_model = embedding_model
         self.api_base = api_base
         self.api_version = api_version
-        self._kwargs = kwargs
+        self._litellm_params = litellm_params
 
     async def completion(
         self, messages: List, response_model: Optional[BaseModel] = None, override_model: Optional[str] = None, **kwargs
     ):
-        """Generate completion from the model. This method is a wrapper around litellm's `acompletion` method."""
+        """Generate completion from the model."""
         model = override_model or self.model
         if not model:
             raise ValueError("No LM model provided.")
 
         # TODO: This is hacky. Fix it later.
-        if response_model:
-            client = instructor.apatch(
-                Router(
-                    model_list=[
-                        {
-                            "model_name": model,
-                            "litellm_params": {
-                                "model": model,
-                                "api_key": self.api_key,
-                                "api_base": self.api_base,
-                                "api_version": self.api_version,
-                                **self._kwargs,
-                            },
-                        }
-                    ]
-                )
+        client = instructor.apatch(
+            litellm.Router(
+                model_list=[
+                    {
+                        "model_name": model,
+                        "litellm_params": {
+                            "model": model,
+                            "api_key": self.api_key,
+                            "api_base": self.api_base,
+                            "api_version": self.api_version,
+                            **self._litellm_params,
+                        },
+                    }
+                ]
             )
-
-            return client.chat.completions.create(
-                messages=messages, model=model, response_model=response_model, **self._kwargs, **kwargs
-            )
-
-        return await litellm.acompletion(
-            messages=messages,
-            model=model,
-            api_key=self.api_key,
-            api_version=self.api_version,
-            api_base=self.api_base,
-            **self._kwargs,
-            **kwargs,
         )
+
+        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)
 
     async def embedding(
         self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs
@@ -115,6 +102,6 @@ class LLMService:
             api_key=self.api_key,
             api_version=self.api_version,
             api_base=self.api_base,
-            **self._kwargs,
+            **self._litellm_params,
             **kwargs,
         )

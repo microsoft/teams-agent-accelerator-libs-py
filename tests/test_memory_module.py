@@ -22,7 +22,9 @@ from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 from memory_module.storage.sqlite_message_buffer_storage import SQLiteMessageBufferStorage
 
 from tests.utils import build_llm_config
+
 litellm.set_verbose = True
+
 
 @pytest.fixture
 def memory_module(monkeypatch):
