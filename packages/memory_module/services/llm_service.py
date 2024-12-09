@@ -2,13 +2,11 @@ from typing import Any, Coroutine, List, Optional, Union
 
 import litellm
 from litellm import BaseModel, CustomStreamWrapper, EmbeddingResponse, ModelResponse
+from pydantic import BaseModel
+
+from memory_module.config import LLMConfig
 
 
-# TODO:
-# * Implement retrying logic
-# * Implement basic costs tracking/logging
-# * Do we want to customeize the response models so that litellm types aren't being used around the codebase?
-# * When using structured outputs do we want to parse the response into the pydantic model?
 class LLMService:
     """Service for handling LM operations.
 
@@ -30,32 +28,26 @@ class LLMService:
     ```
 
     For configuration examples of list of providers see: https://docs.litellm.ai/docs/providers
-    """  # noqa: E501
+    """
 
-    def __init__(
-        self,
-        model: Optional[str] = None,
-        api_key: Optional[str] = None,
-        api_base: Optional[str] = None,
-        api_version: Optional[str] = None,
-        embedding_model: Optional[str] = None,
-        **kwargs,
-    ):
-        """Creates a new LLMService instance.
+    def __init__(self, config: LLMConfig):
+        """Initialize LLM service with configuration.
 
         Args:
-            model (str): The model to use. This should be in the format of `{provider_name}/{model_name}`.
-            api_key (Optional[str], optional): The api key. Defaults to None.
-            api_base (Optional[str], optional): The api base endpoint. Defaults to None.
-            api_version (Optional[str], optional): The api version. Defaults to None.
-            embedding_model (Optional[str], optional): name of the embedding model to use. Defaults to None.
+            config: LLM service configuration
         """
-        self.model = model
-        self.api_key = api_key
-        self.embedding_model = embedding_model
-        self.api_base = api_base
-        self.api_version = api_version
-        self._kwargs = kwargs
+        self.model = config.model
+        self.api_key = config.api_key
+        self.api_base = config.api_base
+        self.api_version = config.api_version
+        self.embedding_model = config.embedding_model
+
+        # Get any additional kwargs from the config
+        self._kwargs = {
+            k: v
+            for k, v in config.model_dump().items()
+            if k not in {"model", "api_key", "api_base", "api_version", "embedding_model"}
+        }
 
     async def completion(
         self,

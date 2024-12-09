@@ -18,7 +18,6 @@ from memory_module.core.memory_core import (
     SemanticMemoryExtraction,
 )
 from memory_module.interfaces.types import Message
-from memory_module.services.llm_service import LLMService
 
 from tests.utils import build_llm_config
 
@@ -26,10 +25,12 @@ from tests.utils import build_llm_config
 @pytest.fixture
 def config():
     """Fixture to create test config."""
+    llm_config = build_llm_config({"model": "gpt-4o-mini"})
     return MemoryModuleConfig(
         db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
         buffer_size=5,
         timeout_seconds=1,  # Short timeout for testing
+        llm=llm_config,
     )
 
 
@@ -40,10 +41,8 @@ def memory_module(config, monkeypatch):
     if config.db_path.exists():
         config.db_path.unlink()
 
-    config_dict = build_llm_config({"model": "gpt-4o-mini"})
-
     # Only mock if api_key is not available
-    if not config_dict.get("api_key"):
+    if not config.llm.api_key:
 
         async def _mock_completion(**kwargs):
             return type(
@@ -79,8 +78,7 @@ def memory_module(config, monkeypatch):
 
         monkeypatch.setattr(litellm, "acompletion", _mock_completion)
 
-    llm_service = LLMService(**config_dict)
-    return MemoryModule(config=config, llm_service=llm_service)
+    return MemoryModule(config=config)
 
 
 @pytest_asyncio.fixture(autouse=True)

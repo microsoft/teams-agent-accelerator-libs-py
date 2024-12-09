@@ -4,14 +4,18 @@ from pathlib import Path
 
 import pytest
 import pytest_asyncio
-from memory_module.config import MemoryModuleConfig
+from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.services.scheduled_events_service import ScheduledEventsService
 
 
 @pytest.fixture
 def config():
     """Fixture that provides a MemoryModuleConfig instance."""
-    return MemoryModuleConfig(db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db", timeout_seconds=1)
+    return MemoryModuleConfig(
+        db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
+        timeout_seconds=1,
+        llm=LLMConfig(),
+    )
 
 
 @pytest.fixture

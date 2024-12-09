@@ -8,16 +8,18 @@ from pydantic import BaseModel
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
+from memory_module.config import LLMConfig
 from memory_module.services.llm_service import LLMService
 
-from tests.utils import get_env_llm_config
+from .utils import get_env_llm_config
 
 load_dotenv()
 
 
 @pytest.fixture()
 def config():
-    return get_env_llm_config()
+    env_config = get_env_llm_config()
+    return env_config
 
 
 async def _return_arguments(**kwargs):
@@ -48,7 +50,8 @@ async def test_completion_calls_litellm_acompletion(mock_completion):
     args = {"test key": "test value"}
     local_args = {"local test key": "local test value"}
 
-    lm = LLMService(model=model, api_base=api_base, api_version=api_version, api_key=api_key, **args)
+    config = LLMConfig(model=model, api_base=api_base, api_version=api_version, api_key=api_key, **args)
+    lm = LLMService(config=config)
 
     res = await lm.completion(messages, **local_args)
 
@@ -71,13 +74,10 @@ async def test_embedding_calls_litellm_aembedding(mock_embedding):
     args = {"test key": "test value"}
     local_args = {"local test key": "local test value"}
 
-    lm = LLMService(
-        embedding_model=embedding_model,
-        api_base=api_base,
-        api_version=api_version,
-        api_key=api_key,
-        **args,
+    config = LLMConfig(
+        embedding_model=embedding_model, api_base=api_base, api_version=api_version, api_key=api_key, **args
     )
+    lm = LLMService(config=config)
 
     res = await lm.embedding(input, **local_args)
 
@@ -95,7 +95,8 @@ async def test_completion_openai(config):
     if not config["openai_api_key"]:
         pytest.skip("OpenAI API key is missing")
 
-    lm = LLMService(model="gpt-4o", api_key=config["openai_api_key"])
+    llm_config = LLMConfig(model="gpt-4o", api_key=config["openai_api_key"])
+    lm = LLMService(config=llm_config)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
     res = await lm.completion(messages)
@@ -109,7 +110,8 @@ async def test_completion_openai_structured_outputs(config):
     if not config["openai_api_key"]:
         pytest.skip("OpenAI API key is missing")
 
-    lm = LLMService(model="gpt-4o", api_key=config["openai_api_key"])
+    llm_config = LLMConfig(model="gpt-4o", api_key=config["openai_api_key"])
+    lm = LLMService(config=llm_config)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
     class Country(BaseModel):
@@ -127,7 +129,8 @@ async def test_embeddings_openai(config):
     if not config["openai_api_key"]:
         pytest.skip("OpenAI API key is missing")
 
-    lm = LLMService(embedding_model="text-embedding-3-small", api_key=config["openai_api_key"])
+    llm_config = LLMConfig(embedding_model="text-embedding-3-small", api_key=config["openai_api_key"])
+    lm = LLMService(config=llm_config)
     query = "Which country has a maple leaf in its flag?"
 
     res = await lm.embedding(input=[query])
@@ -140,7 +143,7 @@ async def test_embeddings_openai(config):
 
 @pytest.mark.asyncio
 async def test_completion_no_model_provided():
-    lm = LLMService()
+    lm = LLMService(config=LLMConfig())
     try:
         await lm.completion(messages=[])
     except ValueError as e:
@@ -149,7 +152,7 @@ async def test_completion_no_model_provided():
 
 @pytest.mark.asyncio
 async def test_embeddings_no_model_provided():
-    lm = LLMService()
+    lm = LLMService(config=LLMConfig())
     try:
         await lm.embedding(input=[])
     except ValueError as e:
@@ -161,7 +164,8 @@ async def test_embedding_model_override(mock_embedding):
     embedding_model = "test-model"
     override_model = "override model"
 
-    lm = LLMService(embedding_model=embedding_model)
+    llm_config = LLMConfig(embedding_model=embedding_model)
+    lm = LLMService(config=llm_config)
 
     res = await lm.embedding(input="test input", override_model=override_model)
 
@@ -173,7 +177,8 @@ async def test_completion_model_override(mock_completion):
     model = "test-model"
     override_model = "override model"
 
-    lm = LLMService(model=model)
+    llm_config = LLMConfig(model=model)
+    lm = LLMService(config=llm_config)
 
     res = await lm.completion(messages=[], override_model=override_model)
 
