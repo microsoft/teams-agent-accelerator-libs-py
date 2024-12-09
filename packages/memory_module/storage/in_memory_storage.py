@@ -14,7 +14,7 @@ from memory_module.services.llm_service import LLMService
 
 class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage):
     def __init__(self, llm_service: Optional[LLMService] = None):
-        self.storage: Dict[str, Dict] = {
+        self.storage: Dict[object, Dict] = {
             "embeddings": {},
             "buffered_messages": defaultdict(list),  # type: Dict[str, List[Message]]
             "scheduled_events": {},
@@ -25,13 +25,13 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self,
         memory: Memory,
         *,
-        embedding_vector: List[float] = None,
+        embedding_vector: Optional[List[float]] = None,
     ) -> None:
         self.storage[memory.id] = memory
         self.storage["embeddings"][memory.id] = embedding_vector
 
     async def retrieve_memories(self, query: str, user_id: str) -> List[Memory]:
-        embedding_list = self.llm_service.get_embeddings([query])
+        embedding_list = self.llm_service.embedding([query])
         query_vector = np.array(embedding_list[0])
         sorted_collection = sorted(
             self.storage["embeddings"].items(),

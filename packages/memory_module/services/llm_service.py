@@ -1,8 +1,9 @@
-from typing import Any, Coroutine, List, Optional, Union
+from typing import Any, Coroutine, List, Optional, Type, Union
 
 import instructor
 import litellm
-from litellm import BaseModel, EmbeddingResponse
+from litellm import BaseModel, CustomStreamWrapper
+from litellm.types.utils import EmbeddingResponse, ModelResponse
 
 
 # TODO:
@@ -89,14 +90,14 @@ class LLMService:
         return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)
 
     async def embedding(
-        self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs
+        self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs: object
     ) -> Coroutine[Any, Any, EmbeddingResponse]:
         """Get embeddings from the model. This method is a wrapper around litellm's `aembedding` method."""
         model = override_model or self.embedding_model
         if not model:
             raise ValueError("No embedding model provided.")
 
-        return await litellm.aembedding(
+        return litellm.aembedding(
             model=model,
             input=input,
             api_key=self.api_key,
