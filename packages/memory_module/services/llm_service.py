@@ -71,27 +71,24 @@ class LLMService:
             raise ValueError("No LM model provided.")
 
         # TODO: This is hacky. Fix it later.
-        router = Router(
-            model_list=[
-                {
-                    "model_name": model,
-                    "litellm_params": {
-                        "model": model,
-                        "api_key": self.api_key,
-                        "api_base": self.api_base,
-                        "api_version": self.api_version,
-                        **self._litellm_params,
-                    },
-                }
-            ]
-        )
-
-        #BUG: Router cannot be used as AsyncOpenAI type
         client = instructor.apatch(
-            router
+            Router(
+                model_list=[
+                    {
+                        "model_name": model,
+                        "litellm_params": {
+                            "model": model,
+                            "api_key": self.api_key,
+                            "api_base": self.api_base,
+                            "api_version": self.api_version,
+                            **self._litellm_params,
+                        },
+                    }
+                ]
+            ) # type: ignore
         )
 
-        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)
+        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs) # type: ignore
 
     async def embedding(
         self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs: object
