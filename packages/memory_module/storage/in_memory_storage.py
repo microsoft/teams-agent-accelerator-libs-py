@@ -32,14 +32,14 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
 
     async def retrieve_memories(self, query: str, user_id: str, limit: Optional[int] = None) -> List[Memory]:
         embedding_list = await self.llm_service.embedding([query])
-        query_vector = np.array(embedding_list.data[0])
+        query_vector = embedding_list.data[0]
         sorted_collection = sorted(
             self.storage.items(),
             key=lambda memory:self._cosine_similarity(memory, query_vector))[:3]
         return sorted_collection
 
-    def _cosine_similarity(self, memory:Memory, query_vector: list[float]) -> float:
-        return np.dot(query_vector, self.storage["embeddings"][memory.id])
+    def _cosine_similarity(self, memory:Memory, query_vector: List[float]) -> float:
+        return np.dot(np.array(query_vector), np.array(self.storage["embeddings"][memory.id]))
 
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer."""
