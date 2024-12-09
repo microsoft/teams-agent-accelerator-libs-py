@@ -177,7 +177,7 @@ async def test_embeddings_openai(config: EnvLLMConfig):
 
 
 @pytest.mark.asyncio
-async def test_completion_azure_openai(config: EnvLLMConfig):
+async def test_completion_azure_openai(azure_config: EnvLLMConfig):
     model = config.azure_openai_deployment
     api_base = config.azure_openai_api_base
     api_version = config.azure_openai_api_version
@@ -195,7 +195,7 @@ async def test_completion_azure_openai(config: EnvLLMConfig):
 
 
 @pytest.mark.asyncio
-async def test_completion_azure_openai_structured_outputs(config: EnvLLMConfig):
+async def test_completion_azure_openai_structured_outputs(azure_config: EnvLLMConfig):
     model = config.azure_openai_deployment
     api_base = config.azure_openai_api_base
     api_version = config.azure_openai_api_version
@@ -215,7 +215,7 @@ async def test_completion_azure_openai_structured_outputs(config: EnvLLMConfig):
 
 
 @pytest.mark.asyncio
-async def test_embeddings_azure_openai(config: EnvLLMConfig):
+async def test_embeddings_azure_openai(azure_config: EnvLLMConfig):
     model = config.azure_openai_embedding_deployment
     api_base = config.azure_openai_api_base
     api_version = config.azure_openai_api_version
