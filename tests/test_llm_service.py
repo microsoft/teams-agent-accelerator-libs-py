@@ -11,7 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from memory_module.config import LLMConfig
 from memory_module.services.llm_service import LLMService
 
-from .utils import get_env_llm_config
+from .utils import EnvLLMConfig, get_env_llm_config
 
 load_dotenv()
 
@@ -91,11 +91,11 @@ async def test_embedding_calls_litellm_aembedding(mock_embedding):
 
 
 @pytest.mark.asyncio
-async def test_completion_openai(config):
-    if not config["openai_api_key"]:
+async def test_completion_openai(config: EnvLLMConfig):
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key is missing")
 
-    llm_config = LLMConfig(model="gpt-4o", api_key=config["openai_api_key"])
+    llm_config = LLMConfig(model="gpt-4o", api_key=config.openai_api_key)
     lm = LLMService(config=llm_config)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
@@ -106,11 +106,11 @@ async def test_completion_openai(config):
 
 
 @pytest.mark.asyncio
-async def test_completion_openai_structured_outputs(config):
-    if not config["openai_api_key"]:
+async def test_completion_openai_structured_outputs(config: EnvLLMConfig):
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key is missing")
 
-    llm_config = LLMConfig(model="gpt-4o", api_key=config["openai_api_key"])
+    llm_config = LLMConfig(model="gpt-4o", api_key=config.openai_api_key)
     lm = LLMService(config=llm_config)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
@@ -125,11 +125,11 @@ async def test_completion_openai_structured_outputs(config):
 
 
 @pytest.mark.asyncio
-async def test_embeddings_openai(config):
-    if not config["openai_api_key"]:
+async def test_embeddings_openai(config: EnvLLMConfig):
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key is missing")
 
-    llm_config = LLMConfig(embedding_model="text-embedding-3-small", api_key=config["openai_api_key"])
+    llm_config = LLMConfig(embedding_model="text-embedding-3-small", api_key=config.openai_api_key)
     lm = LLMService(config=llm_config)
     query = "Which country has a maple leaf in its flag?"
 

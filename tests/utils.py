@@ -5,6 +5,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from memory_module.interfaces.types import Message
 from memory_module.services.llm_service import LLMConfig
+from pydantic import BaseModel
 
 
 def create_test_message(content: str):
@@ -17,7 +18,7 @@ def create_test_message(content: str):
     )
 
 
-class EnvLLMConfig:
+class EnvLLMConfig(BaseModel):
     openai_api_key: Optional[str] = None
     openai_deployment: Optional[str] = None
     azure_openai_api_key: Optional[str] = None
@@ -27,29 +28,29 @@ class EnvLLMConfig:
     azure_openai_api_version: Optional[str] = None
 
 
-def get_env_llm_config() -> dict:
+def get_env_llm_config() -> EnvLLMConfig:
     load_dotenv()
 
-    return {
-        "openai_api_key": os.getenv("OPENAI_API_KEY"),
-        "openai_deployment": os.getenv("OPENAI_DEPLOYMENT"),
-        "azure_openai_api_key": os.getenv("AZURE_OPENAI_API_KEY"),
-        "azure_openai_deployment": os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-        "azure_openai_embedding_deployment": os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT"),
-        "azure_openai_api_base": os.getenv("AZURE_OPENAI_API_BASE"),
-        "azure_openai_api_version": os.getenv("AZURE_OPENAI_API_VERSION"),
-    }
+    return EnvLLMConfig(
+        openai_api_key=os.getenv("OPENAI_API_KEY", None),
+        openai_deployment=os.getenv("OPENAI_DEPLOYMENT", None),
+        azure_openai_api_key=os.getenv("AZURE_OPENAI_API_KEY", None),
+        azure_openai_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT", None),
+        azure_openai_embedding_deployment=os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", None),
+        azure_openai_api_base=os.getenv("AZURE_OPENAI_API_BASE", None),
+        azure_openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION", None),
+    )
 
 
 def build_llm_config(override_config: Optional[LLMConfig] = None) -> LLMConfig:
     env_config = get_env_llm_config()
 
     config = {
-        "model": env_config["openai_deployment"] or env_config["azure_openai_deployment"],
-        "api_key": env_config["openai_api_key"] or env_config["azure_openai_api_key"],
-        "api_base": env_config["azure_openai_api_base"],
-        "api_version": env_config["azure_openai_api_version"],
-        "embedding_model": env_config["azure_openai_embedding_deployment"],
+        "model": env_config.openai_deployment or env_config.azure_openai_deployment,
+        "api_key": env_config.openai_api_key or env_config.azure_openai_api_key,
+        "api_base": env_config.azure_openai_api_base,
+        "api_version": env_config.azure_openai_api_version,
+        "embedding_model": env_config.azure_openai_embedding_deployment,
     }
 
     if override_config:
