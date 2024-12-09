@@ -173,7 +173,7 @@ async def test_completion_azure_openai(azure_config):
     api_key = azure_config["azure_openai_api_key"]
 
     # TODO: Switch to microsft entra id auth when litellm fixes bug: https://github.com/BerriAI/litellm/pull/6917
-    lm = LLMService(model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
+    lm = LLMService(model=model, api_key=api_key, api_base=api_base, api_version=api_version)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
     res = await lm.completion(messages)
@@ -189,7 +189,7 @@ async def test_completion_azure_openai_structured_outputs(azure_config):
     api_version = azure_config["azure_openai_api_version"]
     api_key = azure_config["azure_openai_api_key"]
 
-    lm = LLMService(model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
+    lm = LLMService(model=model, api_key=api_key, api_base=api_base, api_version=api_version)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
     class Country(BaseModel):
@@ -208,7 +208,7 @@ async def test_embeddings_azure_openai(azure_config):
     api_version = azure_config["azure_openai_api_version"]
     api_key = azure_config["azure_openai_api_key"]
 
-    lm = LLMService(embedding_model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
+    lm = LLMService(embedding_model=model, api_key=api_key, api_base=api_base, api_version=api_version)
     query = "Which country has a maple leaf in its flag?"
 
     res = await lm.embedding(input=[query])
