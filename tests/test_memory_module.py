@@ -21,6 +21,8 @@ from memory_module.interfaces.types import Message
 
 from tests.utils import build_llm_config
 
+litellm.set_verbose = True
+
 
 @pytest.fixture
 def config():
@@ -41,44 +43,26 @@ def memory_module(config, monkeypatch):
     if config.db_path.exists():
         config.db_path.unlink()
 
+    memory_module = MemoryModule(config=config)
+
     # Only mock if api_key is not available
     if not config.llm.api_key:
 
         async def _mock_completion(**kwargs):
-            return type(
-                "MockModelResponse",
-                (),
-                {
-                    "choices": [
-                        type(
-                            "MockChoices",
-                            (),
-                            {
-                                "message": type(
-                                    "MockChoiceMessage",
-                                    (),
-                                    {
-                                        "content": SemanticMemoryExtraction(
-                                            action="add",
-                                            reason_for_action="Mocked LLM response about pie",
-                                            interesting_facts=[
-                                                SemanticFact(
-                                                    text="Mocked LLM response about pie",
-                                                    tags=[],
-                                                )
-                                            ],
-                                        ).model_dump_json()
-                                    },
-                                )
-                            },
-                        )
-                    ]
-                },
+            return SemanticMemoryExtraction(
+                action="add",
+                reason_for_action="Mocked LLM response about pie",
+                interesting_facts=[
+                    SemanticFact(
+                        text="Mocked LLM response about pie",
+                        tags=[],
+                    )
+                ],
             )
 
-        monkeypatch.setattr(litellm, "acompletion", _mock_completion)
+        monkeypatch.setattr(memory_module.llm_service, "completion", _mock_completion)
 
-    return MemoryModule(config=config)
+    return memory_module
 
 
 @pytest_asyncio.fixture(autouse=True)

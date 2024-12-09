@@ -1,7 +1,8 @@
 from typing import Any, Coroutine, List, Optional, Union
 
+import instructor
 import litellm
-from litellm import BaseModel, CustomStreamWrapper, EmbeddingResponse, ModelResponse
+from litellm import BaseModel, EmbeddingResponse
 
 from memory_module.config import LLMConfig
 
@@ -43,34 +44,39 @@ class LLMService:
         self.embedding_model = config.embedding_model
 
         # Get any additional kwargs from the config
-        self._kwargs = {
+        self._litellm_params = {
             k: v
             for k, v in config.model_dump().items()
             if k not in {"model", "api_key", "api_base", "api_version", "embedding_model"}
         }
 
     async def completion(
-        self,
-        messages: List,
-        response_format: Optional[dict | BaseModel] = None,
-        override_model: Optional[str] = None,
-        **kwargs,
-    ) -> Coroutine[Any, Any, ModelResponse | CustomStreamWrapper]:
-        """Generate completion from the model. This method is a wrapper around litellm's `acompletion` method."""
+        self, messages: List, response_model: Optional[BaseModel] = None, override_model: Optional[str] = None, **kwargs
+    ):
+        """Generate completion from the model."""
         model = override_model or self.model
         if not model:
             raise ValueError("No LM model provided.")
 
-        return await litellm.acompletion(
-            messages=messages,
-            model=model,
-            api_key=self.api_key,
-            api_version=self.api_version,
-            api_base=self.api_base,
-            response_format=response_format,
-            **self._kwargs,
-            **kwargs,
+        # TODO: This is hacky. Fix it later.
+        client = instructor.apatch(
+            litellm.Router(
+                model_list=[
+                    {
+                        "model_name": model,
+                        "litellm_params": {
+                            "model": model,
+                            "api_key": self.api_key,
+                            "api_base": self.api_base,
+                            "api_version": self.api_version,
+                            **self._litellm_params,
+                        },
+                    }
+                ]
+            )
         )
+
+        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)
 
     async def embedding(
         self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs
@@ -86,6 +92,6 @@ class LLMService:
             api_key=self.api_key,
             api_version=self.api_version,
             api_base=self.api_base,
-            **self._kwargs,
+            **self._litellm_params,
             **kwargs,
         )
