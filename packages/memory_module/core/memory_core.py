@@ -2,6 +2,7 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.types import Memory, Message
 from memory_module.services.llm_service import LLMService
@@ -40,11 +41,19 @@ class MemoryCore(BaseMemoryCore):
 
     def __init__(
         self,
+        config: MemoryModuleConfig,
         llm_service: LLMService,
         storage: Optional[SQLiteMemoryStorage] = None,
     ):
+        """Initialize the memory core.
+
+        Args:
+            config: Memory module configuration
+            llm_service: LLM service instance
+            storage: Optional storage implementation for memory persistence
+        """
         self.lm = llm_service
-        self.storage = storage if storage is not None else SQLiteMemoryStorage()
+        self.storage = storage or SQLiteMemoryStorage(db_path=config.db_path)
 
     async def process_semantic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
@@ -120,9 +129,9 @@ User: {message.content}
             },
         ]
 
-        res = await self.lm.completion(messages=messages, response_format=SemanticMemoryExtraction)
+        res = await self.lm.completion(messages=messages, response_model=SemanticMemoryExtraction)
 
-        return SemanticMemoryExtraction.model_validate_json(res.choices[0].message.content)
+        return res
 
     async def _extract_episodic_memory_from_message(
         self, message: Message, memory_message: str = ""

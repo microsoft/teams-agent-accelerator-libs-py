@@ -1,6 +1,8 @@
 import os
 import sys
+from unittest import mock
 
+import instructor
 import litellm
 import pytest
 from dotenv import load_dotenv
@@ -8,16 +10,40 @@ from pydantic import BaseModel
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
+from memory_module.config import LLMConfig
 from memory_module.services.llm_service import LLMService
 
-from tests.utils import get_env_llm_config
+from .utils import EnvLLMConfig, get_env_llm_config
+
+litellm.set_verbose = True
 
 load_dotenv()
 
 
 @pytest.fixture()
 def config():
-    return get_env_llm_config()
+    env_config = get_env_llm_config()
+    return env_config
+
+
+@pytest.fixture()
+def azure_config(config: EnvLLMConfig):
+    if not config.azure_openai_api_key:
+        pytest.skip("Azure OpenAI API key is missing")
+
+    if not config.azure_openai_api_base:
+        pytest.skip("Azure OpenAI API base is missing")
+
+    if not config.azure_openai_api_version:
+        pytest.skip("Azure OpenAI API version is missing")
+
+    if not config.azure_openai_deployment:
+        pytest.skip("Azure OpenAI deployment is missing")
+
+    if not config.azure_openai_embedding_deployment:
+        pytest.skip("Azure OpenAI embedding deployment is missing")
+
+    return config
 
 
 async def _return_arguments(**kwargs):
@@ -26,7 +52,12 @@ async def _return_arguments(**kwargs):
 
 @pytest.fixture()
 def mock_completion(monkeypatch):
-    monkeypatch.setattr(litellm, "acompletion", _return_arguments)
+    client = mock.Mock()
+    router = mock.Mock()
+    monkeypatch.setattr(instructor, "apatch", client)
+    monkeypatch.setattr(litellm, "Router", router)
+
+    return client, router
 
 
 @pytest.fixture()
@@ -39,26 +70,34 @@ def includes(text: str, phrase):
 
 
 @pytest.mark.asyncio
-async def test_completion_calls_litellm_acompletion(mock_completion):
+async def test_completion_calls_litellm_client(mock_completion):
     model = "test-model"
     api_base = "api base"
     api_version = "api version"
     api_key = "api key"
     messages = []
-    args = {"test key": "test value"}
+    litellm_params = {"test key": "test value"}
     local_args = {"local test key": "local test value"}
 
-    lm = LLMService(model=model, api_base=api_base, api_version=api_version, api_key=api_key, **args)
+    config = LLMConfig(model=model, api_base=api_base, api_version=api_version, api_key=api_key, **litellm_params)
+    lm = LLMService(config=config)
 
-    res = await lm.completion(messages, **local_args)
+    await lm.completion(messages, **local_args)
 
+    client_mock, router_mock = mock_completion
+    res = client_mock.mock_calls[1].kwargs
     assert res["model"] == model
     assert res["messages"] == messages
-    assert res["api_base"] == api_base
-    assert res["api_version"] == api_version
-    assert res["api_key"] == api_key
-    assert res["test key"] == args["test key"]
+    assert res["response_model"] is None
     assert res["local test key"] == local_args["local test key"]
+
+    config = router_mock.mock_calls[0].kwargs["model_list"][0]
+    assert config["model_name"] == model
+    assert config["litellm_params"]["model"] == model
+    assert config["litellm_params"]["api_key"] == api_key
+    assert config["litellm_params"]["api_base"] == api_base
+    assert config["litellm_params"]["api_version"] == api_version
+    assert config["litellm_params"]["test key"] == litellm_params["test key"]
 
 
 @pytest.mark.asyncio
@@ -71,13 +110,10 @@ async def test_embedding_calls_litellm_aembedding(mock_embedding):
     args = {"test key": "test value"}
     local_args = {"local test key": "local test value"}
 
-    lm = LLMService(
-        embedding_model=embedding_model,
-        api_base=api_base,
-        api_version=api_version,
-        api_key=api_key,
-        **args,
+    config = LLMConfig(
+        embedding_model=embedding_model, api_base=api_base, api_version=api_version, api_key=api_key, **args
     )
+    lm = LLMService(config=config)
 
     res = await lm.embedding(input, **local_args)
 
@@ -91,11 +127,12 @@ async def test_embedding_calls_litellm_aembedding(mock_embedding):
 
 
 @pytest.mark.asyncio
-async def test_completion_openai(config):
-    if not config["openai_api_key"]:
+async def test_completion_openai(config: EnvLLMConfig):
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key is missing")
 
-    lm = LLMService(model="gpt-4o", api_key=config["openai_api_key"])
+    llm_config = LLMConfig(model="gpt-4o", api_key=config.openai_api_key)
+    lm = LLMService(config=llm_config)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
     res = await lm.completion(messages)
@@ -105,29 +142,88 @@ async def test_completion_openai(config):
 
 
 @pytest.mark.asyncio
-async def test_completion_openai_structured_outputs(config):
-    if not config["openai_api_key"]:
+async def test_completion_openai_structured_outputs(config: EnvLLMConfig):
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key is missing")
 
-    lm = LLMService(model="gpt-4o", api_key=config["openai_api_key"])
+    llm_config = LLMConfig(model="gpt-4o", api_key=config.openai_api_key)
+    lm = LLMService(config=llm_config)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
     class Country(BaseModel):
         name: str
         capital: str
 
-    res = await lm.completion(messages, response_format=Country)
-    json_str = res.choices[0].message.content
+    res = await lm.completion(messages, response_model=Country)
 
-    assert Country.model_validate_json(json_str).name == "Canada"
+    assert res.name == "Canada"
 
 
 @pytest.mark.asyncio
-async def test_embeddings_openai(config):
-    if not config["openai_api_key"]:
+async def test_embeddings_openai(config: EnvLLMConfig):
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key is missing")
 
-    lm = LLMService(embedding_model="text-embedding-3-small", api_key=config["openai_api_key"])
+    llm_config = LLMConfig(embedding_model="text-embedding-3-small", api_key=config.openai_api_key)
+    lm = LLMService(config=llm_config)
+    query = "Which country has a maple leaf in its flag?"
+
+    res = await lm.embedding(input=[query])
+
+    assert res.model == "text-embedding-3-small"
+    assert (
+        len(res.data[0]["embedding"]) >= 512
+    )  # 512 is the smallest configurable embedding size for the text-embedding-3-small model
+
+
+@pytest.mark.asyncio
+async def test_completion_azure_openai(azure_config: EnvLLMConfig):
+    model = config.azure_openai_deployment
+    api_base = config.azure_openai_api_base
+    api_version = config.azure_openai_api_version
+    api_key = config.azure_openai_api_key
+
+    # TODO: Switch to microsft entra id auth when litellm fixes bug: https://github.com/BerriAI/litellm/pull/6917
+    llm_config = LLMConfig(model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
+    lm = LLMService(config=llm_config)
+    messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
+
+    res = await lm.completion(messages)
+    text = res.choices[0].message.content
+
+    assert includes(text, "Canada")
+
+
+@pytest.mark.asyncio
+async def test_completion_azure_openai_structured_outputs(azure_config: EnvLLMConfig):
+    model = config.azure_openai_deployment
+    api_base = config.azure_openai_api_base
+    api_version = config.azure_openai_api_version
+    api_key = config.azure_openai_api_key
+
+    llm_config = LLMConfig(model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
+    lm = LLMService(config=llm_config)
+    messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
+
+    class Country(BaseModel):
+        name: str
+        capital: str
+
+    res = await lm.completion(messages, response_model=Country)
+
+    assert res.name == "Canada"
+
+
+@pytest.mark.asyncio
+async def test_embeddings_azure_openai(azure_config: EnvLLMConfig):
+    model = config.azure_openai_embedding_deployment
+    api_base = config.azure_openai_api_base
+    api_version = config.azure_openai_api_version
+    api_key = config.azure_openai_api_key
+
+    lm = LLMService(
+        config=LLMConfig(embedding_model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
+    )
     query = "Which country has a maple leaf in its flag?"
 
     res = await lm.embedding(input=[query])
@@ -140,7 +236,7 @@ async def test_embeddings_openai(config):
 
 @pytest.mark.asyncio
 async def test_completion_no_model_provided():
-    lm = LLMService()
+    lm = LLMService(config=LLMConfig())
     try:
         await lm.completion(messages=[])
     except ValueError as e:
@@ -149,7 +245,7 @@ async def test_completion_no_model_provided():
 
 @pytest.mark.asyncio
 async def test_embeddings_no_model_provided():
-    lm = LLMService()
+    lm = LLMService(config=LLMConfig())
     try:
         await lm.embedding(input=[])
     except ValueError as e:
@@ -161,7 +257,8 @@ async def test_embedding_model_override(mock_embedding):
     embedding_model = "test-model"
     override_model = "override model"
 
-    lm = LLMService(embedding_model=embedding_model)
+    llm_config = LLMConfig(embedding_model=embedding_model)
+    lm = LLMService(config=llm_config)
 
     res = await lm.embedding(input="test input", override_model=override_model)
 
@@ -173,8 +270,11 @@ async def test_completion_model_override(mock_completion):
     model = "test-model"
     override_model = "override model"
 
-    lm = LLMService(model=model)
+    llm_config = LLMConfig(model=model)
+    lm = LLMService(config=llm_config)
 
-    res = await lm.completion(messages=[], override_model=override_model)
+    await lm.completion(messages=[], override_model=override_model)
 
+    client_mock, _ = mock_completion
+    res = client_mock.mock_calls[1].kwargs
     assert res["model"] == override_model

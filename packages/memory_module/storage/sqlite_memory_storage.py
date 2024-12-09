@@ -19,7 +19,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         self.db_path = db_path or DEFAULT_DB_PATH
         self.storage = SQLiteStorage(self.db_path)
 
-    async def store_memory(self, memory: Memory) -> None:
+    async def store_memory(self, memory: Memory, *, embedding_vector: List[float]) -> int | None:
         """Store a memory and its message attributions."""
         async with aiosqlite.connect(self.db_path) as conn:
             async with conn.cursor() as cursor:
