@@ -11,7 +11,9 @@ from pydantic import BaseModel
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.services.llm_service import LLMService
+
 from .utils import get_env_llm_config
+
 litellm.set_verbose = True
 
 load_dotenv()
@@ -20,6 +22,7 @@ load_dotenv()
 @pytest.fixture()
 def config():
     return get_env_llm_config()
+
 
 @pytest.fixture()
 def azure_config(config):
@@ -148,6 +151,7 @@ async def test_completion_openai_structured_outputs(config):
     res = await lm.completion(messages, response_model=Country)
 
     assert res.name == "Canada"
+
 
 @pytest.mark.asyncio
 async def test_embeddings_openai(config):

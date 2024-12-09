@@ -6,10 +6,9 @@ import pytest
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
-from memory_module.core.memory_core import EpisodicMemoryExtraction
-from memory_module.core.memory_core import MemoryCore
-from memory_module.services.llm_service import LLMService
 from memory_module.config import MemoryModuleConfig
+from memory_module.core.memory_core import EpisodicMemoryExtraction, MemoryCore
+from memory_module.services.llm_service import LLMService
 
 from .utils import create_test_message, get_env_llm_config
 
@@ -58,6 +57,7 @@ async def test_extract_information_from_messages(config):
 
     assert any(includes(keyword, "software") for keyword in res.keywords)
 
+
 @pytest.mark.asyncio()
 async def test_extract_episodic_memory_from_messages(config):
     if not config["openai_api_key"]:
@@ -70,7 +70,9 @@ async def test_extract_episodic_memory_from_messages(config):
     config = MemoryModuleConfig()
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
 
-    m = lambda c : create_test_message(content=c)
+    def m(c):
+        return create_test_message(content=c)
+
     messages = [
         m("Hey, I'm a software developer."),
         m("That's cool! I'm a software developer too. What brings you to the Microsoft Build conference?"),
@@ -81,6 +83,7 @@ async def test_extract_episodic_memory_from_messages(config):
 
     assert includes(res.summary, "Azure")
     assert includes(res.summary, "software development tools")
+
 
 @pytest.mark.asyncio()
 async def test_create_memory_embedding_from_messages(config):
@@ -97,6 +100,4 @@ async def test_create_memory_embedding_from_messages(config):
     content = "Which country has a maple leaf in its flag?"
     res: list[float] = await memory_core._create_memory_embedding(content=content)
 
-    assert (
-        len(res) >= 512
-    )  # 512 is the smallest configurable embedding size for the text-embedding-3-small model
+    assert len(res) >= 512  # 512 is the smallest configurable embedding size for the text-embedding-3-small model

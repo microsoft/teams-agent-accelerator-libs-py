@@ -47,6 +47,7 @@ def memory_module(config, monkeypatch):
 
     # Only mock if api_key is not available
     if not config_dict.get("api_key"):
+
         async def _mock_completion(**kwargs):
             return SemanticMemoryExtraction(
                 action="add",
