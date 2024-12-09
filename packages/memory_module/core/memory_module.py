@@ -16,7 +16,7 @@ class MemoryModule(BaseMemoryModule):
     def __init__(
         self,
         config: MemoryModuleConfig,
-        llm_service: LLMService,
+        llm_service: Optional[LLMService] = None,
         memory_core: Optional[BaseMemoryCore] = None,
         message_queue: Optional[BaseMessageQueue] = None,
     ):
@@ -24,22 +24,15 @@ class MemoryModule(BaseMemoryModule):
 
         Args:
             config: Memory module configuration
-            llm_service: LLM service instance
+            llm_service: Optional LLM service instance
             memory_core: Optional BaseMemoryCore instance
             message_queue: Optional BaseMessageQueue instance
         """
         self.config = config
-        self.llm_service = llm_service
 
-        if memory_core is None:
-            self.memory_core = MemoryCore(config=config, llm_service=llm_service)
-        else:
-            self.memory_core = memory_core
-
-        if message_queue is None:
-            self.message_queue = MessageQueue(config=config, memory_core=self.memory_core)
-        else:
-            self.message_queue = message_queue
+        self.llm_service = llm_service or LLMService(config=config.llm)
+        self.memory_core = memory_core or MemoryCore(config=config, llm_service=self.llm_service)
+        self.message_queue = message_queue or MessageQueue(config=config, memory_core=self.memory_core)
 
     async def add_message(self, message: Message) -> None:
         """Add a message to be processed into memory."""
