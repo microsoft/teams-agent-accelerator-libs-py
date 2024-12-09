@@ -26,6 +26,26 @@ def config():
     return env_config
 
 
+@pytest.fixture()
+def azure_config(config: EnvLLMConfig):
+    if not config.azure_openai_api_key:
+        pytest.skip("Azure OpenAI API key is missing")
+
+    if not config.azure_openai_api_base:
+        pytest.skip("Azure OpenAI API base is missing")
+
+    if not config.azure_openai_api_version:
+        pytest.skip("Azure OpenAI API version is missing")
+
+    if not config.azure_openai_deployment:
+        pytest.skip("Azure OpenAI deployment is missing")
+
+    if not config.azure_openai_embedding_deployment:
+        pytest.skip("Azure OpenAI embedding deployment is missing")
+
+    return config
+
+
 async def _return_arguments(**kwargs):
     return kwargs
 
