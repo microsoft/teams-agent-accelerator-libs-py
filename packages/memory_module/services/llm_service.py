@@ -3,7 +3,6 @@ from typing import List, Optional, Union
 import instructor
 import litellm
 from litellm import BaseModel
-from litellm.router import Router
 from litellm.types.utils import EmbeddingResponse
 
 from memory_module.config import LLMConfig
@@ -62,7 +61,7 @@ class LLMService:
 
         # TODO: This is hacky. Fix it later.
         client = instructor.apatch(
-            Router(
+            litellm.Router(
                 model_list=[
                     {
                         "model_name": model,
