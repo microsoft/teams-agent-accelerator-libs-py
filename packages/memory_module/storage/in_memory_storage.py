@@ -14,7 +14,7 @@ from memory_module.services.llm_service import LLMService
 
 class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage):
     def __init__(self, llm_service: Optional[LLMService] = None):
-        self.storage: Dict[str, Dict] = {
+        self.storage: Dict = {
             "embeddings": {},
             "buffered_messages": defaultdict(list),  # type: Dict[str, List[Message]]
             "scheduled_events": {},
@@ -25,22 +25,21 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self,
         memory: Memory,
         *,
-        embedding_vector: List[float] = None,
+        embedding_vector: List[float],
     ) -> None:
         self.storage[memory.id] = memory
         self.storage["embeddings"][memory.id] = embedding_vector
 
-    async def retrieve_memories(self, query: str, user_id: str) -> List[Memory]:
-        embedding_list = self.llm_service.get_embeddings([query])
-        query_vector = np.array(embedding_list[0])
+    async def retrieve_memories(self, query: str, user_id: str, limit: Optional[int] = None) -> List[Memory]:
+        embedding_list = await self.llm_service.embedding([query])
+        query_vector = embedding_list.data[0]
         sorted_collection = sorted(
-            self.storage["embeddings"].items(),
-            key=lambda record: self._cosine_similarity(record, query_vector),
-        )[:3]
+            self.storage.items(),
+            key=lambda memory:self._cosine_similarity(memory, query_vector))[:3]
         return sorted_collection
 
-    def _cosine_similarity(self, record: Memory, query_vector: list[float]):
-        return np.dot(query_vector, np.array(record.embedding_vector))
+    def _cosine_similarity(self, memory:Memory, query_vector: List[float]) -> float:
+        return np.dot(np.array(query_vector), np.array(self.storage["embeddings"][memory.id]))
 
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer."""

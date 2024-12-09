@@ -16,6 +16,20 @@ As the maintainer of this project, please make a few updates:
 - Understanding the security reporting process in SECURITY.MD
 - Remove this section from the README
 
+## Getting Started
+### Prerequisites
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
+
+### Installing
+`uv sync` - it installs the virtual env and dependencies  
+Activate virtual env
+ - Mac: `source .venv/bin/activate` 
+ - Windows: `.venv\Scripts\Activate`
+### Deployment
+### Test Running
+Mac: `PYTHONPATH=$PYTHONPATH:. pytest tests/test_memory_module.py`  
+Window: `$env:PYTHONPATH = "$env:PYTHONPATH;."; pytest tests/test_memory_module.py`
+
 ## Contributing
 
 This project welcomes contributions and suggestions. Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us the rights to use your contribution.

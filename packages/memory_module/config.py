@@ -1,6 +1,19 @@
 from pathlib import Path
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class LLMConfig(BaseModel):
+    """Configuration for LLM service."""
+
+    model_config = ConfigDict(extra="allow")  # Allow arbitrary kwargs
+
+    model: Optional[str] = None
+    api_key: Optional[str] = None
+    api_base: Optional[str] = None
+    api_version: Optional[str] = None
+    embedding_model: Optional[str] = None
 
 
 class MemoryModuleConfig(BaseModel):
@@ -19,3 +32,4 @@ class MemoryModuleConfig(BaseModel):
         default=300,  # 5 minutes
         description="Seconds to wait before processing a conversation",
     )
+    llm: LLMConfig = Field(description="LLM service configuration")
