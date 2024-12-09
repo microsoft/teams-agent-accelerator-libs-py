@@ -12,8 +12,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.services.llm_service import LLMService
 
-# from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-
 litellm.set_verbose = True
 
 load_dotenv()
@@ -190,9 +188,7 @@ async def test_completion_azure_openai(azure_config):
     api_version = azure_config["azure_openai_api_version"]
     api_key = azure_config["azure_openai_api_key"]
 
-    # switch to microsft entra id auth when litellm fixes bug: https://github.com/BerriAI/litellm/pull/6917
-    # token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
-
+    # TODO: Switch to microsft entra id auth when litellm fixes bug: https://github.com/BerriAI/litellm/pull/6917
     lm = LLMService(model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
