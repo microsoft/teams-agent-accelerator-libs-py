@@ -1,8 +1,10 @@
-from typing import Any, Coroutine, List, Optional, Union
+from typing import List, Optional, Union
 
 import instructor
 import litellm
-from litellm import BaseModel, EmbeddingResponse
+from litellm import BaseModel
+from litellm.router import Router
+from litellm.types.utils import EmbeddingResponse
 
 from memory_module.config import LLMConfig
 
@@ -60,7 +62,7 @@ class LLMService:
 
         # TODO: This is hacky. Fix it later.
         client = instructor.apatch(
-            litellm.Router(
+            Router(
                 model_list=[
                     {
                         "model_name": model,
@@ -73,14 +75,14 @@ class LLMService:
                         },
                     }
                 ]
-            )
+            ) # type: ignore
         )
 
-        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)
+        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs) # type: ignore
 
     async def embedding(
         self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs
-    ) -> Coroutine[Any, Any, EmbeddingResponse]:
+    ) -> EmbeddingResponse:
         """Get embeddings from the model. This method is a wrapper around litellm's `aembedding` method."""
         model = override_model or self.embedding_model
         if not model:

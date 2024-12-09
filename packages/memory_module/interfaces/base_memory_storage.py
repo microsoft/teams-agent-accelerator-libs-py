@@ -12,8 +12,8 @@ class BaseMemoryStorage(ABC):
         self,
         memory: Memory,
         *,
-        embedding_vector: List[float] = None,
-    ) -> None:
+        embedding_vector: List[float],
+    ) -> int | None:
         """Store a memory in the storage system.
 
         Args:
@@ -37,7 +37,7 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def clear_memories(self, conversation_ref: str) -> None:
+    async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given conversation."""
         pass
 
