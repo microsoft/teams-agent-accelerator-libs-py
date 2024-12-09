@@ -26,9 +26,7 @@ model = OpenAIModel(
 
 prompts = PromptManager(PromptManagerOptions(prompts_folder=f"{os.getcwd()}/prompts"))
 
-planner = ActionPlanner(
-    ActionPlannerOptions(model=model, prompts=prompts, default_prompt="chat")
-)
+planner = ActionPlanner(ActionPlannerOptions(model=model, prompts=prompts, default_prompt="chat"))
 
 # Define storage and application
 storage = MemoryStorage()
