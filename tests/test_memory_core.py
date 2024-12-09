@@ -6,10 +6,12 @@ import pytest
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
+from memory_module.core.memory_core import EpisodicMemoryExtraction
 from memory_module.core.memory_core import MemoryCore
 from memory_module.services.llm_service import LLMService
+from memory_module.config import MemoryModuleConfig
 
-from .utils import create_test_message
+from .utils import create_test_message, get_env_llm_config
 
 
 def includes(text: str, phrase):
@@ -18,21 +20,7 @@ def includes(text: str, phrase):
 
 @pytest.fixture()
 def config():
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    azure_openai_api_key = os.getenv("AZURE_OPENAI_API_KEY")
-    azure_openai_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
-    azure_openai_embedding_deployment = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
-    azure_openai_api_base = os.getenv("AZURE_OPENAI_API_BASE")
-    azure_openai_api_version = os.getenv("AZURE_OPENAI_API_VERSION")
-
-    return {
-        "openai_api_key": openai_api_key,
-        "azure_openai_api_key": azure_openai_api_key,
-        "azure_openai_api_base": azure_openai_api_base,
-        "azure_openai_api_version": azure_openai_api_version,
-        "azure_openai_deployment": azure_openai_deployment,
-        "azure_openai_embedding_deployment": azure_openai_embedding_deployment,
-    }
+    return get_env_llm_config()
 
 
 @pytest.mark.asyncio()
@@ -44,9 +32,71 @@ async def test_extract_memory_from_messages(config):
 
     # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
-    memory_core = MemoryCore(llm_service=lm, storage=storage)
+    config = MemoryModuleConfig()
+    memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
 
     message = create_test_message(content="Hey, I'm a software developer.")
     res = await memory_core._extract_semantic_fact_from_message(message=message)
 
     assert any(includes(fact.text, "software developer") for fact in res.interesting_facts)
+
+
+@pytest.mark.asyncio()
+async def test_extract_information_from_messages(config):
+    if not config["openai_api_key"]:
+        pytest.skip("OpenAI API key not provided")
+
+    lm = LLMService(model="gpt-4o-mini", api_key=config["openai_api_key"])
+
+    # TODO: Mocking storage this way doesn't seem right but it works for now.
+    storage = mock.Mock()
+    config = MemoryModuleConfig()
+    memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
+
+    message = create_test_message(content="Hey, I'm a software developer.")
+    res = await memory_core._extract_information_from_messages(messages=[message])
+
+    assert any(includes(keyword, "software") for keyword in res.keywords)
+
+@pytest.mark.asyncio()
+async def test_extract_episodic_memory_from_messages(config):
+    if not config["openai_api_key"]:
+        pytest.skip("OpenAI API key not provided")
+
+    lm = LLMService(model="gpt-4o-mini", api_key=config["openai_api_key"])
+
+    # TODO: Mocking storage this way doesn't seem right but it works for now.
+    storage = mock.Mock()
+    config = MemoryModuleConfig()
+    memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
+
+    m = lambda c : create_test_message(content=c)
+    messages = [
+        m("Hey, I'm a software developer."),
+        m("That's cool! I'm a software developer too. What brings you to the Microsoft Build conference?"),
+        m("I'm here to learn more about Azure and the latest software development tools."),
+        m("That's awesome! I'm here to learn more about the latest software development tools too."),
+    ]
+    res: EpisodicMemoryExtraction = await memory_core._extract_episodic_memory_from_messages(messages=messages)
+
+    assert includes(res.summary, "Azure")
+    assert includes(res.summary, "software development tools")
+
+@pytest.mark.asyncio()
+async def test_create_memory_embedding_from_messages(config):
+    if not config["openai_api_key"]:
+        pytest.skip("OpenAI API key not provided")
+
+    lm = LLMService(embedding_model="text-embedding-3-small", api_key=config["openai_api_key"])
+
+    # TODO: Mocking storage this way doesn't seem right but it works for now.
+    storage = mock.Mock()
+    config = MemoryModuleConfig()
+    memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
+
+    content = "Which country has a maple leaf in its flag?"
+    res: list[float] = await memory_core._create_memory_embedding(content=content)
+
+    assert (
+        len(res) >= 512
+    )  # 512 is the smallest configurable embedding size for the text-embedding-3-small model

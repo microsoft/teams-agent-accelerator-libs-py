@@ -11,7 +11,7 @@ from pydantic import BaseModel
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.services.llm_service import LLMService
-
+from .utils import get_env_llm_config
 litellm.set_verbose = True
 
 load_dotenv()
@@ -19,22 +19,7 @@ load_dotenv()
 
 @pytest.fixture()
 def config():
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    azure_openai_api_key = os.getenv("AZURE_OPENAI_API_KEY")
-    azure_openai_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
-    azure_openai_embedding_deployment = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
-    azure_openai_api_base = os.getenv("AZURE_OPENAI_API_BASE")
-    azure_openai_api_version = os.getenv("AZURE_OPENAI_API_VERSION")
-
-    return {
-        "openai_api_key": openai_api_key,
-        "azure_openai_api_key": azure_openai_api_key,
-        "azure_openai_api_base": azure_openai_api_base,
-        "azure_openai_api_version": azure_openai_api_version,
-        "azure_openai_deployment": azure_openai_deployment,
-        "azure_openai_embedding_deployment": azure_openai_embedding_deployment,
-    }
-
+    return get_env_llm_config()
 
 @pytest.fixture()
 def azure_config(config):
@@ -163,7 +148,6 @@ async def test_completion_openai_structured_outputs(config):
     res = await lm.completion(messages, response_model=Country)
 
     assert res.name == "Canada"
-
 
 @pytest.mark.asyncio
 async def test_embeddings_openai(config):
