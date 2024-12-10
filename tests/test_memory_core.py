@@ -24,10 +24,10 @@ def config():
 
 @pytest.mark.asyncio()
 async def test_extract_memory_from_messages(config):
-    if not config["openai_api_key"]:
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key not provided")
 
-    lm = LLMService(model="gpt-4o-mini", api_key=config["openai_api_key"])
+    lm = LLMService(model="gpt-4o-mini", api_key=config.openai_api_key)
 
     # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
@@ -42,10 +42,10 @@ async def test_extract_memory_from_messages(config):
 
 @pytest.mark.asyncio()
 async def test_extract_information_from_messages(config):
-    if not config["openai_api_key"]:
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key not provided")
 
-    lm = LLMService(model="gpt-4o-mini", api_key=config["openai_api_key"])
+    lm = LLMService(model="gpt-4o-mini", api_key=config.openai_api_key)
 
     # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
@@ -60,10 +60,10 @@ async def test_extract_information_from_messages(config):
 
 @pytest.mark.asyncio()
 async def test_extract_episodic_memory_from_messages(config):
-    if not config["openai_api_key"]:
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key not provided")
 
-    lm = LLMService(model="gpt-4o-mini", api_key=config["openai_api_key"])
+    lm = LLMService(model="gpt-4o-mini", api_key=config.openai_api_key)
 
     # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
@@ -87,10 +87,10 @@ async def test_extract_episodic_memory_from_messages(config):
 
 @pytest.mark.asyncio()
 async def test_create_memory_embedding_from_messages(config):
-    if not config["openai_api_key"]:
+    if not config.openai_api_key:
         pytest.skip("OpenAI API key not provided")
 
-    lm = LLMService(embedding_model="text-embedding-3-small", api_key=config["openai_api_key"])
+    lm = LLMService(embedding_model="text-embedding-3-small", api_key=config.openai_api_key)
 
     # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()

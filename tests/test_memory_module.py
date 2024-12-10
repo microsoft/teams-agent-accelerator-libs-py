@@ -138,7 +138,7 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
         nonlocal extraction_called
         extraction_called = True
 
-    monkeypatch.setattr(memory_module.memory_core, "_extract_episodic_memory_from_message", mock_extract_episodic)
+    monkeypatch.setattr(memory_module.memory_core, "_extract_episodic_memory_from_messages", mock_extract_episodic)
 
     conversation_id = str(uuid4())
     messages = [
