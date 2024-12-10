@@ -68,7 +68,7 @@ class MemoryCore(BaseMemoryCore):
                         message_attributions=[message.id],
                         memory_type="semantic",
                     )
-                    await self.storage.store_memory(memory)
+                    await self.storage.store_memory(memory, embedding_vector=[])
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into episodic memories (specific events, experiences)."""
