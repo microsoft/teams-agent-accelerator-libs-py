@@ -45,6 +45,6 @@ class Memory(BaseModel):
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default_factory=list)
 
-class EmbedQuery(BaseModel):
+class EmbedText(BaseModel):
     text: str
     embedding_vector: List[float]

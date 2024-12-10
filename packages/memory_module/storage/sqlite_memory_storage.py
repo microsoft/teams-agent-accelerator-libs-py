@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import sqlite_vec
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
-from memory_module.interfaces.types import EmbedQuery, Memory
+from memory_module.interfaces.types import EmbedText, Memory
 from memory_module.storage.sqlite_storage import SQLiteStorage
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
     async def retrieve_memories(
             self,
-            embedQuery: EmbedQuery,
+            embedText: EmbedText,
             user_id: str,
             limit: Optional[int] = None) -> List[Memory]:
         """Retrieve memories based on a query."""
@@ -118,7 +118,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         rows = await self.storage.fetch_all(
             query,
             (
-                sqlite_vec.serialize_float32(embedQuery.embedding_vector),
+                sqlite_vec.serialize_float32(embedText.embedding_vector),
                 limit or 3,
                 1.0,
             ),

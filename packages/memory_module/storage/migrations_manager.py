@@ -50,7 +50,7 @@ class MigrationManager:
         sqlite_vec.load(conn)
         conn.enable_load_extension(False)
         conn.execute("""
-            CREATE VIRTUAL TABLE IF NOT EXISTS vec_items 
+            CREATE VIRTUAL TABLE IF NOT EXISTS vec_items
             USING vec0(memory_embedding_id INTEGER PRIMARY KEY AUTOINCREMENT, embedding float[1536]);
         """)
 

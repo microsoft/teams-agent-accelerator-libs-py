@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
-from memory_module.interfaces.types import EmbedQuery, Memory, MemoryType, Message
+from memory_module.interfaces.types import EmbedText, Memory, MemoryType, Message
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 
@@ -86,8 +86,8 @@ class MemoryCore(BaseMemoryCore):
         2. Find relevant memories
         3. Possibly rerank or filter results
         """
-        embedQuery = EmbedQuery(text=query, embedding_vector=await self._create_memory_embedding(query))
-        return await self.storage.retrieve_memories(embedQuery, user_id, limit)
+        embedText = EmbedText(text=query, embedding_vector=await self._create_memory_embedding(query))
+        return await self.storage.retrieve_memories(embedText, user_id, limit)
 
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
