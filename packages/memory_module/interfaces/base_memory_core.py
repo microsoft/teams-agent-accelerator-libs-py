@@ -21,7 +21,7 @@ class BaseMemoryCore(ABC):
     async def retrieve(
         self,
         query: str,
-        user_id: str,
+        user_id: Optional[str],
         limit: Optional[int]
     ) -> List[Memory]:
         """Retrieve memories based on a query."""

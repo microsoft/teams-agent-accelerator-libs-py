@@ -78,7 +78,7 @@ class MemoryCore(BaseMemoryCore):
         # TODO: Implement episodic memory processing
         await self._extract_episodic_memory_from_message(messages)
 
-    async def retrieve(self, query: str, user_id: str, limit: Optional[int]) -> List[Memory]:
+    async def retrieve(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve memories based on a query.
 
         Steps:

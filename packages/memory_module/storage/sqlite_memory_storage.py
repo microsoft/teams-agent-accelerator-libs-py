@@ -89,7 +89,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     async def retrieve_memories(
             self,
             embedText: EmbedText,
-            user_id: str,
+            user_id: Optional[str],
             limit: Optional[int] = None) -> List[Memory]:
         """Retrieve memories based on a query."""
         query = """
