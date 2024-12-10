@@ -34,11 +34,11 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         embedding_list = await self.llm_service.embedding([query])
         query_vector = embedding_list.data[0]
         sorted_collection = sorted(
-            self.storage.items(),
-            key=lambda memory:self._cosine_similarity(memory, query_vector))[:3]
+            self.storage.items(), key=lambda memory: self._cosine_similarity(memory, query_vector)
+        )[:3]
         return sorted_collection
 
-    def _cosine_similarity(self, memory:Memory, query_vector: List[float]) -> float:
+    def _cosine_similarity(self, memory: Memory, query_vector: List[float]) -> float:
         return np.dot(np.array(query_vector), np.array(self.storage["embeddings"][memory.id]))
 
     async def store_buffered_message(self, message: Message) -> None:
