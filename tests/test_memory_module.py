@@ -11,6 +11,7 @@ import pytest_asyncio
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
+from memory_module.core.memory_core import EpisodicMemoryExtraction
 from memory_module import MemoryModule
 from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import (
@@ -47,8 +48,7 @@ def memory_module(config, monkeypatch):
 
     # Only mock if api_key is not available
     if not config.llm.api_key:
-
-        async def _mock_completion(**kwargs):
+        async def _mock_semantic_memory_extraction(message, **kwargs):
             return SemanticMemoryExtraction(
                 action="add",
                 reason_for_action="Mocked LLM response about pie",
@@ -59,8 +59,15 @@ def memory_module(config, monkeypatch):
                     )
                 ],
             )
-
-        monkeypatch.setattr(memory_module.llm_service, "completion", _mock_completion)
+        monkeypatch.setattr(memory_module.memory_core, "_extract_semantic_fact_from_message", _mock_semantic_memory_extraction)
+        
+        async def _mock_episodic_memory_extraction(messages, **kwargs):
+            return EpisodicMemoryExtraction(
+                action="add",
+                reason_for_action="Mocked LLM response about pie",
+                summary="Mocked LLM response about pie",
+            )
+        monkeypatch.setattr(memory_module.memory_core, "_extract_episodic_memory_from_messages", _mock_episodic_memory_extraction)
 
     return memory_module
 
@@ -103,29 +110,30 @@ async def test_simple_conversation(memory_module):
     assert all(memory.memory_type == "semantic" for memory in stored_messages)
 
 
-@pytest.mark.asyncio
-async def test_episodic_memory_creation(memory_module):
-    """Test that episodic memory creation raises NotImplementedError."""
-    conversation_id = str(uuid4())
+# TODO: Add test for episodic memory extraction once `MemoryCore.process_episodic_messages` is implemented.
+# @pytest.mark.asyncio
+# async def test_episodic_memory_creation(memory_module):
+#     """Test that episodic memory creation raises NotImplementedError."""
+#     conversation_id = str(uuid4())
 
-    messages = [
-        Message(
-            id=str(uuid4()),
-            content=f"Message {i} about pie",
-            author_id="user-123",
-            conversation_ref=conversation_id,
-            created_at=datetime.now(),
-            role="user",
-        )
-        for i in range(5)
-    ]
+#     messages = [
+#         Message(
+#             id=str(uuid4()),
+#             content=f"Message {i} about pie",
+#             author_id="user-123",
+#             conversation_ref=conversation_id,
+#             created_at=datetime.now(),
+#             role="user",
+#         )
+#         for i in range(5)
+#     ]
 
-    for i, message in enumerate(messages):
-        if i < 4:
-            await memory_module.add_message(message)
-        else:
-            with pytest.raises(NotImplementedError, match="Episodic memory extraction not yet implemented"):
-                await memory_module.add_message(message)
+#     for i, message in enumerate(messages):
+#         if i < 4:
+#             await memory_module.add_message(message)
+#         else:
+#             with pytest.raises(NotImplementedError, match="Episodic memory extraction not yet implemented"):
+#                 await memory_module.add_message(message)
 
 
 @pytest.mark.asyncio
