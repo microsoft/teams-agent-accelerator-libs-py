@@ -760,7 +760,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.53.7"
+version = "1.54.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -776,9 +776,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/64/c0/78b3b23f39edb11045c88f459096ab1c5e3afc710881de52b2ab837eb8c9/litellm-1.53.7.tar.gz", hash = "sha256:1b00bb3b7f8f35b0843abc1ced98e7bb0580430ca027f6710128dc1346fb1073", size = 6186780 }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/93/e718a9de07049d8a5cdeb728ca943a8662cb14de2f9beabbd8fcc9a41270/litellm-1.54.1.tar.gz", hash = "sha256:b5a8fc99160fab0699b9258457432b3975499218ffcf1b515709808b2ce5a2d7", size = 6190398 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/19/dd/a7870198fb4391977864619c5d2fec3c306961da447d54cfc7ed5252701d/litellm-1.53.7-py3-none-any.whl", hash = "sha256:f6d58a6bebe8cb530d6e3d45ae6f2f648546687d5fd3eb2e064ac8292b50b9c1", size = 6441792 },
+    { url = "https://files.pythonhosted.org/packages/f4/79/44645946d1343de9250f9d414a65fcf856027523d8a679b0f33ff3fcec92/litellm-1.54.1-py3-none-any.whl", hash = "sha256:d8e60d4a5e8decb0234a1e8c20351c904aec561fb4025df7df3d0d7ea81ca442", size = 6446858 },
 ]
 
 [[package]]
@@ -869,7 +869,7 @@ dependencies = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20.0" },
     { name = "instructor", specifier = ">=1.6.4" },
-    { name = "litellm" },
+    { name = "litellm", specifier = "==1.54.1" },
     { name = "numpy" },
     { name = "pydantic", specifier = ">=2.10.1" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
