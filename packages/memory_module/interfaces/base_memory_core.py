@@ -21,7 +21,16 @@ class BaseMemoryCore(ABC):
     async def retrieve(
         self,
         query: str,
-        user_id: Optional[str],
+        user_id: str,
+        limit: Optional[int]
     ) -> List[Memory]:
         """Retrieve memories based on a query."""
+        pass
+
+    @abstractmethod
+    async def remove_memories(
+        self,
+        user_id: str,
+    ) -> None:
+        """Remove memories based on user id."""
         pass

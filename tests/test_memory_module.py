@@ -102,6 +102,10 @@ async def test_simple_conversation(memory_module):
     assert any(message.id in stored_messages[0].message_attributions for message in messages)
     assert all(memory.memory_type == "semantic" for memory in stored_messages)
 
+    result = await memory_module.retrieve_memories("apple pie", "", 1)
+    assert len(result) == 1
+    assert result[0].id == 2
+
 
 @pytest.mark.asyncio
 async def test_episodic_memory_creation(memory_module):
@@ -159,3 +163,42 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
     await asyncio.sleep(1.5)
 
     assert extraction_called, "Episodic memory extraction should have been triggered by timeout"
+
+@pytest.mark.asyncio
+async def test_remove_memory(memory_module):
+    """Test a simple conversation about pie."""
+    conversation_id = str(uuid4())
+    messages = [
+        Message(
+            id=str(uuid4()),
+            content="I like pho a lot!",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+        Message(
+            id=str(uuid4()),
+            content="I prefer noodle soup!",
+            author_id="user-456",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+        Message(
+            id=str(uuid4()),
+            content="Dim sum is also my favorite!",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+    ]
+
+    for message in messages:
+        await memory_module.add_message(message)
+
+    stored_messages = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_messages) == 3
+
+    await memory_module.remove_memories("user-123")
+
+    stored_messages = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_messages) == 1

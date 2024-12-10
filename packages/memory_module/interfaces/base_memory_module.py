@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 from memory_module.interfaces.types import Memory, Message
 
@@ -13,6 +13,6 @@ class BaseMemoryModule(ABC):
         pass
 
     @abstractmethod
-    async def retrieve_memories(self, query: str) -> List[Memory]:
+    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
         pass

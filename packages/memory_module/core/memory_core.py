@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
-from memory_module.interfaces.types import Memory, Message
+from memory_module.interfaces.types import EmbedQuery, Memory, MemoryType, Message
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 
@@ -65,17 +65,20 @@ class MemoryCore(BaseMemoryCore):
                     memory = Memory(
                         content=fact.text,
                         created_at=message.created_at,
+                        user_id=message.author_id,
                         message_attributions=[message.id],
-                        memory_type="semantic",
+                        memory_type=MemoryType.SEMANTIC,
                     )
-                    await self.storage.store_memory(memory, embedding_vector=[])
+                    embedResponse = await self.lm.embedding([fact.text])
+                    embed_vector = embedResponse.data[0]["embedding"]
+                    await self.storage.store_memory(memory, embedding_vector=embed_vector)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into episodic memories (specific events, experiences)."""
         # TODO: Implement episodic memory processing
         await self._extract_episodic_memory_from_message(messages)
 
-    async def retrieve(self, query: str) -> List[Memory]:
+    async def retrieve(self, query: str, user_id: str, limit: Optional[int]) -> List[Memory]:
         """Retrieve memories based on a query.
 
         Steps:
@@ -83,8 +86,11 @@ class MemoryCore(BaseMemoryCore):
         2. Find relevant memories
         3. Possibly rerank or filter results
         """
-        # TODO: Implement memory retrieval logic
-        pass
+        embedQuery = EmbedQuery(text=query, embedding_vector=await self._create_memory_embedding(query))
+        return await self.storage.retrieve_memories(embedQuery, user_id, limit)
+
+    async def remove_memories(self, user_id: str) -> None:
+        await self.storage.clear_memories(user_id)
 
     async def _extract_memory_from_messages(self, messages: List[Message]) -> MessageMemoryExtraction:
         """Extract meaningful information from messages using LLM."""
@@ -93,8 +99,8 @@ class MemoryCore(BaseMemoryCore):
 
     async def _create_memory_embedding(self, content: str) -> List[float]:
         """Create embedding for memory content."""
-        # TODO: Implement embedding creation
-        pass
+        embedResponse = await self.lm.embedding([content])
+        return embedResponse.data[0]["embedding"]
 
     async def _extract_semantic_fact_from_message(
         self, message: Message, memory_message: str = ""
@@ -134,7 +140,7 @@ User: {message.content}
         return res
 
     async def _extract_episodic_memory_from_message(
-        self, message: Message, memory_message: str = ""
+        self, message: List[Message], memory_message: str = ""
     ) -> SemanticMemoryExtraction:
         """Extract episodic memories from a message using LLM."""
         # TODO: Implement episodic memory extraction
