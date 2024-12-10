@@ -11,10 +11,10 @@ import pytest_asyncio
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from memory_module.core.memory_core import EpisodicMemoryExtraction
 from memory_module import MemoryModule
 from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import (
+    EpisodicMemoryExtraction,
     SemanticFact,
     SemanticMemoryExtraction,
 )
