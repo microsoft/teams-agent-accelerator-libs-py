@@ -147,34 +147,37 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given user."""
-        # Get memory id
-        memory_id_rows = await self.storage.fetch_all("SELECT id FROM memories WHERE user_id = ?", (user_id,))
-        memory_id_list = [row["id"] for row in memory_id_rows]
-
-        embed_id_rows = await self.storage.fetch_all(
-            f"SELECT id FROM embeddings WHERE memory_id in ({",".join(["?"]*len(memory_id_rows))})",
-            tuple(memory_id_list))
-        embed_id_list = [row["id"] for row in embed_id_rows]
+        query = """
+            SELECT
+                m.id,
+                e.id AS embed_id
+            FROM memories m
+            LEFT JOIN embeddings e
+            WHERE m.user_id = ? AND m.id = e.memory_id
+        """
+        id_rows = await self.storage.fetch_all(query, (user_id,))
+        memory_id_list = [row["id"] for row in id_rows]
+        embed_id_list = [row["embed_id"] for row in id_rows]
 
         # Remove memory
         async with self.storage.transaction() as cursor:
             await cursor.execute(
-                f"DELETE FROM vec_items WHERE memory_embedding_id in ({",".join(["?"]*len(embed_id_rows))})",
+                f"DELETE FROM vec_items WHERE memory_embedding_id in ({",".join(["?"]*len(embed_id_list))})",
                 tuple(embed_id_list)
             )
 
             await cursor.execute(
-                f"DELETE FROM embeddings WHERE memory_id in ({",".join(["?"]*len(memory_id_rows))})",
+                f"DELETE FROM embeddings WHERE memory_id in ({",".join(["?"]*len(memory_id_list))})",
                 tuple(memory_id_list)
             )
 
             await cursor.execute(
-                f"DELETE FROM memory_attributions WHERE memory_id in ({",".join(["?"]*len(memory_id_rows))})",
+                f"DELETE FROM memory_attributions WHERE memory_id in ({",".join(["?"]*len(memory_id_list))})",
                 tuple(memory_id_list)
             )
 
             await cursor.execute(
-                f"DELETE FROM memories WHERE id in ({",".join(["?"]*len(memory_id_rows))})",
+                f"DELETE FROM memories WHERE id in ({",".join(["?"]*len(memory_id_list))})",
                 tuple(memory_id_list)
             )
 
