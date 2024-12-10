@@ -6,6 +6,7 @@ import pytest
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
+from memory_module.config import LLMConfig
 from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import EpisodicMemoryExtraction, MemoryCore
 from memory_module.services.llm_service import LLMService
@@ -27,11 +28,12 @@ async def test_extract_memory_from_messages(config):
     if not config.openai_api_key:
         pytest.skip("OpenAI API key not provided")
 
-    lm = LLMService(model="gpt-4o-mini", api_key=config.openai_api_key)
+    lm_config = LLMConfig(model="gpt-4o-mini", api_key=config.openai_api_key)
+    lm = LLMService(config=lm_config)
 
     # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
-    config = MemoryModuleConfig()
+    config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
 
     message = create_test_message(content="Hey, I'm a software developer.")
@@ -45,11 +47,12 @@ async def test_extract_information_from_messages(config):
     if not config.openai_api_key:
         pytest.skip("OpenAI API key not provided")
 
-    lm = LLMService(model="gpt-4o-mini", api_key=config.openai_api_key)
+    lm_config = LLMConfig(model="gpt-4o-mini", api_key=config.openai_api_key)
+    lm = LLMService(config=lm_config)
 
     # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
-    config = MemoryModuleConfig()
+    config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
 
     message = create_test_message(content="Hey, I'm a software developer.")
@@ -63,11 +66,12 @@ async def test_extract_episodic_memory_from_messages(config):
     if not config.openai_api_key:
         pytest.skip("OpenAI API key not provided")
 
-    lm = LLMService(model="gpt-4o-mini", api_key=config.openai_api_key)
+    lm_config = LLMConfig(model="gpt-4o-mini", api_key=config.openai_api_key)
+    lm = LLMService(config=lm_config)
 
     # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
-    config = MemoryModuleConfig()
+    config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
 
     def m(c):
@@ -90,11 +94,12 @@ async def test_create_memory_embedding_from_messages(config):
     if not config.openai_api_key:
         pytest.skip("OpenAI API key not provided")
 
-    lm = LLMService(embedding_model="text-embedding-3-small", api_key=config.openai_api_key)
+    lm_config = LLMConfig(embedding_model="text-embedding-3-small", api_key=config.openai_api_key)
+    lm = LLMService(config=lm_config)
 
     # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
-    config = MemoryModuleConfig()
+    config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
 
     content = "Which country has a maple leaf in its flag?"

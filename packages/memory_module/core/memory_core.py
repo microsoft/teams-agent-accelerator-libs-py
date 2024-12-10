@@ -34,7 +34,7 @@ class SemanticMemoryExtraction(BaseModel):
         description="Reason for the action taken on the extracted fact or the reason it was ignored.",
     )
     interesting_facts: Optional[List[SemanticFact]] = Field(
-        ..., description="One or more interesting fact extracted from the message."
+        ..., description="One or more interesting fact extracted from the message. An empty list if no facts were extracted."
     )
 
 
