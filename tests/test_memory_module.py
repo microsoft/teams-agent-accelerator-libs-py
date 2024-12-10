@@ -24,6 +24,7 @@ from tests.utils import build_llm_config
 
 litellm.set_verbose = True
 
+
 @pytest.fixture
 def config():
     """Fixture to create test config."""
@@ -115,10 +116,12 @@ async def test_simple_conversation(memory_module):
     assert any(message.id in stored_messages[0].message_attributions for message in messages)
     assert all(memory.memory_type == "semantic" for memory in stored_messages)
 
+
 @pytest.mark.asyncio
 async def test_no_memories_found():
     # TODO: Implement test for no memories found
     pass
+
 
 # TODO: Add test for episodic memory extraction once `MemoryCore.process_episodic_messages` is implemented.
 # @pytest.mark.asyncio
