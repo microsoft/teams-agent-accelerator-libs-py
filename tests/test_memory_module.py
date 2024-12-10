@@ -48,6 +48,7 @@ def memory_module(config, monkeypatch):
 
     # Only mock if api_key is not available
     if not config.llm.api_key:
+
         async def _mock_semantic_memory_extraction(message, **kwargs):
             return SemanticMemoryExtraction(
                 action="add",
@@ -59,15 +60,21 @@ def memory_module(config, monkeypatch):
                     )
                 ],
             )
-        monkeypatch.setattr(memory_module.memory_core, "_extract_semantic_fact_from_message", _mock_semantic_memory_extraction)
-        
+
+        monkeypatch.setattr(
+            memory_module.memory_core, "_extract_semantic_fact_from_message", _mock_semantic_memory_extraction
+        )
+
         async def _mock_episodic_memory_extraction(messages, **kwargs):
             return EpisodicMemoryExtraction(
                 action="add",
                 reason_for_action="Mocked LLM response about pie",
                 summary="Mocked LLM response about pie",
             )
-        monkeypatch.setattr(memory_module.memory_core, "_extract_episodic_memory_from_messages", _mock_episodic_memory_extraction)
+
+        monkeypatch.setattr(
+            memory_module.memory_core, "_extract_episodic_memory_from_messages", _mock_episodic_memory_extraction
+        )
 
     return memory_module
 

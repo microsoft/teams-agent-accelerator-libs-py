@@ -74,10 +74,10 @@ class LLMService:
                         },
                     }
                 ]
-            ) # type: ignore
+            )  # type: ignore
         )
 
-        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs) # type: ignore
+        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)  # type: ignore
 
     async def embedding(
         self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs
