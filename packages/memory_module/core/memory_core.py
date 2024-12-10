@@ -89,6 +89,11 @@ class MemoryCore(BaseMemoryCore):
         embedText = EmbedText(text=query, embedding_vector=await self._create_memory_embedding(query))
         return await self.storage.retrieve_memories(embedText, user_id, limit)
 
+    async def update(self, memory_id: str, updateMemory: str) -> None:
+        embedResponse = await self.lm.embedding([updateMemory])
+        embed_vector = embedResponse.data[0]["embedding"]
+        await self.storage.update_memory(memory_id, updateMemory, embedding_vector=embed_vector)
+
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
 

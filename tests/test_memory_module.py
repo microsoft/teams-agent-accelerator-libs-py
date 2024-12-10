@@ -165,8 +165,30 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
     assert extraction_called, "Episodic memory extraction should have been triggered by timeout"
 
 @pytest.mark.asyncio
+async def test_update_memory(memory_module):
+    """Test memory update"""
+    conversation_id = str(uuid4())
+    messages = [
+        Message(
+            id=str(uuid4()),
+            content="Seattle is my favorite city!",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+    ]
+
+    for message in messages:
+        await memory_module.add_message(message)
+
+    await memory_module.update_memories(1, "The user like San Diego city")
+    updated_message = await memory_module.memory_core.storage.get_memory(1)
+    assert "San Diego" in updated_message.content
+
+
+@pytest.mark.asyncio
 async def test_remove_memory(memory_module):
-    """Test a simple conversation about pie."""
+    """Test a simple conversation removal based on user id."""
     conversation_id = str(uuid4())
     messages = [
         Message(

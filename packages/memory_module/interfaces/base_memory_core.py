@@ -28,6 +28,15 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
+    async def update(
+        self,
+        memory_id: str,
+        updateMemory: str
+    ) -> None:
+        """update memeory with new fact"""
+        pass
+
+    @abstractmethod
     async def remove_memories(
         self,
         user_id: str,

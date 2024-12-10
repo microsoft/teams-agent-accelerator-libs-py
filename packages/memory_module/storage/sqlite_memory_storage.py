@@ -60,12 +60,18 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
         return memory_id
 
-    async def update_memory(self, memory_id: str, memory: Memory, *, embedding_vector: List[float]) -> None:
-        """Update a memory with extracted fact and insert embedding"""
+    async def insert_memory_to_existing_record(
+            self,
+            memory_id: str,
+            memory: Memory,
+            *,
+            embedding_vector: List[float]
+        ) -> None:
+        """Once an async memory extraction process is done, update it with extracted fact and insert embedding"""
         serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
 
         async with self.storage.transaction() as cursor:
-            # Store the memory
+            # Update the memory content
             await cursor.execute(
                 """UPDATE memories
                     SET content = ?
@@ -84,6 +90,36 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             await cursor.execute(
                 "INSERT INTO vec_items (memory_embedding_id, embedding) VALUES (?, ?)",
                 (embedding_id, serialized_embedding),
+            )
+
+    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector:List[float]) -> None:
+        """replace an existing memory with new extracted fact and embedding"""
+        serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
+
+        async with self.storage.transaction() as cursor:
+            # Update the memory content
+            await cursor.execute(
+                "UPDATE memories SET content = ? WHERE id = ?",
+                (updateMemory, memory_id)
+            )
+
+            # Update embedding in embeddings table
+            await cursor.execute(
+                "UPDATE embeddings SET embedding = ? WHERE memory_id = ?",
+                (serialized_embedding, memory_id,),
+            )
+            await cursor.execute(
+                "SELECT id FROM embeddings WHERE memory_id = ?",
+                (memory_id,)
+            )
+
+            embedding_id = await cursor.fetchone()
+
+
+            # Update in vec_items table
+            await cursor.execute(
+                "UPDATE vec_items SET embedding = ? WHERE memory_embedding_id = ?",
+                (serialized_embedding, embedding_id[0], ),
             )
 
     async def retrieve_memories(
