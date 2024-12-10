@@ -124,6 +124,7 @@ Key Points: A list of key points or notable facts extracted from the messages.
 Here's the list of messages you need to analyze:
 {[message.content for message in messages]}
 """
+        # TODO: Fix the above prompt so that the messages are displayed correctly. Ex "User: I love pie!", "Assitant: I love pie!"
 
         messages = [{"role": "system", "content": system_message}]
 
@@ -200,6 +201,7 @@ understanding the specific event.
 Here are the incoming messages:
 {[message.content for message in messages]}
 """
+        # TODO: Fix the above prompt so that the messages are displayed correctly. Ex "User: I love pie!", "Assitant: I love pie!"
         messages = [{"role": "system", "content": system_message}]
 
         return await self.lm.completion(messages=messages, response_model=EpisodicMemoryExtraction)
