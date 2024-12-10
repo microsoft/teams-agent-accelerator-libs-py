@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
-from memory_module.interfaces.types import Memory, Message
+from memory_module.interfaces.types import Memory, MemoryType, Message
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 
@@ -66,9 +66,9 @@ class MemoryCore(BaseMemoryCore):
                         content=fact.text,
                         created_at=message.created_at,
                         message_attributions=[message.id],
-                        memory_type="semantic",
+                        memory_type=MemoryType.SEMANTIC,
                     )
-                    await self.storage.store_memory(memory)
+                    await self.storage.store_memory(memory, embedding_vector=[])
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into episodic memories (specific events, experiences)."""
@@ -134,7 +134,7 @@ User: {message.content}
         return res
 
     async def _extract_episodic_memory_from_message(
-        self, message: Message, memory_message: str = ""
+        self, message: List[Message], memory_message: str = ""
     ) -> SemanticMemoryExtraction:
         """Extract episodic memories from a message using LLM."""
         # TODO: Implement episodic memory extraction
