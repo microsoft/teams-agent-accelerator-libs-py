@@ -89,7 +89,7 @@ class MemoryCore(BaseMemoryCore):
     async def process_episodic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into episodic memories (specific events, experiences)."""
         # TODO: Implement episodic memory processing
-        await self._extract_episodic_memory_from_message(messages)
+        await self._extract_episodic_memory_from_messages(messages)
 
     async def retrieve(self, query: str) -> List[Memory]:
         """Retrieve memories based on a query.
