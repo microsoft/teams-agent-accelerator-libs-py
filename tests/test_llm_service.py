@@ -22,8 +22,7 @@ load_dotenv()
 
 @pytest.fixture()
 def config():
-    env_config = get_env_llm_config()
-    return env_config
+    return get_env_llm_config()
 
 
 @pytest.fixture()
@@ -178,13 +177,13 @@ async def test_embeddings_openai(config: EnvLLMConfig):
 
 @pytest.mark.asyncio
 async def test_completion_azure_openai(azure_config: EnvLLMConfig):
-    model = config.azure_openai_deployment
-    api_base = config.azure_openai_api_base
-    api_version = config.azure_openai_api_version
-    api_key = config.azure_openai_api_key
+    model = azure_config.azure_openai_deployment
+    api_base = azure_config.azure_openai_api_base
+    api_version = azure_config.azure_openai_api_version
+    api_key = azure_config.azure_openai_api_key
 
     # TODO: Switch to microsft entra id auth when litellm fixes bug: https://github.com/BerriAI/litellm/pull/6917
-    llm_config = LLMConfig(model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
+    llm_config = LLMConfig(model=model, api_key=api_key, api_base=api_base, api_version=api_version)
     lm = LLMService(config=llm_config)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
@@ -196,12 +195,12 @@ async def test_completion_azure_openai(azure_config: EnvLLMConfig):
 
 @pytest.mark.asyncio
 async def test_completion_azure_openai_structured_outputs(azure_config: EnvLLMConfig):
-    model = config.azure_openai_deployment
-    api_base = config.azure_openai_api_base
-    api_version = config.azure_openai_api_version
-    api_key = config.azure_openai_api_key
+    model = azure_config.azure_openai_deployment
+    api_base = azure_config.azure_openai_api_base
+    api_version = azure_config.azure_openai_api_version
+    api_key = azure_config.azure_openai_api_key
 
-    llm_config = LLMConfig(model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
+    llm_config = LLMConfig(model=model, api_key=api_key, api_base=api_base, api_version=api_version)
     lm = LLMService(config=llm_config)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
@@ -216,13 +215,13 @@ async def test_completion_azure_openai_structured_outputs(azure_config: EnvLLMCo
 
 @pytest.mark.asyncio
 async def test_embeddings_azure_openai(azure_config: EnvLLMConfig):
-    model = config.azure_openai_embedding_deployment
-    api_base = config.azure_openai_api_base
-    api_version = config.azure_openai_api_version
-    api_key = config.azure_openai_api_key
+    model = azure_config.azure_openai_embedding_deployment
+    api_base = azure_config.azure_openai_api_base
+    api_version = azure_config.azure_openai_api_version
+    api_key = azure_config.azure_openai_api_key
 
     lm = LLMService(
-        config=LLMConfig(embedding_model=f"azure/{model}", api_key=api_key, api_base=api_base, api_version=api_version)
+        config=LLMConfig(embedding_model=model, api_key=api_key, api_base=api_base, api_version=api_version)
     )
     query = "Which country has a maple leaf in its flag?"
 
