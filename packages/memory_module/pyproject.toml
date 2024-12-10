@@ -10,5 +10,5 @@ dependencies = [
     "pydantic>=2.10.1",
     "python-dotenv>=1.0.1",
     "numpy",
-    "litellm",
+    "litellm==1.54.1",
 ]
