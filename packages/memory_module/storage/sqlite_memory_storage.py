@@ -2,9 +2,9 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-import aiosqlite
+import sqlite_vec
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
-from memory_module.interfaces.types import Memory
+from memory_module.interfaces.types import EmbedText, Memory
 from memory_module.storage.sqlite_storage import SQLiteStorage
 
 logger = logging.getLogger(__name__)
@@ -21,56 +21,201 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
     async def store_memory(self, memory: Memory, *, embedding_vector: List[float]) -> int | None:
         """Store a memory and its message attributions."""
-        async with aiosqlite.connect(self.db_path) as conn:
-            async with conn.cursor() as cursor:
-                await conn.execute("BEGIN TRANSACTION")
-                try:
-                    # Store the memory
-                    await cursor.execute(
-                        """INSERT INTO memories
-                           (content, created_at, user_id, memory_type)
-                           VALUES (?, ?, ?, ?)""",
-                        (
-                            memory.content,
-                            memory.created_at,
-                            memory.user_id,
-                            memory.memory_type.value,
-                        ),
-                    )
+        serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
 
-                    memory_id = cursor.lastrowid
+        async with self.storage.transaction() as cursor:
+            # Store the memory
+            await cursor.execute(
+                """INSERT INTO memories
+                    (content, created_at, user_id, memory_type)
+                    VALUES (?, ?, ?, ?)""",
+                (
+                    memory.content,
+                    memory.created_at,
+                    memory.user_id,
+                    memory.memory_type.value,
+                ),
+            )
 
-                    # Store message attributions
-                    if memory.message_attributions:
-                        await cursor.executemany(
-                            "INSERT INTO memory_attributions (memory_id, message_id) VALUES (?, ?)",
-                            [(memory_id, msg_id) for msg_id in memory.message_attributions],
-                        )
+            memory_id = cursor.lastrowid
 
-                    await conn.commit()
-                    return memory_id
-                except Exception:
-                    await conn.rollback()
-                    raise
+            # Store message attributions
+            if memory.message_attributions:
+                await cursor.executemany(
+                    "INSERT INTO memory_attributions (memory_id, message_id) VALUES (?, ?)",
+                    [(memory_id, msg_id) for msg_id in memory.message_attributions],
+                )
 
-    async def retrieve_memories(self, query: str, user_id: str, limit: Optional[int] = None) -> List[Memory]:
+            # Store embedding in embeddings table
+            await cursor.execute(
+                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
+                (memory_id, serialized_embedding),
+            )
+            embedding_id = cursor.lastrowid
+
+            # Store in vec_items table
+            await cursor.execute(
+                "INSERT INTO vec_items (memory_embedding_id, embedding) VALUES (?, ?)",
+                (embedding_id, serialized_embedding),
+            )
+        return memory_id
+
+    async def insert_memory_to_existing_record(
+            self,
+            memory_id: str,
+            memory: Memory,
+            *,
+            embedding_vector: List[float]
+        ) -> None:
+        """Once an async memory extraction process is done, update it with extracted fact and insert embedding"""
+        serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
+
+        async with self.storage.transaction() as cursor:
+            # Update the memory content
+            await cursor.execute(
+                """UPDATE memories
+                    SET content = ?
+                    WHERE id = ?""",
+                (memory.content, memory_id)
+            )
+
+            # Store embedding in embeddings table
+            await cursor.execute(
+                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
+                (memory_id, serialized_embedding),
+            )
+            embedding_id = cursor.lastrowid
+
+            # Store in vec_items table
+            await cursor.execute(
+                "INSERT INTO vec_items (memory_embedding_id, embedding) VALUES (?, ?)",
+                (embedding_id, serialized_embedding),
+            )
+
+    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector:List[float]) -> None:
+        """replace an existing memory with new extracted fact and embedding"""
+        serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
+
+        async with self.storage.transaction() as cursor:
+            # Update the memory content
+            await cursor.execute(
+                "UPDATE memories SET content = ? WHERE id = ?",
+                (updateMemory, memory_id)
+            )
+
+            # Update embedding in embeddings table
+            await cursor.execute(
+                "UPDATE embeddings SET embedding = ? WHERE memory_id = ?",
+                (serialized_embedding, memory_id,),
+            )
+            await cursor.execute(
+                "SELECT id FROM embeddings WHERE memory_id = ?",
+                (memory_id,)
+            )
+
+            embedding_id = await cursor.fetchone()
+
+
+            # Update in vec_items table
+            await cursor.execute(
+                "UPDATE vec_items SET embedding = ? WHERE memory_embedding_id = ?",
+                (serialized_embedding, embedding_id[0], ),
+            )
+
+    async def retrieve_memories(
+            self,
+            embedText: EmbedText,
+            user_id: Optional[str],
+            limit: Optional[int] = None) -> List[Memory]:
         """Retrieve memories based on a query."""
-        sql_query = """
-            SELECT * FROM memories
-            WHERE (user_id = ? OR user_id IS NULL)
-            AND content LIKE ?
-            ORDER BY created_at DESC
+        query = """
+            WITH ranked_memories AS (
+                SELECT
+                    e.memory_id,
+                    distance
+                FROM vec_items
+                JOIN embeddings e ON vec_items.memory_embedding_id = e.id
+                WHERE vec_items.embedding MATCH ? AND K = ? AND distance < ?
+                ORDER BY distance ASC
+            )
+            SELECT
+                m.id,
+                m.content,
+                m.created_at,
+                m.user_id,
+                m.memory_type,
+                ma.message_id
+            FROM ranked_memories rm
+            JOIN memories m ON m.id = rm.memory_id
+            LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
+            ORDER BY rm.distance ASC
         """
-        if limit:
-            sql_query += f" LIMIT {limit}"
 
-        results = await self.storage.fetch_all(sql_query, (user_id, f"%{query}%"))
+        rows = await self.storage.fetch_all(
+            query,
+            (
+                sqlite_vec.serialize_float32(embedText.embedding_vector),
+                limit or 3,
+                1.0,
+            ),
+        )
 
-        return [Memory(**row) for row in results]
+        # Group rows by memory_id to handle message attributions
+        memories_dict = {}
+        for row in rows:
+            memory_id = row["id"]
+            if memory_id not in memories_dict:
+                memories_dict[memory_id] = {
+                    "id": memory_id,
+                    "content": row["content"],
+                    "created_at": row["created_at"],
+                    "user_id": row["user_id"],
+                    "memory_type": row["memory_type"],
+                    "message_attributions": [],
+                }
+
+            if row["message_id"]:
+                memories_dict[memory_id]["message_attributions"].append(
+                    row["message_id"]
+                )
+
+        return [Memory(**memory_data) for memory_data in memories_dict.values()]
 
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given user."""
-        await self.storage.execute("DELETE FROM memories WHERE user_id = ?", (user_id,))
+        query = """
+            SELECT
+                m.id,
+                e.id AS embed_id
+            FROM memories m
+            LEFT JOIN embeddings e
+            WHERE m.user_id = ? AND m.id = e.memory_id
+        """
+        id_rows = await self.storage.fetch_all(query, (user_id,))
+        memory_id_list = [row["id"] for row in id_rows]
+        embed_id_list = [row["embed_id"] for row in id_rows]
+
+        # Remove memory
+        async with self.storage.transaction() as cursor:
+            await cursor.execute(
+                f"DELETE FROM vec_items WHERE memory_embedding_id in ({",".join(["?"]*len(embed_id_list))})",
+                tuple(embed_id_list)
+            )
+
+            await cursor.execute(
+                f"DELETE FROM embeddings WHERE memory_id in ({",".join(["?"]*len(memory_id_list))})",
+                tuple(memory_id_list)
+            )
+
+            await cursor.execute(
+                f"DELETE FROM memory_attributions WHERE memory_id in ({",".join(["?"]*len(memory_id_list))})",
+                tuple(memory_id_list)
+            )
+
+            await cursor.execute(
+                f"DELETE FROM memories WHERE id in ({",".join(["?"]*len(memory_id_list))})",
+                tuple(memory_id_list)
+            )
 
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
         """Retrieve a memory with its message attributions."""

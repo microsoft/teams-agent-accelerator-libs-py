@@ -38,6 +38,15 @@ class MemoryModule(BaseMemoryModule):
         """Add a message to be processed into memory."""
         await self.message_queue.enqueue(message)
 
-    async def retrieve_memories(self, query: str, user_id: Optional[str]) -> List[Memory]:
+    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
-        return await self.memory_core.retrieve(query, user_id)
+        return await self.memory_core.retrieve(query, user_id, limit)
+
+    async def update_memories(self, memory_id: str, updateMemory: str) -> None:
+        """Update memory with new fact"""
+        return await self.memory_core.update(memory_id, updateMemory)
+
+    async def remove_memories(self, user_id: str) -> None:
+        """Remove memories based on user id"""
+        await self.memory_core.remove_memories(user_id)
+
