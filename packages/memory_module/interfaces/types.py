@@ -1,8 +1,10 @@
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
+from typing_extensions import TypedDict
 
 
 class User(BaseModel):
@@ -18,9 +20,10 @@ class Message(BaseModel):
 
     id: str
     content: str
-    author_id: str
+    author_id: Optional[str]
     conversation_ref: str
     created_at: datetime
+    is_assistant_message: bool = False
 
 
 class MemoryAttribution(BaseModel):
@@ -45,6 +48,12 @@ class Memory(BaseModel):
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default_factory=list)
 
+
 class EmbedText(BaseModel):
     text: str
     embedding_vector: List[float]
+
+
+class ShortTermMemoryRetrievalConfig(TypedDict):
+    n_messages: Optional[int] = None  # Number of messages to retrieve
+    last_minutes: Optional[Decimal] = None  # Time frame in minutes 0

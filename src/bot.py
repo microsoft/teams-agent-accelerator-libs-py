@@ -1,11 +1,11 @@
+import datetime
 import json
 import sys
 import traceback
 from typing import Literal
 
 from botbuilder.core import MemoryStorage, TurnContext
-from memory_module import MemoryModule
-from memory_module.config import LLMConfig, MemoryModuleConfig
+from memory_module import LLMConfig, MemoryModule, MemoryModuleConfig, Message
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel, Field
@@ -17,7 +17,9 @@ from config import Config
 config = Config()
 client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
 memory_module = MemoryModule(
-    config=MemoryModuleConfig(llm=LLMConfig(model="gpt-4o-mini", api_key=config.OPENAI_API_KEY))
+    config=MemoryModuleConfig(
+        llm=LLMConfig(model="gpt-4o-mini", api_key=config.OPENAI_API_KEY, embedding_model="text-embedding-3-small")
+    )
 )
 
 # Define storage and application
@@ -55,7 +57,7 @@ class GetCandidateTasks(BaseModel):
 
 
 class GetMemorizedFields(BaseModel):
-    fields_to_retrieve: list[str]
+    required_fields: list[str]
 
 
 class FieldToMemorize(BaseModel):
@@ -86,8 +88,13 @@ async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
 
 async def get_memorized_fields(fields_to_retrieve: GetMemorizedFields) -> str:
     empty_obj = {}
-    for field in fields_to_retrieve.fields_to_retrieve:
-        empty_obj[field] = None
+    for field in fields_to_retrieve.required_fields:
+        result = await memory_module.retrieve_memories(field, None, None)
+        print(f"result for {field}: {result}")
+        if result:
+            empty_obj[field] = ", ".join([r.content for r in result])
+        else:
+            empty_obj[field] = None
     return json.dumps(empty_obj)
 
 
@@ -109,14 +116,6 @@ async def inform_user(message: InformUser, context: TurnContext) -> str:
     return message.message
 
 
-messages = [
-    {
-        "role": "system",
-        "content": "Hello! I'm your IT Support Assistant. How can I assist you today?",
-    }
-]
-
-
 def get_available_functions():
     return [
         {
@@ -127,30 +126,30 @@ def get_available_functions():
                 "parameters": GetCandidateTasks.schema(),
             },
         },
-        {
-            "type": "function",
-            "function": {
-                "name": "inform_user",
-                "description": "Send a message to the user",
-                "parameters": InformUser.schema(),
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "prompt_user",
-                "description": "Ask the user for specific information",
-                "parameters": PromptUser.schema(),
-            },
-        },
+        # {
+        #     "type": "function",
+        #     "function": {
+        #         "name": "inform_user",
+        #         "description": "Send a message to the user",
+        #         "parameters": InformUser.schema(),
+        #     },
+        # },
         {
             "type": "function",
             "function": {
                 "name": "get_memorized_fields",
-                "description": "Retrieve previously stored field values",
+                "description": "Retrieve values for fields that have been previously memorized",
                 "parameters": GetMemorizedFields.schema(),
             },
         },
+        # {
+        #     "type": "function",
+        #     "function": {
+        #         "name": "prompt_user",
+        #         "description": "Ask the user for specific information",
+        #         "parameters": PromptUser.schema(),
+        #     },
+        # },
         # {
         #     "type": "function",
         #     "function": {
@@ -170,31 +169,72 @@ def get_available_functions():
     ]
 
 
+async def add_message(
+    context: TurnContext,
+    content: str,
+    is_assistant_message: bool,
+    created_at: datetime.datetime | None = None,
+):
+    conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
+    if conversation_ref_dict is None:
+        print("conversation_ref_dict is None")
+        return False
+    if conversation_ref_dict.user is None:
+        print("conversation_ref_dict.user is None")
+        return False
+    if conversation_ref_dict.bot is None:
+        print("conversation_ref_dict.bot is None")
+        return False
+    if conversation_ref_dict.conversation is None:
+        print("conversation_ref_dict.conversation is None")
+        return False
+    user_aad_object_id = conversation_ref_dict.user.aad_object_id
+    bot_id = conversation_ref_dict.bot.id
+    await memory_module.add_message(
+        Message(
+            id=context.activity.id if not is_assistant_message else f"bot_{context.activity.id}",
+            content=content,
+            author_id=user_aad_object_id,
+            conversation_ref=conversation_ref_dict.conversation.id,
+            created_at=created_at or datetime.datetime.now(datetime.timezone.utc),
+            is_assistant_message=is_assistant_message,
+        )
+    )
+
+
+@bot_app.conversation_update("membersAdded")
+async def on_members_added(context: TurnContext, state: TurnState):
+    await context.send_activity("Hello! I'm your IT Support Assistant. How can I assist you today?")
+    await add_message(context, "Hello! I'm your IT Support Assistant. How can I assist you today?", True)
+
+
 @bot_app.activity("message")
 async def on_message(context: TurnContext, state: TurnState):
+    conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
+    await add_message(context, context.activity.text, False)
     system_prompt = """
 You are an IT Chat Bot that helps users troubleshoot tasks
 
 <PROGRAM>
 Display "Hello! I'm your IT Support Assistant. How can I assist you today?"
 
-Ask the user for their request.
+Ask the user for their request unless the user has already provided a request.
 
 Note: Step 1 - Identify potential tasks based on the user's query.
 To identify tasks:
     Use the "get_candidate_tasks" function with the user's query as input.
     If tasks are found, list the relevant tasks and their required fields.
-    Use the "inform_user" function to display "I'm not sure what task you need help with. Could you clarify your request?"
+    Display "I'm not sure what task you need help with. Could you clarify your request?"
 
 Note: Step 2 - Gather necessary information for the selected task.
 To gather missing fields for the task:
     Use the "get_memorized_fields" function to check if any required fields are already known.
-    For each missing field, use the "prompt_user" function to prompt the user to provide the required information.
+    For each missing field, prompt the user to provide the required information.
 
 Note: Step 3 - Execute the task.
 To execute the selected task:
     Use the "execute_task" function with the user's query, the selected task, and the list of gathered fields.
-    Use the "inform_user" function to display the result of the task to the user.
+    Display the result of the task to the user.
 
 Note: Full process flow.
 While the user has requests:
@@ -208,15 +248,23 @@ If the user ends the conversation, display "Thank you! Let me know if you need a
 <INSTRUCTIONS>
 Run the provided program
 """
+    messages = await memory_module.retrieve_short_term_memories(
+        conversation_ref_dict.conversation.id, {"last_minutes": 30}
+    )
+    print("messages", messages)
     llm_messages = [
         {
             "role": "system",
             "content": system_prompt,
         },
-        *messages,
+        *[
+            {
+                "role": "assistant" if message.is_assistant_message else "user",
+                "content": message.content,
+            }
+            for message in messages
+        ],
     ]
-    llm_messages.append({"role": "user", "content": context.activity.text})
-    messages.append({"role": "user", "content": context.activity.text})
 
     max_turns = 5
     should_break = False  # Flag to indicate if we should break the outer loop
@@ -226,8 +274,11 @@ Run the provided program
             messages=llm_messages,
             tools=get_available_functions(),
             tool_choice="auto",
+            temperature=0,
         )
-        print(llm_messages, response)
+        print("llm_messages", llm_messages)
+        print("tools", get_available_functions())
+        print("response", response)
 
         message = response.choices[0].message
 
@@ -268,21 +319,21 @@ Run the provided program
                 print("--res--")
                 print(res)
                 print("--res--")
-                for message_array in [llm_messages, messages]:
-                    message_array.append(
-                        {
-                            "role": "assistant",
-                            "content": None,
-                            "tool_calls": [tool_call],
-                        }
-                    )
-                    message_array.append({"role": "tool", "tool_call_id": tool_call.id, "content": str(res)})
+                llm_messages.append(
+                    {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [tool_call],
+                    }
+                )
+                llm_messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": str(res)})
             else:
                 break
 
             # Set the flag to break the outer loop if necessary
             if function_name in ["prompt_user", "inform_user"]:
                 should_break = True
+                await add_message(context, res, True, datetime.datetime.now(datetime.timezone.utc))
                 break  # Break the inner loop
 
         if should_break:
