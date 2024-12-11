@@ -6,7 +6,7 @@ from memory_module.core.message_queue import MessageQueue
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.base_memory_module import BaseMemoryModule
 from memory_module.interfaces.base_message_queue import BaseMessageQueue
-from memory_module.interfaces.types import Memory, Message
+from memory_module.interfaces.types import Memory, Message, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
 
 
@@ -36,8 +36,23 @@ class MemoryModule(BaseMemoryModule):
 
     async def add_message(self, message: Message) -> None:
         """Add a message to be processed into memory."""
+        await self.memory_core.add_short_term_memory(message)
         await self.message_queue.enqueue(message)
 
-    async def retrieve_memories(self, query: str, user_id: Optional[str]) -> List[Memory]:
+    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
-        return await self.memory_core.retrieve(query, user_id)
+        return await self.memory_core.retrieve(query, user_id, limit)
+
+    async def update_memories(self, memory_id: str, updateMemory: str) -> None:
+        """Update memory with new fact"""
+        return await self.memory_core.update(memory_id, updateMemory)
+
+    async def remove_memories(self, user_id: str) -> None:
+        """Remove memories based on user id"""
+        await self.memory_core.remove_memories(user_id)
+
+    async def retrieve_short_term_memories(
+        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    ) -> List[Message]:
+        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
+        return await self.memory_core.retrieve_short_term_memories(conversation_ref, config)

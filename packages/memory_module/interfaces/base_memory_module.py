@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
-from memory_module.interfaces.types import Memory, Message
+from memory_module.interfaces.types import Memory, Message, ShortTermMemoryRetrievalConfig
 
 
 class BaseMemoryModule(ABC):
@@ -13,6 +13,13 @@ class BaseMemoryModule(ABC):
         pass
 
     @abstractmethod
-    async def retrieve_memories(self, query: str) -> List[Memory]:
+    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
+        pass
+
+    @abstractmethod
+    async def retrieve_short_term_memories(
+        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    ) -> List[Message]:
+        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         pass

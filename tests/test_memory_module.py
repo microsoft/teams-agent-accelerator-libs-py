@@ -29,6 +29,8 @@ litellm.set_verbose = True
 def config():
     """Fixture to create test config."""
     llm_config = build_llm_config({"model": "gpt-4o-mini"})
+    if not llm_config.api_key:
+        pytest.skip("OpenAI API key not provided")
     return MemoryModuleConfig(
         db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
         buffer_size=5,
@@ -116,6 +118,16 @@ async def test_simple_conversation(memory_module):
     assert any(message.id in stored_messages[0].message_attributions for message in messages)
     assert all(memory.memory_type == "semantic" for memory in stored_messages)
 
+    result = await memory_module.retrieve_memories("apple pie", "", 1)
+    assert len(result) == 1
+    assert result[0].id == 2
+
+
+@pytest.mark.asyncio
+async def test_no_memories_found():
+    # TODO: Implement test for no memories found
+    pass
+
 
 @pytest.mark.asyncio
 async def test_no_memories_found():
@@ -180,3 +192,64 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
     await asyncio.sleep(1.5)
 
     assert extraction_called, "Episodic memory extraction should have been triggered by timeout"
+
+@pytest.mark.asyncio
+async def test_update_memory(memory_module):
+    """Test memory update"""
+    conversation_id = str(uuid4())
+    messages = [
+        Message(
+            id=str(uuid4()),
+            content="Seattle is my favorite city!",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+    ]
+
+    for message in messages:
+        await memory_module.add_message(message)
+
+    await memory_module.update_memories(1, "The user like San Diego city")
+    updated_message = await memory_module.memory_core.storage.get_memory(1)
+    assert "San Diego" in updated_message.content
+
+
+@pytest.mark.asyncio
+async def test_remove_memory(memory_module):
+    """Test a simple conversation removal based on user id."""
+    conversation_id = str(uuid4())
+    messages = [
+        Message(
+            id=str(uuid4()),
+            content="I like pho a lot!",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+        Message(
+            id=str(uuid4()),
+            content="I prefer noodle soup!",
+            author_id="user-456",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+        Message(
+            id=str(uuid4()),
+            content="Dim sum is also my favorite!",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+    ]
+
+    for message in messages:
+        await memory_module.add_message(message)
+
+    stored_messages = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_messages) == 3
+
+    await memory_module.remove_memories("user-123")
+
+    stored_messages = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_messages) == 1

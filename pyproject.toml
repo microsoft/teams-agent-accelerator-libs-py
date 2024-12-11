@@ -15,15 +15,17 @@ dev-dependencies = [
     "pytest>=8.3.3",
     "ruff>=0.6.5",
     "termcolor>=2.4.0",
-    "watchdog>=5.0.3"
+    "watchdog>=5.0.3",
+    "customer-service-agent-sample"
 ]
 
 [tool.uv.sources]
 agent-runtime = { workspace = true }
 memory-module = { workspace = true }
+customer-service-agent-sample = { workspace = true }
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/*", "src"]
 
 [tool.ruff]
 line-length = 120
