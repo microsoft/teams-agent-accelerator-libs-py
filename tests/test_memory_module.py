@@ -28,6 +28,8 @@ litellm.set_verbose = True
 def config():
     """Fixture to create test config."""
     llm_config = build_llm_config({"model": "gpt-4o-mini"})
+    if not llm_config.api_key:
+        pytest.skip("OpenAI API key not provided")
     return MemoryModuleConfig(
         db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
         buffer_size=5,
