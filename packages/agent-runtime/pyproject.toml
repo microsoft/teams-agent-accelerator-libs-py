@@ -1,18 +1,22 @@
 [project]
 name = "agent-runtime"
-version = "0.0.0"
-description = ""
-readme = "README.md"
-requires-python = ">=3.11"
-dependencies = []
+version = "0.1.0"
+description = "Actor runtime system for agents"
+requires-python = ">=3.8"
+dependencies = [
+    "pyzmq",
+    "protobuf",
+    "termcolor"
+]
 
-[tool.uv]
-package = true
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["agent"]
+packages = ["agent_runtime"]
 
 [tool.uv.sources]
