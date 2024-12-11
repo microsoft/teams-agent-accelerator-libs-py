@@ -55,7 +55,7 @@ def memory_module(config, monkeypatch):
             return SemanticMemoryExtraction(
                 action="add",
                 reason_for_action="Mocked LLM response about pie",
-                interesting_facts=[
+                facts=[
                     SemanticFact(
                         text="Mocked LLM response about pie",
                         tags=[],

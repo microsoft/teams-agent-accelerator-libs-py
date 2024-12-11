@@ -18,7 +18,9 @@ config = Config()
 client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
 memory_module = MemoryModule(
     config=MemoryModuleConfig(
-        llm=LLMConfig(model="gpt-4o-mini", api_key=config.OPENAI_API_KEY, embedding_model="text-embedding-3-small")
+        llm=LLMConfig(model="gpt-4o-mini", api_key=config.OPENAI_API_KEY, embedding_model="text-embedding-3-small"),
+        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
+        timeout_seconds=10,
     )
 )
 
@@ -283,6 +285,8 @@ Run the provided program
         message = response.choices[0].message
 
         if not message.tool_calls:
+            await add_message(context, message.content, True, datetime.datetime.now(datetime.timezone.utc))
+            await context.send_activity(message.content)
             break
 
         for tool_call in message.tool_calls:

@@ -38,7 +38,7 @@ async def test_extract_memory_from_messages(config):
     message = create_test_message(content="Hey, I'm a software developer.")
     res = await memory_core._extract_semantic_fact_from_message(message=message)
 
-    assert any(includes(fact.text, "software developer") for fact in res.interesting_facts)
+    assert any(includes(fact.text, "software developer") for fact in res.facts)
 
 
 @pytest.mark.asyncio()

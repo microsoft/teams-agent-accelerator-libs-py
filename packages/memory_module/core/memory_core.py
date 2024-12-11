@@ -41,9 +41,9 @@ class SemanticMemoryExtraction(BaseModel):
         ...,
         description="Reason for the action taken on the extracted fact or the reason it was ignored.",
     )
-    interesting_facts: Optional[List[SemanticFact]] = Field(
+    facts: Optional[List[SemanticFact]] = Field(
         default=None,
-        description="One or more interesting fact extracted from the message. If the action is 'ignore',"
+        description="One or more facts about the user. If the action is 'ignore',"
         "this field should be empty.",
     )
 
@@ -95,8 +95,8 @@ class MemoryCore(BaseMemoryCore):
 
         extraction = await self._extract_semantic_fact_from_messages(messages)
 
-        if extraction.action == "add" and extraction.interesting_facts:
-            for fact in extraction.interesting_facts:
+        if extraction.action == "add" and extraction.facts:
+            for fact in extraction.facts:
                 message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
                 memory = Memory(
                     content=fact.text,
@@ -227,17 +227,15 @@ User: {message.content}
             else:
                 messages_str += f"{idx}. Assistant: {message.content}\n"
 
-        system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful,
-long-term facts and preferences from user messages. Focus on recognizing general patterns and interests
+        system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests
 that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
 Prioritize:
 - General Interests and Preferences: When a user mentions specific events or actions, focus on the underlying
 interests, hobbies, or preferences they reveal (e.g., if the user mentions attending a conference, focus on the topic of the conference,
 not the date or location).
-- Facts or Details about user: Extract facts that describe long-term information about the user, such as details about things they own.
-- Long-Term Facts: Extract facts that describe long-term information about the user, such as their likes, dislikes, or ongoing activities.
-- Ignore Short-Term Details: Avoid storing short-term specifics like dates or locations unless they reflect a recurring activity or long-term plan.
+- Facts or Details about user: Extract facts that describe relevant information about the user, such as details about things they own.
+- Facts about the user that the assistant might find useful.
 
 {memory_message}
 Here are the messages that were sent:
@@ -248,8 +246,7 @@ Here are the messages that were sent:
             {"role": "system", "content": system_message},
             {
                 "role": "user",
-                "content": "Please analyze this message and decide whether to extract facts or ignore it. If extracting"
-                "facts, provide one or more semantic facts focusing on long-term, meaningful information."
+                "content": "Please analyze this message and decide whether to extract facts or ignore it."
                 "For each fact, include the indices of the messages that the fact was extracted from.",
             },
         ]
