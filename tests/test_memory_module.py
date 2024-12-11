@@ -14,6 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from memory_module import MemoryModule
 from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import (
+    EpisodicMemoryExtraction,
     SemanticFact,
     SemanticMemoryExtraction,
 )
@@ -48,7 +49,7 @@ def memory_module(config, monkeypatch):
     # Only mock if api_key is not available
     if not config.llm.api_key:
 
-        async def _mock_completion(**kwargs):
+        async def _mock_semantic_memory_extraction(message, **kwargs):
             return SemanticMemoryExtraction(
                 action="add",
                 reason_for_action="Mocked LLM response about pie",
@@ -60,7 +61,20 @@ def memory_module(config, monkeypatch):
                 ],
             )
 
-        monkeypatch.setattr(memory_module.llm_service, "completion", _mock_completion)
+        monkeypatch.setattr(
+            memory_module.memory_core, "_extract_semantic_fact_from_message", _mock_semantic_memory_extraction
+        )
+
+        async def _mock_episodic_memory_extraction(messages, **kwargs):
+            return EpisodicMemoryExtraction(
+                action="add",
+                reason_for_action="Mocked LLM response about pie",
+                summary="Mocked LLM response about pie",
+            )
+
+        monkeypatch.setattr(
+            memory_module.memory_core, "_extract_episodic_memory_from_messages", _mock_episodic_memory_extraction
+        )
 
     return memory_module
 
@@ -108,28 +122,35 @@ async def test_simple_conversation(memory_module):
 
 
 @pytest.mark.asyncio
-async def test_episodic_memory_creation(memory_module):
-    """Test that episodic memory creation raises NotImplementedError."""
-    conversation_id = str(uuid4())
+async def test_no_memories_found():
+    # TODO: Implement test for no memories found
+    pass
 
-    messages = [
-        Message(
-            id=str(uuid4()),
-            content=f"Message {i} about pie",
-            author_id="user-123",
-            conversation_ref=conversation_id,
-            created_at=datetime.now(),
-            role="user",
-        )
-        for i in range(5)
-    ]
 
-    for i, message in enumerate(messages):
-        if i < 4:
-            await memory_module.add_message(message)
-        else:
-            with pytest.raises(NotImplementedError, match="Episodic memory extraction not yet implemented"):
-                await memory_module.add_message(message)
+# TODO: Add test for episodic memory extraction once `MemoryCore.process_episodic_messages` is implemented.
+# @pytest.mark.asyncio
+# async def test_episodic_memory_creation(memory_module):
+#     """Test that episodic memory creation raises NotImplementedError."""
+#     conversation_id = str(uuid4())
+
+#     messages = [
+#         Message(
+#             id=str(uuid4()),
+#             content=f"Message {i} about pie",
+#             author_id="user-123",
+#             conversation_ref=conversation_id,
+#             created_at=datetime.now(),
+#             role="user",
+#         )
+#         for i in range(5)
+#     ]
+
+#     for i, message in enumerate(messages):
+#         if i < 4:
+#             await memory_module.add_message(message)
+#         else:
+#             with pytest.raises(NotImplementedError, match="Episodic memory extraction not yet implemented"):
+#                 await memory_module.add_message(message)
 
 
 @pytest.mark.asyncio
@@ -142,7 +163,7 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
         nonlocal extraction_called
         extraction_called = True
 
-    monkeypatch.setattr(memory_module.memory_core, "_extract_episodic_memory_from_message", mock_extract_episodic)
+    monkeypatch.setattr(memory_module.memory_core, "_extract_episodic_memory_from_messages", mock_extract_episodic)
 
     conversation_id = str(uuid4())
     messages = [
