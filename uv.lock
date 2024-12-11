@@ -421,6 +421,7 @@ dependencies = [
     { name = "aiohttp" },
     { name = "botbuilder" },
     { name = "memory-module" },
+    { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "teams-ai" },
 ]
@@ -430,6 +431,7 @@ requires-dist = [
     { name = "aiohttp" },
     { name = "botbuilder" },
     { name = "memory-module", virtual = "packages/memory_module" },
+    { name = "pydantic", specifier = ">=2.10.3" },
     { name = "python-dotenv" },
     { name = "teams-ai" },
 ]
