@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from memory_module.interfaces.types import Memory
+from memory_module.interfaces.types import EmbedText, Memory
 
 
 class BaseMemoryStorage(ABC):
@@ -23,7 +23,12 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def retrieve_memories(self, query: str, user_id: str, limit: Optional[int] = None) -> List[Memory]:
+    async def retrieve_memories(
+        self,
+        embedText: EmbedText,
+        user_id: Optional[str],
+        limit: Optional[int] = None
+    ) -> List[Memory]:
         """Retrieve memories based on a query.
 
         Args:
