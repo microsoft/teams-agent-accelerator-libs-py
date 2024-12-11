@@ -129,12 +129,6 @@ async def test_no_memories_found():
     pass
 
 
-@pytest.mark.asyncio
-async def test_no_memories_found():
-    # TODO: Implement test for no memories found
-    pass
-
-
 # TODO: Add test for episodic memory extraction once `MemoryCore.process_episodic_messages` is implemented.
 # @pytest.mark.asyncio
 # async def test_episodic_memory_creation(memory_module):

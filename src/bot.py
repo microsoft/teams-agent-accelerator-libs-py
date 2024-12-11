@@ -4,6 +4,8 @@ import sys
 import traceback
 from typing import Literal
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
+
 from botbuilder.core import MemoryStorage, TurnContext
 from memory_module import LLMConfig, MemoryModule, MemoryModuleConfig, Message
 from openai import AsyncOpenAI
