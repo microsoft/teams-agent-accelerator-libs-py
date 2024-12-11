@@ -25,7 +25,28 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 Activate virtual env
  - Mac: `source .venv/bin/activate` 
  - Windows: `.venv\Scripts\Activate`
-### Deployment
+
+### Debug with test cases
+#### Connect with LLM service
+Under root folder, create `.env` and put LLM configurations into it.  
+Note: for azure models, please add `azure/` prefix.
+```
+AZURE_OPENAI_API_KEY=<API key>
+AZURE_OPENAI_DEPLOYMENT=azure/gpt-4o
+AZURE_OPENAI_EMBEDDING_DEPLOYMENT=azure/text-embedding-3-small
+AZURE_OPENAI_API_BASE=https://<domain name>.openai.azure.com
+AZURE_OPENAI_API_VERSION=<version name>
+```
+#### Start debugging on selected test case
+__Remove overrided model string__:  
+In `test_memory_core.py`, `LLMService` initiator, remove `model="gpt-4o-mini",` in param.  
+In `test_memory_module.py`, `build_llm_config` initiator, remove `{"model": "gpt-4o-mini"}` in param.
+
+__Debug selected test__:  
+For test cases marked with `@pytest.mark.asyncio`, find the play icon left to it. Right click and choose `Debug test`.
+![alt text](image.png)
+![alt text](image-1.png)
+
 ### Test Running
 Mac: `PYTHONPATH=$PYTHONPATH:. pytest tests/test_memory_module.py`  
 Window: `$env:PYTHONPATH = "$env:PYTHONPATH;."; pytest tests/test_memory_module.py`
