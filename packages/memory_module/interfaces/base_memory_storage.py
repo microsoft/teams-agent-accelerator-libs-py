@@ -23,6 +23,17 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
+    async def update_memory(
+        self,
+        memory_id: str,
+        updateMemory: str,
+        *,
+        embedding_vector:List[float]
+    ) -> None:
+        """replace an existing memory with new extracted fact and embedding"""
+        pass
+
+    @abstractmethod
     async def retrieve_memories(
         self,
         embedText: EmbedText,

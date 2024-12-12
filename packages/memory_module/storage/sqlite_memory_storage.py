@@ -119,7 +119,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             # Update in vec_items table
             await cursor.execute(
                 "UPDATE vec_items SET embedding = ? WHERE memory_embedding_id = ?",
-                (serialized_embedding, embedding_id[0], ),
+                (serialized_embedding, embedding_id[0], ), # type: ignore
             )
 
     async def retrieve_memories(
