@@ -8,18 +8,16 @@ from memory_module.interfaces.base_message_buffer_storage import (
 )
 from memory_module.interfaces.base_scheduled_events_service import Event
 from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
-from memory_module.interfaces.types import Memory, Message
-from memory_module.services.llm_service import LLMService
+from memory_module.interfaces.types import EmbedText, Memory, Message
 
 
 class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage):
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self):
         self.storage: Dict = {
             "embeddings": {},
             "buffered_messages": defaultdict(list),  # type: Dict[str, List[Message]]
             "scheduled_events": {},
         }
-        self.llm_service = llm_service or LLMService()
 
     async def store_memory(
         self,
@@ -30,16 +28,38 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self.storage[memory.id] = memory
         self.storage["embeddings"][memory.id] = embedding_vector
 
-    async def retrieve_memories(self, query: str, user_id: str, limit: Optional[int] = None) -> List[Memory]:
-        embedding_list = await self.llm_service.embedding([query])
-        query_vector = embedding_list.data[0]
-        sorted_collection = sorted(
-            self.storage.items(), key=lambda memory: self._cosine_similarity(memory, query_vector)
-        )[:3]
-        return sorted_collection
+    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector:List[float]) -> None:
+        if memory_id in self.storage:
+            self.storage[memory_id].content = updateMemory
+            self.storage["embeddings"][memory_id] = embedding_vector
 
-    def _cosine_similarity(self, memory: Memory, query_vector: List[float]) -> float:
-        return np.dot(np.array(query_vector), np.array(self.storage["embeddings"][memory.id]))
+    async def retrieve_memories(
+        self,
+        embedText: EmbedText,
+        user_id: Optional[str],
+        limit: Optional[int] = None) -> List[Memory]:
+        limit = limit or 3
+        sorted_memories = [
+            {
+                "id": value.id,
+                "score": self._cosine_similarity(embedText.embedding_vector, self.storage["embeddings"][value.id])
+            } for key, value in self.storage.items()]
+        sorted_memories = sorted(sorted_memories, key = lambda x:x["score"], reverse=True)[:limit]
+        return [self.storage[item["id"]] for item in sorted_memories]
+
+    def _cosine_similarity(self, memory_vector: List[float], query_vector: List[float]) -> float:
+        return np.dot(np.array(query_vector), np.array(memory_vector))
+
+    async def clear_memories(self, user_id: str) -> None:
+        for key, value in self.storage.items():
+            if value.user_id == user_id:
+                self.storage.pop(value.id)
+
+    async def get_memory(self, memory_id: int) -> Optional[Memory]:
+        return self.storage[memory_id]
+
+    async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
+        return [value for key, value in self.storage.items()][:limit]
 
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer."""
