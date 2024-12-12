@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from memory_module.interfaces.types import Memory, Message
+from memory_module.interfaces.types import Memory, Message, ShortTermMemoryRetrievalConfig
 
 
 class BaseMemoryCore(ABC):
@@ -18,28 +18,28 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def retrieve(
-        self,
-        query: str,
-        user_id: Optional[str],
-        limit: Optional[int]
-    ) -> List[Memory]:
+    async def retrieve(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve memories based on a query."""
         pass
 
     @abstractmethod
-    async def update(
-        self,
-        memory_id: str,
-        updateMemory: str
-    ) -> None:
-        """update memeory with new fact"""
+    async def update(self, memory_id: str, updateMemory: str) -> None:
+        """Update memory with new fact."""
         pass
 
     @abstractmethod
-    async def remove_memories(
-        self,
-        user_id: str,
-    ) -> None:
+    async def remove_memories(self, user_id: str) -> None:
         """Remove memories based on user id."""
+        pass
+
+    @abstractmethod
+    async def add_short_term_memory(self, message: Message) -> None:
+        """Add a short-term memory entry."""
+        pass
+
+    @abstractmethod
+    async def retrieve_short_term_memories(
+        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    ) -> List[Message]:
+        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         pass
