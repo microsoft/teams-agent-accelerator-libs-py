@@ -187,6 +187,7 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
 
     assert extraction_called, "Episodic memory extraction should have been triggered by timeout"
 
+
 @pytest.mark.asyncio
 async def test_update_memory(memory_module):
     """Test memory update"""
@@ -247,3 +248,33 @@ async def test_remove_memory(memory_module):
 
     stored_messages = await memory_module.memory_core.storage.get_all_memories()
     assert len(stored_messages) == 1
+
+
+@pytest.mark.asyncio
+async def test_short_term_memory(memory_module):
+    """Test that messages are stored in short-term memory."""
+    conversation_id = str(uuid4())
+    messages = [
+        Message(
+            id=str(uuid4()),
+            content=f"Test message {i}",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+            role="user",
+        )
+        for i in range(3)
+    ]
+
+    # Add messages one by one
+    for message in messages:
+        await memory_module.add_message(message)
+
+    # Check short-term memory using retrieve method
+    short_term_memories = await memory_module.retrieve_short_term_memories()
+    assert len(short_term_memories) == 3
+    assert all(msg in short_term_memories for msg in messages)
+
+    # Verify messages are in correct order
+    for i, msg in enumerate(messages):
+        assert short_term_memories[i] == messages[i]
