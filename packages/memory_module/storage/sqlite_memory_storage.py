@@ -309,11 +309,11 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
         params = [conversation_ref]
 
-        if "n_messages" in config and config["n_messages"] is not None:
+        if config.n_messages is not None:
             query += " ORDER BY created_at DESC LIMIT ?"
-            params.append(config["n_messages"])
+            params.append(config.n_messages)
 
-        if "last_minutes" in config and config["last_minutes"] is not None:
+        if config.last_minutes is not None:
             query += " AND created_at >= datetime('now', ?) ORDER BY created_at DESC"
             params.append(f"-{config['last_minutes']} minutes")
 

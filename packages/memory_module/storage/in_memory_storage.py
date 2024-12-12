@@ -1,3 +1,4 @@
+import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional
 
@@ -97,7 +98,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         if config.n_messages is not None:
             messages = conversation_messages[-config.n_messages :]
         elif config.last_minutes is not None:
-            current_time = ...  # Get the current time
+            current_time = datetime.now()
             messages = [
                 msg
                 for msg in conversation_messages
