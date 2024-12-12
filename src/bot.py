@@ -1,8 +1,11 @@
 import datetime
 import json
+import os
 import sys
 import traceback
 from typing import List, Literal
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
 from botbuilder.core import MemoryStorage, TurnContext
 from memory_module import LLMConfig, MemoryModule, MemoryModuleConfig, Message
@@ -15,22 +18,23 @@ from teams.state import TurnState
 from config import Config
 
 config = Config()
+# client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
 client = AsyncAzureOpenAI(
     api_key=config.AZURE_OPENAI_API_KEY,
-    api_version=config.AZURE_OPENAI_API_VERSION,
     azure_endpoint=config.AZURE_OPENAI_API_BASE,
-    azure_deployment=config.AZURE_OPENAI_DEPLOYMENT,
+    api_version=config.AZURE_OPENAI_API_VERSION,
 )
 memory_module = MemoryModule(
     config=MemoryModuleConfig(
         llm=LLMConfig(
-            model=f"azure/{config.AZURE_OPENAI_DEPLOYMENT}",
-            api_key=config.AZURE_OPENAI_API_KEY,
-            embedding_model=f"azure/{config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT}",
-            api_version=config.AZURE_OPENAI_API_VERSION,
+            model="azure/gpt-4o",
             api_base=config.AZURE_OPENAI_API_BASE,
+            api_key=config.AZURE_OPENAI_API_KEY,
+            api_version=config.AZURE_OPENAI_API_VERSION,
+            embedding_model="azure/text-embedding-3-small",
         ),
-        timeout_seconds=120,
+        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
+        timeout_seconds=60,
     )
 )
 
@@ -314,7 +318,7 @@ Run the provided PROGRAM by executing each step.
     should_break = False  # Flag to indicate if we should break the outer loop
     for _ in range(max_turns):
         response: ChatCompletion = await client.chat.completions.create(
-            model=config.OPENAI_MODEL_NAME,
+            model=config.AZURE_OPENAI_DEPLOYMENT,
             messages=llm_messages,
             tools=get_available_functions(),
             tool_choice="auto",
