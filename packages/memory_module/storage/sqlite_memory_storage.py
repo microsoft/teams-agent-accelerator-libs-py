@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import sqlite_vec
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
-from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import EmbedText, Memory
 from memory_module.storage.sqlite_storage import SQLiteStorage
 
 logger = logging.getLogger(__name__)
@@ -19,11 +19,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         self.db_path = db_path or DEFAULT_DB_PATH
         self.storage = SQLiteStorage(self.db_path)
 
-    async def store_memory(self, memory: Memory, *, embedding_vectors: List[List[float]]) -> int | None:
+    async def store_memory(self, memory: Memory, *, embedding_vector: List[float]) -> int | None:
         """Store a memory and its message attributions."""
-        serialized_embeddings = [
-            sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
-        ]
+        serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
 
         async with self.storage.transaction() as cursor:
             # Store the memory
@@ -49,19 +47,16 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 )
 
             # Store embedding in embeddings table
-            await cursor.executemany(
-                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-                [(memory_id, serialized_embedding) for serialized_embedding in serialized_embeddings],
-            )
-
             await cursor.execute(
-                """
-                INSERT INTO vec_items (memory_embedding_id, embedding)
-                SELECT id, embedding
-                FROM embeddings
-                WHERE memory_id = ?
-                """,
-                (memory_id,),
+                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
+                (memory_id, serialized_embedding),
+            )
+            embedding_id = cursor.lastrowid
+
+            # Store in vec_items table
+            await cursor.execute(
+                "INSERT INTO vec_items (memory_embedding_id, embedding) VALUES (?, ?)",
+                (embedding_id, serialized_embedding),
             )
         return memory_id
 
@@ -285,38 +280,3 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 memories_dict[memory_id]["message_attributions"].append(row["message_id"])
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
-
-    async def store_short_term_memory(self, message: Message) -> None:
-        """Store a short-term memory entry."""
-        async with self.storage.transaction() as cursor:
-            await cursor.execute(
-                """INSERT INTO messages (id, content, author_id, conversation_ref, created_at, is_assistant_message)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (
-                    message.id,
-                    message.content,
-                    message.author_id,
-                    message.conversation_ref,
-                    message.created_at,
-                    message.is_assistant_message,
-                ),
-            )
-
-    async def retrieve_short_term_memories(
-        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
-    ) -> List[Message]:
-        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
-        query = "SELECT * FROM messages WHERE conversation_ref = ?"
-        params = [conversation_ref]
-
-        if config.n_messages is not None:
-            query += " ORDER BY created_at DESC LIMIT ?"
-            params.append(config.n_messages)
-
-        if config.last_minutes is not None:
-            query += " AND created_at >= datetime('now', ?) ORDER BY created_at DESC"
-            params.append(f"-{config['last_minutes']} minutes")
-
-        rows = await self.storage.fetch_all(query, params)
-
-        return [Message(**row) for row in rows][::-1]
