@@ -49,7 +49,8 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
                 m.content,
                 m.author_id,
                 m.conversation_ref,
-                m.created_at
+                m.created_at,
+                m.is_assistant_message
             FROM buffered_messages b
             JOIN messages m ON b.message_id = m.id
             WHERE b.conversation_ref = ?

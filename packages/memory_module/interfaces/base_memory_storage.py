@@ -12,7 +12,7 @@ class BaseMemoryStorage(ABC):
         self,
         memory: Memory,
         *,
-        embedding_vector: List[float],
+        embedding_vector: List[List[float]],
     ) -> int | None:
         """Store a memory in the storage system.
 

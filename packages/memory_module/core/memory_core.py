@@ -97,6 +97,8 @@ class MemoryCore(BaseMemoryCore):
 
         if extraction.action == "add" and extraction.interesting_facts:
             for fact in extraction.interesting_facts:
+                metadata = await self._extract_metadata_from_fact(fact)
+                print(f"Extracted metadata: {metadata}")
                 message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
                 memory = Memory(
                     content=fact.text,
@@ -105,9 +107,11 @@ class MemoryCore(BaseMemoryCore):
                     message_attributions=message_ids,
                     memory_type=MemoryType.SEMANTIC,
                 )
-                embedResponse = await self.lm.embedding([fact.text])
-                embed_vector = embedResponse.data[0]["embedding"]
-                await self.storage.store_memory(memory, embedding_vector=embed_vector)
+                embedResponse = await self.lm.embedding(
+                    [fact.text, metadata.topic, metadata.summary, *metadata.keywords]
+                )
+                embed_vectors = [data["embedding"] for data in embedResponse.data]
+                await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into episodic memories (specific events, experiences)."""
@@ -133,7 +137,7 @@ class MemoryCore(BaseMemoryCore):
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
 
-    async def _extract_information_from_messages(self, messages: List[Message]) -> MessageDigest:
+    async def _extract_metadata_from_fact(self, fact: SemanticFact) -> MessageDigest:
         """Extract meaningful information from messages using LLM.
 
         Args:
@@ -142,70 +146,21 @@ class MemoryCore(BaseMemoryCore):
         Returns:
             MemoryDigest containing the summary, importance, and key points from the list of messages.
         """
-        system_message = f"""You are an expert memory extractor. Given a list of messages, your task is to extract
-        meaningful information by providing the following:
-
-Summary: A concise summary of the overall content or key theme of the messages.
-Importance: A numeric score between 1 and 10 (1 = least important, 10 = most important) that reflects how significant
-this information is.
-Key Points: A list of key points or notable facts extracted from the messages.
-
-Here's the list of messages you need to analyze:
-{[message.content for message in messages]}
-"""
-        # TODO: Fix the above prompt so that the messages are displayed correctly.
-        # Ex "User: I love pie!", "Assitant: I love pie!"
-
-        messages = [{"role": "system", "content": system_message}]
-
-        return await self.lm.completion(messages=messages, response_model=MessageDigest)
+        return await self.lm.completion(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Your role is to rephrase the text in your own words and provide a summary of the text.",
+                },
+                {"role": "user", "content": fact.text},
+            ],
+            response_model=MessageDigest,
+        )
 
     async def _create_memory_embedding(self, content: str) -> List[float]:
         """Create embedding for memory content."""
         res: EmbeddingResponse = await self.lm.embedding(input=[content])
         return res.data[0]["embedding"]
-
-    async def _extract_semantic_fact_from_message(
-        self, message: Message, memory_message: str = ""
-    ) -> SemanticMemoryExtraction:
-        """Extract semantic facts from a message using LLM.
-
-        Args:
-            message: The message to extract facts from
-            memory_message: Optional context from previous memories
-
-        Returns:
-            SemanticMemoryExtraction containing the action and extracted facts
-        """
-        system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful,
-long-term facts and preferences from user messages. Focus on recognizing general patterns and interests
-that will remain relevant over time, even if the user is mentioning short-term plans or events.
-
-Prioritize:
-- General Interests and Preferences: When a user mentions specific events or actions, focus on the underlying
-interests, hobbies, or preferences they reveal (e.g., if the user mentions attending a conference, focus on the topic of the conference,
-not the date or location).
-- Facts or Details about user: Extract facts that describe long-term information about the user, such as details about things they own.
-- Long-Term Facts: Extract facts that describe long-term information about the user, such as their likes, dislikes, or ongoing activities.
-- Ignore Short-Term Details: Avoid storing short-term specifics like dates or locations unless they reflect a recurring activity or long-term plan.
-
-{memory_message}
-Here is the latest message that was sent:
-User: {message.content}
-"""  # noqa: E501
-
-        messages = [
-            {"role": "system", "content": system_message},
-            {
-                "role": "user",
-                "content": "Please analyze this message and decide whether to extract facts or ignore it. If extracting"
-                "facts, provide one or more semantic facts focusing on long-term, meaningful information.",  # noqa: E501
-            },
-        ]
-
-        res = await self.lm.completion(messages=messages, response_model=SemanticMemoryExtraction)
-
-        return res
 
     async def _extract_semantic_fact_from_messages(
         self, messages: List[Message], memory_message: str = ""
@@ -227,8 +182,7 @@ User: {message.content}
             else:
                 messages_str += f"{idx}. Assistant: {message.content}\n"
 
-        system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful,
-long-term facts and preferences from user messages. Focus on recognizing general patterns and interests
+        system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, long-term facts and preferences from user messages. Focus on recognizing general patterns and interests
 that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
 Prioritize:
@@ -240,8 +194,10 @@ not the date or location).
 - Ignore Short-Term Details: Avoid storing short-term specifics like dates or locations unless they reflect a recurring activity or long-term plan.
 
 {memory_message}
-Here are the messages that were sent:
+Here is the transcript of the conversation:
+<TRANSCRIPT>
 {messages_str}
+</TRANSCRIPT>
 """  # noqa: E501
 
         messages = [

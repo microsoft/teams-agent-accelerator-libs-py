@@ -2,11 +2,11 @@ import datetime
 import json
 import sys
 import traceback
-from typing import Literal
+from typing import List, Literal
 
 from botbuilder.core import MemoryStorage, TurnContext
 from memory_module import LLMConfig, MemoryModule, MemoryModuleConfig, Message
-from openai import AsyncOpenAI
+from openai import AsyncAzureOpenAI
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel, Field
 from teams import Application, ApplicationOptions, TeamsAdapter
@@ -15,10 +15,22 @@ from teams.state import TurnState
 from config import Config
 
 config = Config()
-client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
+client = AsyncAzureOpenAI(
+    api_key=config.AZURE_OPENAI_API_KEY,
+    api_version=config.AZURE_OPENAI_API_VERSION,
+    azure_endpoint=config.AZURE_OPENAI_API_BASE,
+    azure_deployment=config.AZURE_OPENAI_DEPLOYMENT,
+)
 memory_module = MemoryModule(
     config=MemoryModuleConfig(
-        llm=LLMConfig(model="gpt-4o-mini", api_key=config.OPENAI_API_KEY, embedding_model="text-embedding-3-small")
+        llm=LLMConfig(
+            model=f"azure/{config.AZURE_OPENAI_DEPLOYMENT}",
+            api_key=config.AZURE_OPENAI_API_KEY,
+            embedding_model=f"azure/{config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT}",
+            api_version=config.AZURE_OPENAI_API_VERSION,
+            api_base=config.AZURE_OPENAI_API_BASE,
+        ),
+        timeout_seconds=120,
     )
 )
 
@@ -57,7 +69,9 @@ class GetCandidateTasks(BaseModel):
 
 
 class GetMemorizedFields(BaseModel):
-    required_fields: list[str]
+    queries_for_fields: list[str] = Field(
+        description="A list of questions to see if any information exists about the fields. These must be questions."
+    )
 
 
 class FieldToMemorize(BaseModel):
@@ -77,8 +91,14 @@ class InformUser(BaseModel):
     message: str
 
 
+class UserDetail(BaseModel):
+    field_name: str
+    field_value: str
+
+
 class ExecuteTask(BaseModel):
-    task_name: Literal["troubleshoot_device_issue", "troubleshoot_connectivity_issue", "troubleshoot_access_issue"]
+    succint_summary_of_issue: str
+    user_details: List[UserDetail] = Field(description="A key value pair of the user's details")
 
 
 async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
@@ -88,7 +108,7 @@ async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
 
 async def get_memorized_fields(fields_to_retrieve: GetMemorizedFields) -> str:
     empty_obj = {}
-    for field in fields_to_retrieve.required_fields:
+    for field in fields_to_retrieve.queries_for_fields:
         result = await memory_module.retrieve_memories(field, None, None)
         print(f"result for {field}: {result}")
         if result:
@@ -108,7 +128,22 @@ async def prompt_user(query_for_user: PromptUser, context: TurnContext) -> str:
 
 
 async def execute_task(task_name: ExecuteTask, context: TurnContext) -> str:
-    return "This is a common issue."
+    system_prompt = f"""
+You are an IT Support Assistant. You make up some common solutions to common issues. Be creative.
+
+The user's issue is: {task_name.succint_summary_of_issue}
+
+The user's details are: {task_name.user_details}
+
+Come up with a solution to the user's issue.
+"""
+    res = await client.chat.completions.create(
+        model=config.OPENAI_MODEL_NAME,
+        messages=[{"role": "system", "content": system_prompt}],
+        temperature=0.9,
+    )
+    await context.send_activity(res.choices[0].message.content)
+    return res.choices[0].message.content
 
 
 async def inform_user(message: InformUser, context: TurnContext) -> str:
@@ -174,6 +209,7 @@ async def add_message(
     content: str,
     is_assistant_message: bool,
     created_at: datetime.datetime | None = None,
+    override_message_id: str | None = None,
 ):
     conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
     if conversation_ref_dict is None:
@@ -190,9 +226,20 @@ async def add_message(
         return False
     user_aad_object_id = conversation_ref_dict.user.aad_object_id
     bot_id = conversation_ref_dict.bot.id
+    print(
+        "Adding message",
+        Message(
+            id=override_message_id or context.activity.id,
+            content=content,
+            author_id=user_aad_object_id,
+            conversation_ref=conversation_ref_dict.conversation.id,
+            created_at=created_at or datetime.datetime.now(datetime.timezone.utc),
+            is_assistant_message=is_assistant_message,
+        ),
+    )
     await memory_module.add_message(
         Message(
-            id=context.activity.id if not is_assistant_message else f"bot_{context.activity.id}",
+            id=override_message_id or context.activity.id,
             content=content,
             author_id=user_aad_object_id,
             conversation_ref=conversation_ref_dict.conversation.id,
@@ -216,25 +263,22 @@ async def on_message(context: TurnContext, state: TurnState):
 You are an IT Chat Bot that helps users troubleshoot tasks
 
 <PROGRAM>
-Display "Hello! I'm your IT Support Assistant. How can I assist you today?"
-
-Ask the user for their request unless the user has already provided a request.
+Ask the user for their request unless the user has already provided it.
 
 Note: Step 1 - Identify potential tasks based on the user's query.
 To identify tasks:
-    Use the "get_candidate_tasks" function with the user's query as input.
-    If tasks are found, list the relevant tasks and their required fields.
-    Display "I'm not sure what task you need help with. Could you clarify your request?"
+    Step 1a: Use the "get_candidate_tasks" function with the user's query as input.
+    Step 1b (If necessary): Display "I'm not sure what task you need help with. Could you clarify your request?"
 
 Note: Step 2 - Gather necessary information for the selected task.
 To gather missing fields for the task:
-    Use the "get_memorized_fields" function to check if any required fields are already known.
-    For each missing field, prompt the user to provide the required information.
+    Step 2a: Use the "get_memorized_fields" function to check if any required fields are already known.
+    Step 2b (If necessary): For each missing field, prompt the user to provide the required information.
 
 Note: Step 3 - Execute the task.
 To execute the selected task:
-    Use the "execute_task" function with the user's query, the selected task, and the list of gathered fields.
-    Display the result of the task to the user.
+    Step 3a: Use the "execute_task" function with the user's query, the selected task, and the list of gathered fields.
+    Step 3b: Display the result of the task to the user.
 
 Note: Full process flow.
 While the user has requests:
@@ -246,10 +290,10 @@ While the user has requests:
 If the user ends the conversation, display "Thank you! Let me know if you need anything else in the future."
 
 <INSTRUCTIONS>
-Run the provided program
+Run the provided PROGRAM by executing each step.
 """
     messages = await memory_module.retrieve_short_term_memories(
-        conversation_ref_dict.conversation.id, {"last_minutes": 30}
+        conversation_ref_dict.conversation.id, {"last_minutes": 1}
     )
     print("messages", messages)
     llm_messages = [
@@ -282,17 +326,23 @@ Run the provided program
 
         message = response.choices[0].message
 
-        if not message.tool_calls:
+        if message.tool_calls is None and message.content is not None:
+            print("Adding dm", response.id)
+            await add_message(context, message.content, True, datetime.datetime.now(datetime.timezone.utc), response.id)
+            await context.send_activity(message.content)
+            break
+        elif message.tool_calls is None and message.content is None:
+            print("No tool calls and no content")
             break
 
         for tool_call in message.tool_calls:
             function_name = tool_call.function.name
             function_args = tool_call.function.arguments
 
-            print("----")
+            print(f"--ToolCall {tool_call.id}--")
             print(function_name)
             print(function_args)
-            print("----")
+            print(f"--ToolCall {tool_call.id}--")
 
             if function_name == "get_candidate_tasks":
                 args = GetCandidateTasks.model_validate_json(function_args)
@@ -327,14 +377,20 @@ Run the provided program
                     }
                 )
                 llm_messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": str(res)})
+                await add_message(
+                    context,
+                    json.dumps(
+                        {
+                            "tool_call_name": function_name,
+                            "result": res,
+                        }
+                    ),
+                    True,
+                    datetime.datetime.now(datetime.timezone.utc),
+                    tool_call.id,
+                )
             else:
                 break
-
-            # Set the flag to break the outer loop if necessary
-            if function_name in ["prompt_user", "inform_user"]:
-                should_break = True
-                await add_message(context, res, True, datetime.datetime.now(datetime.timezone.utc))
-                break  # Break the inner loop
 
         if should_break:
             break  # Break the outer loop
