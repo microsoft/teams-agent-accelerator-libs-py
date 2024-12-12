@@ -8,7 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
 from botbuilder.core import MemoryStorage, TurnContext
 from memory_module import LLMConfig, MemoryModule, MemoryModuleConfig, Message
-from openai import AsyncOpenAI
+from openai import AsyncAzureOpenAI, AsyncOpenAI
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel, Field
 from teams import Application, ApplicationOptions, TeamsAdapter
@@ -17,12 +17,17 @@ from teams.state import TurnState
 from config import Config
 
 config = Config()
-client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
+# client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
+client = AsyncAzureOpenAI(
+    api_key=config.AZURE_OPENAI_API_KEY,
+    azure_endpoint=config.AZURE_OPENAI_API_BASE,
+    api_version=config.AZURE_OPENAI_API_VERSION,
+)
 memory_module = MemoryModule(
     config=MemoryModuleConfig(
-        llm=LLMConfig(model="gpt-4o-mini", api_key=config.OPENAI_API_KEY, embedding_model="text-embedding-3-small"),
+        llm=LLMConfig(model="azure/gpt-4o", api_base=config.AZURE_OPENAI_API_BASE, api_key=config.AZURE_OPENAI_API_KEY, api_version=config.AZURE_OPENAI_API_VERSION, embedding_model="azure/text-embedding-3-small"),
         db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
-        timeout_seconds=10,
+        timeout_seconds=60,
     )
 )
 
@@ -274,7 +279,7 @@ Run the provided program
     should_break = False  # Flag to indicate if we should break the outer loop
     for _ in range(max_turns):
         response: ChatCompletion = await client.chat.completions.create(
-            model=config.OPENAI_MODEL_NAME,
+            model=config.AZURE_OPENAI_DEPLOYMENT,
             messages=llm_messages,
             tools=get_available_functions(),
             tool_choice="auto",
