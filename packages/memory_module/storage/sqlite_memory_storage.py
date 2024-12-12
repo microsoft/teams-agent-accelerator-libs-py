@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import sqlite_vec
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
-from memory_module.interfaces.types import EmbedText, Memory
+from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
 from memory_module.storage.sqlite_storage import SQLiteStorage
 
 logger = logging.getLogger(__name__)
@@ -280,3 +280,38 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 memories_dict[memory_id]["message_attributions"].append(row["message_id"])
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
+
+    async def store_short_term_memory(self, message: Message) -> None:
+        """Store a short-term memory entry."""
+        async with self.storage.transaction() as cursor:
+            await cursor.execute(
+                """INSERT INTO messages (id, content, author_id, conversation_ref, created_at, is_assistant_message)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    message.id,
+                    message.content,
+                    message.author_id,
+                    message.conversation_ref,
+                    message.created_at,
+                    message.is_assistant_message,
+                ),
+            )
+
+    async def retrieve_short_term_memories(
+        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    ) -> List[Message]:
+        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
+        query = "SELECT * FROM messages WHERE conversation_ref = ?"
+        params = [conversation_ref]
+
+        if "n_messages" in config and config["n_messages"] is not None:
+            query += " ORDER BY created_at DESC LIMIT ?"
+            params.append(config["n_messages"])
+
+        if "last_minutes" in config and config["last_minutes"] is not None:
+            query += " AND created_at >= datetime('now', ?) ORDER BY created_at DESC"
+            params.append(f"-{config['last_minutes']} minutes")
+
+        rows = await self.storage.fetch_all(query, params)
+
+        return [Message(**row) for row in rows][::-1]
