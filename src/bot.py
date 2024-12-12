@@ -21,8 +21,9 @@ config = Config()
 # client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
 client = AsyncAzureOpenAI(
     api_key=config.AZURE_OPENAI_API_KEY,
-    azure_endpoint=config.AZURE_OPENAI_API_BASE,
     api_version=config.AZURE_OPENAI_API_VERSION,
+    azure_endpoint=config.AZURE_OPENAI_API_BASE,
+    azure_deployment=config.AZURE_OPENAI_DEPLOYMENT,
 )
 memory_module = MemoryModule(
     config=MemoryModuleConfig(
@@ -142,7 +143,7 @@ The user's details are: {task_name.user_details}
 Come up with a solution to the user's issue.
 """
     res = await client.chat.completions.create(
-        model=config.OPENAI_MODEL_NAME,
+        model="gpt-4o",
         messages=[{"role": "system", "content": system_prompt}],
         temperature=0.9,
     )

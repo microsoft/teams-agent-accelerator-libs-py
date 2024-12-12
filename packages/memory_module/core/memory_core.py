@@ -21,6 +21,12 @@ class MessageDigest(BaseModel):
         default_factory=list,
         description="Keywords that the message(s) is about. These can range from very specific to very general.",
     )
+    hypothetical_questions: list[str] = Field(
+        default_factory=list,
+        min_length=5,
+        max_length=8,
+        description="Hypothetical questions about this memory that someone might ask to query for it. These can range from very specific to very general.",
+    )
 
 
 class SemanticFact(BaseModel):
@@ -107,7 +113,7 @@ class MemoryCore(BaseMemoryCore):
                     memory_type=MemoryType.SEMANTIC,
                 )
                 embedResponse = await self.lm.embedding(
-                    [fact.text, metadata.topic, metadata.summary, *metadata.keywords]
+                    [fact.text, metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
                 )
                 embed_vectors = [data["embedding"] for data in embedResponse.data]
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
