@@ -276,5 +276,5 @@ async def test_short_term_memory(memory_module):
     assert all(msg in short_term_memories for msg in messages)
 
     # Verify messages are in correct order
-    for i, msg in enumerate(messages):
+    for i, _msg in enumerate(messages):
         assert short_term_memories[i] == messages[i]
