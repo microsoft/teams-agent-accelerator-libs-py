@@ -1,6 +1,6 @@
 # Overview of the Basic AI Chatbot template
 
-This app template is built on top of [Teams AI library](https://aka.ms/teams-ai-library).
+This app template is built on top of [Teams AI library](https://aka.ms/teams-ai-library) and [Teams Memory Agent]().
 This template showcases a bot app that responds to user questions like an AI assistant. This enables your users to talk with the AI assistant in Teams to find information.
 
 
@@ -17,14 +17,27 @@ This template showcases a bot app that responds to user questions like an AI ass
 > - [Node.js](https://nodejs.org/) (supported versions: 16, 18) for local debug in Test Tool.
 
 ### Configurations
-1. Open the command box and enter `Python: Create Environment` to create and activate your desired virtual environment. Remember to select `src/requirements.txt` as dependencies to install when creating the virtual environment.
-1. In file *env/.env.testtool.user*, fill in your OpenAI key `SECRET_OPENAI_API_KEY`. 
-1. In this template, default model name is `gpt-3.5-turbo`. If you want to use a different model from OpenAI, fill in your model name in [src/config.py](./src/config.py).
+1. create *.env* in root folder. Copy the below template into it.
+```
+AZURE_OPENAI_API_KEY=<API key>
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-small
+AZURE_OPENAI_API_BASE=https://<domain name>.openai.azure.com
+AZURE_OPENAI_API_VERSION=<version number>
+OPENAI_API_KEY=
+```
 
-### Conversation with bot
-1. Select the Teams Toolkit icon on the left in the VS Code toolbar.
-1. Press F5 to start debugging which launches your app in Teams App Test Tool using a web browser. Select `Debug in Test Tool`.
-1. You will receive a welcome message from the bot, or send any message to get a response.
+### Start server
+1. Open a new Powershell Terminal under root folder.
+1. run `npm install -g @microsoft/teamsapp-cli`
+1. run `uv sync`
+1. run `.venv\Scripts\Activat`
+1. run `python src/app.py`  
+If success, server will start on `http://localhost:3978`
+1. Open another new Terminal under root folder
+1. run `node src/devTools/teamsapptester/node_modules/@microsoft/teams-app-test-tool/cli.js start`  
+If success, a test website will show up
+![alt text](image.png)
 
 **Congratulations**! You are running an application that can now interact with users in Teams:
 
@@ -38,7 +51,6 @@ This template showcases a bot app that responds to user questions like an AI ass
 | - | - |
 | `.vscode`    | VSCode files for debugging                          |
 | `appPackage` | Templates for the Teams application manifest        |
-| `env`        | Environment files                                   |
 | `infra`      | Templates for provisioning Azure resources          |
 | `src`        | The source code for the application                 |
 
