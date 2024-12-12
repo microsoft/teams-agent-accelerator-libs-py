@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import traceback
+import uuid
 from typing import List, Literal
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
@@ -69,17 +70,20 @@ tasks_by_config = {
 
 
 class GetCandidateTasks(BaseModel):
+    model_config = {"json_schema_extra": {"additionalProperties": False}}
     user_query: str = Field(description="A succinct description of the user's issue")
     candidate_task: Literal["troubleshoot_device_issue", "troubleshoot_connectivity_issue", "troubleshoot_access_issue"]
 
 
 class GetMemorizedFields(BaseModel):
+    model_config = {"json_schema_extra": {"additionalProperties": False}}
     queries_for_fields: list[str] = Field(
         description="A list of questions to see if any information exists about the fields. These must be questions."
     )
 
 
 class FieldToMemorize(BaseModel):
+    model_config = {"json_schema_extra": {"additionalProperties": False}}
     field_name: str
     field_value: str
 
@@ -89,19 +93,23 @@ class FieldToMemorize(BaseModel):
 
 
 class PromptUser(BaseModel):
+    model_config = {"json_schema_extra": {"additionalProperties": False}}
     query_for_user: str
 
 
 class InformUser(BaseModel):
+    model_config = {"json_schema_extra": {"additionalProperties": False}}
     message: str
 
 
 class UserDetail(BaseModel):
+    model_config = {"json_schema_extra": {"additionalProperties": False}}
     field_name: str
     field_value: str
 
 
 class ExecuteTask(BaseModel):
+    model_config = {"json_schema_extra": {"additionalProperties": False}}
     succint_summary_of_issue: str
     user_details: List[UserDetail] = Field(description="A key value pair of the user's details")
 
@@ -164,6 +172,7 @@ def get_available_functions():
                 "name": "get_candidate_tasks",
                 "description": "Identify the task based on user's query",
                 "parameters": GetCandidateTasks.schema(),
+                "strict": True,
             },
         },
         # {
@@ -204,6 +213,7 @@ def get_available_functions():
                 "name": "execute_task",
                 "description": "Execute a troubleshooting task",
                 "parameters": ExecuteTask.schema(),
+                "strict": True,
             },
         },
     ]
@@ -214,7 +224,7 @@ async def add_message(
     content: str,
     is_assistant_message: bool,
     created_at: datetime.datetime | None = None,
-    override_message_id: str | None = None,
+    override_message_id: bool = False,
 ):
     conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
     if conversation_ref_dict is None:
@@ -231,10 +241,11 @@ async def add_message(
         return False
     user_aad_object_id = conversation_ref_dict.user.aad_object_id
     bot_id = conversation_ref_dict.bot.id
+    message_id = str(uuid.uuid4()) if override_message_id else context.activity.id
     print(
         "Adding message",
         Message(
-            id=override_message_id or context.activity.id,
+            id=message_id,
             content=content,
             author_id=user_aad_object_id,
             conversation_ref=conversation_ref_dict.conversation.id,
@@ -244,7 +255,7 @@ async def add_message(
     )
     await memory_module.add_message(
         Message(
-            id=override_message_id or context.activity.id,
+            id=message_id,
             content=content,
             author_id=user_aad_object_id,
             conversation_ref=conversation_ref_dict.conversation.id,
@@ -333,7 +344,7 @@ Run the provided PROGRAM by executing each step.
 
         if message.tool_calls is None and message.content is not None:
             print("Adding dm", response.id)
-            await add_message(context, message.content, True, datetime.datetime.now(datetime.timezone.utc), response.id)
+            await add_message(context, message.content, True, datetime.datetime.now(datetime.timezone.utc), True)
             await context.send_activity(message.content)
             break
         elif message.tool_calls is None and message.content is None:
@@ -392,7 +403,7 @@ Run the provided PROGRAM by executing each step.
                     ),
                     True,
                     datetime.datetime.now(datetime.timezone.utc),
-                    tool_call.id,
+                    True,
                 )
             else:
                 break

@@ -38,7 +38,6 @@ class SemanticFact(BaseModel):
         default_factory=list,
         description="The indices of the messages that the fact was extracted from.",
     )
-    tags: List[str]
 
 
 class SemanticMemoryExtraction(BaseModel):
