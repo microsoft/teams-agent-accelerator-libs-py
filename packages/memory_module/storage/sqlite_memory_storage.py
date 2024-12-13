@@ -137,7 +137,8 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 m.created_at,
                 m.user_id,
                 m.memory_type,
-                ma.message_id
+                ma.message_id,
+                rm.distance
             FROM ranked_memories rm
             JOIN memories m ON m.id = rm.memory_id
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
@@ -148,7 +149,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             query,
             (
                 sqlite_vec.serialize_float32(embedText.embedding_vector),
-                limit or 3,
+                limit or self.default_limit,
                 1.0,
             ),
         )
@@ -165,6 +166,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     "user_id": row["user_id"],
                     "memory_type": row["memory_type"],
                     "message_attributions": [],
+                    "distance": row["distance"]
                 }
 
             if row["message_id"]:
