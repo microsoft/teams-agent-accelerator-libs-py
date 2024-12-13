@@ -29,15 +29,13 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         """Store a message in the buffer."""
         query = """
             INSERT INTO buffered_messages
-            (message_id, content, author_id, conversation_ref, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            (message_id, conversation_ref, created_at)
+            VALUES (?, ?, ?)
         """
         await self.storage.execute(
             query,
             (
                 message.id,
-                message.content,
-                message.author_id,
                 message.conversation_ref,
                 message.created_at,
             ),
@@ -47,14 +45,16 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         """Retrieve all buffered messages for a conversation."""
         query = """
             SELECT
-                message_id as id,
-                content,
-                author_id,
-                conversation_ref,
-                created_at
-            FROM buffered_messages
-            WHERE conversation_ref = ?
-            ORDER BY created_at ASC
+                m.id,
+                m.content,
+                m.author_id,
+                m.conversation_ref,
+                m.created_at,
+                m.is_assistant_message
+            FROM buffered_messages b
+            JOIN messages m ON b.message_id = m.id
+            WHERE b.conversation_ref = ?
+            ORDER BY b.created_at ASC
         """
         results = await self.storage.fetch_all(query, (conversation_ref,))
         return [Message(**row) for row in results]

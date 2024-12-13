@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
-from memory_module.interfaces.types import EmbedText, Memory, MemoryType, Message
+from memory_module.interfaces.types import EmbedText, Memory, MemoryType, Message, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 from packages.memory_module.interfaces.base_memory_storage import BaseMemoryStorage
@@ -220,3 +220,12 @@ Here are the incoming messages:
         messages = [{"role": "system", "content": system_message}]
 
         return await self.lm.completion(messages=messages, response_model=EpisodicMemoryExtraction)
+
+    async def add_short_term_memory(self, message: Message) -> None:
+        await self.storage.store_short_term_memory(message)
+
+    async def retrieve_chat_history(
+        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    ) -> List[Message]:
+        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
+        return await self.storage.retrieve_chat_history(conversation_ref, config)
