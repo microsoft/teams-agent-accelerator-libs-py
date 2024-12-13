@@ -626,6 +626,9 @@ sdist = { url = "https://files.pythonhosted.org/packages/68/8a/b08dd0b946f0843cb
 name = "evals"
 version = "0.1.0"
 source = { virtual = "packages/evals" }
+dependencies = [
+    { name = "memory-module" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -636,6 +639,7 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "memory-module", virtual = "packages/memory_module" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2410,6 +2414,7 @@ version = "0.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "agent-runtime" },
+    { name = "evals" },
     { name = "litellm" },
     { name = "memory-module" },
 ]
@@ -2417,22 +2422,19 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "customer-service-agent-sample" },
-    { name = "databricks-sdk" },
-    { name = "mlflow" },
-    { name = "pandas" },
     { name = "poethepoet" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
     { name = "termcolor" },
-    { name = "tqdm" },
     { name = "watchdog" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "agent-runtime", editable = "packages/agent-runtime" },
+    { name = "evals", virtual = "packages/evals" },
     { name = "litellm" },
     { name = "memory-module", virtual = "packages/memory_module" },
 ]
@@ -2440,16 +2442,12 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "customer-service-agent-sample", virtual = "src" },
-    { name = "databricks-sdk" },
-    { name = "mlflow", specifier = ">=2.17.2" },
-    { name = "pandas" },
     { name = "poethepoet", specifier = ">=0.28.0" },
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },
     { name = "ruff", specifier = ">=0.6.5" },
     { name = "termcolor", specifier = ">=2.4.0" },
-    { name = "tqdm", specifier = ">=4.66.5" },
     { name = "watchdog", specifier = ">=5.0.3" },
 ]
 

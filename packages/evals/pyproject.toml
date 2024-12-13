@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Benchmarks for the different components"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "memory-module"
+]
 
 [tool.uv]
 package = false

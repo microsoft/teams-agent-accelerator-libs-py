@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "a framework for creating intelligent agents within Microsoft Teams"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["agent-runtime", "memory-module", "litellm"]
+dependencies = ["agent-runtime", "memory-module", "litellm", "evals"]
 
 [tool.uv]
 package = false
@@ -17,16 +17,13 @@ dev-dependencies = [
     "termcolor>=2.4.0",
     "watchdog>=5.0.3",
     "customer-service-agent-sample",
-    "pandas",
-    "mlflow>=2.17.2",
-    "tqdm>=4.66.5",
-    "databricks-sdk",
 ]
 
 [tool.uv.sources]
 agent-runtime = { workspace = true }
 memory-module = { workspace = true }
 customer-service-agent-sample = { workspace = true }
+evals = { workspace = true }
 
 [tool.uv.workspace]
 members = ["packages/*", "src"]
