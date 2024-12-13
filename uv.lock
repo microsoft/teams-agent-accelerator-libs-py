@@ -864,11 +864,6 @@ dependencies = [
     { name = "sqlite-vec" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "tenacity" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20.0" },
@@ -879,9 +874,6 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "sqlite-vec", specifier = ">=0.1.6" },
 ]
-
-[package.metadata.requires-dev]
-dev = [{ name = "tenacity", specifier = ">=9.0.0" }]
 
 [[package]]
 name = "msal"
