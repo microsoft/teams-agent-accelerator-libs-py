@@ -16,7 +16,11 @@ dev-dependencies = [
     "ruff>=0.6.5",
     "termcolor>=2.4.0",
     "watchdog>=5.0.3",
-    "customer-service-agent-sample"
+    "customer-service-agent-sample",
+    "pandas",
+    "mlflow>=2.17.2",
+    "tqdm>=4.66.5",
+    "databricks-sdk",
 ]
 
 [tool.uv.sources]
