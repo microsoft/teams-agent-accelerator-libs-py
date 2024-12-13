@@ -35,12 +35,15 @@ class EnvLLMConfig(BaseModel):
 def get_env_llm_config() -> EnvLLMConfig:
     load_dotenv()
 
+    azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", None)
+    azure_embedding_deployment = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", None)
+
     return EnvLLMConfig(
         openai_api_key=os.getenv("OPENAI_API_KEY", None),
         openai_deployment=os.getenv("OPENAI_DEPLOYMENT", None),
         azure_openai_api_key=os.getenv("AZURE_OPENAI_API_KEY", None),
-        azure_openai_deployment=f'azure/{os.getenv("AZURE_OPENAI_DEPLOYMENT", None)}',
-        azure_openai_embedding_deployment=f'azure/{os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", None)}',
+        azure_openai_deployment=f"azure/{azure_deployment}" if azure_deployment else None,
+        azure_openai_embedding_deployment=f"azure/{azure_embedding_deployment}" if azure_embedding_deployment else None,
         azure_openai_api_base=os.getenv("AZURE_OPENAI_API_BASE", None),
         azure_openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION", None),
     )

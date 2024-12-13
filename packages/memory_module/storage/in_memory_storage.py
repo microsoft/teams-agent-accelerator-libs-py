@@ -1,3 +1,4 @@
+import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional
 
@@ -8,7 +9,7 @@ from memory_module.interfaces.base_message_buffer_storage import (
 )
 from memory_module.interfaces.base_scheduled_events_service import Event
 from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
-from memory_module.interfaces.types import Memory, Message
+from memory_module.interfaces.types import Memory, Message, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
 
 
@@ -84,3 +85,27 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             id: Unique identifier of the event to cancel
         """
         await self.delete_event(id)
+
+    async def retrieve_chat_history(
+        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    ) -> List[Message]:
+        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
+        messages = []
+
+        # Get messages for the conversation
+        conversation_messages = self.storage["buffered_messages"].get(conversation_ref, [])
+
+        if config.n_messages is not None:
+            messages = conversation_messages[-config.n_messages :]
+        elif config.last_minutes is not None:
+            current_time = datetime.now()
+            messages = [
+                msg
+                for msg in conversation_messages
+                if (current_time - msg.created_at).total_seconds() / 60 <= config.last_minutes
+            ]
+
+        # Sort messages in descending order based on created_at
+        messages.sort(key=lambda msg: msg.created_at, reverse=True)
+
+        return messages
