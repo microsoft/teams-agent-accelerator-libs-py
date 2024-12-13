@@ -2,7 +2,7 @@ import datetime
 import logging
 from typing import List, Literal, Optional
 
-from litellm import EmbeddingResponse
+from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field
 
 from memory_module.config import MemoryModuleConfig
@@ -10,6 +10,8 @@ from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.types import EmbedText, Memory, MemoryType, Message, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
+from packages.memory_module.interfaces.base_memory_storage import BaseMemoryStorage
+from packages.memory_module.storage.in_memory_storage import InMemoryStorage
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +77,7 @@ class MemoryCore(BaseMemoryCore):
         self,
         config: MemoryModuleConfig,
         llm_service: LLMService,
-        storage: Optional[SQLiteMemoryStorage] = None,
+        storage: Optional[BaseMemoryStorage] = None,
     ):
         """Initialize the memory core.
 
@@ -85,7 +87,9 @@ class MemoryCore(BaseMemoryCore):
             storage: Optional storage implementation for memory persistence
         """
         self.lm = llm_service
-        self.storage = storage or SQLiteMemoryStorage(db_path=config.db_path)
+        self.storage = storage or (
+            SQLiteMemoryStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
+        )
 
     async def process_semantic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
@@ -113,10 +117,7 @@ class MemoryCore(BaseMemoryCore):
                     message_attributions=message_ids,
                     memory_type=MemoryType.SEMANTIC,
                 )
-                embedResponse = await self.lm.embedding(
-                    [fact.text, metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
-                )
-                embed_vectors = [data["embedding"] for data in embedResponse.data]
+                embed_vectors = await self._get_semantic_fact_embeddings(fact, metadata)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
@@ -124,7 +125,7 @@ class MemoryCore(BaseMemoryCore):
         # TODO: Implement episodic memory processing
         await self._extract_episodic_memory_from_messages(messages)
 
-    async def retrieve(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
+    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve memories based on a query.
 
         Steps:
@@ -163,10 +164,17 @@ class MemoryCore(BaseMemoryCore):
             response_model=MessageDigest,
         )
 
-    async def _create_memory_embedding(self, content: str) -> List[float]:
+    async def _get_query_embedding(self, query: str) -> List[float]:
         """Create embedding for memory content."""
-        res: EmbeddingResponse = await self.lm.embedding(input=[content])
+        res: EmbeddingResponse = await self.lm.embedding(input=[query])
         return res.data[0]["embedding"]
+
+    async def _get_semantic_fact_embeddings(self, fact: SemanticFact, metadata: MessageDigest) -> List[List[float]]:
+        """Create embedding for semantic fact and metadata."""
+        res: EmbeddingResponse = await self.lm.embedding(
+            input=[fact.text, metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
+        )
+        return [data["embedding"] for data in res.data]
 
     async def _extract_semantic_fact_from_messages(
         self, messages: List[Message], memory_message: str = ""

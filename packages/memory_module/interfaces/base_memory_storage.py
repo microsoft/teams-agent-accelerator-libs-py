@@ -7,6 +7,8 @@ from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTerm
 class BaseMemoryStorage(ABC):
     """Base class for the storage component."""
 
+    default_limit = 3
+
     @abstractmethod
     async def store_memory(
         self,
@@ -20,6 +22,11 @@ class BaseMemoryStorage(ABC):
             memory: The Memory object to store
             embedding_vector: Optional embedding vector for the memory
         """
+        pass
+
+    @abstractmethod
+    async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vector: List[float]) -> None:
+        """replace an existing memory with new extracted fact and embedding"""
         pass
 
     @abstractmethod
