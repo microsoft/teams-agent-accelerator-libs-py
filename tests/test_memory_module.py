@@ -140,7 +140,6 @@ async def test_simple_conversation(memory_module):
     for message in messages:
         await memory_module.add_message(message)
 
-    # wait a bit b
     async for attempt in AsyncRetrying(wait=wait_exponential(multiplier=1, min=1, max=5)):
         with attempt:
             stored_memories = await memory_module.memory_core.storage.get_all_memories()
