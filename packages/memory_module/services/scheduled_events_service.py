@@ -10,6 +10,7 @@ from memory_module.interfaces.base_scheduled_events_service import (
 )
 from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
 from memory_module.storage.sqlite_scheduled_events_storage import SQLiteScheduledEventsStorage
+from packages.memory_module.storage.in_memory_storage import InMemoryStorage
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,9 @@ class ScheduledEventsService(BaseScheduledEventsService):
         """
         self._callback_func: Optional[Callable[[str, Any, datetime], Awaitable[None]]] = None
         self._tasks: Dict[str, asyncio.Task] = {}
-        self.storage = storage or SQLiteScheduledEventsStorage(db_path=config.db_path)
-
+        self.storage = storage or (SQLiteScheduledEventsStorage(db_path=config.db_path)
+                                   if config.db_path is not None
+                                   else InMemoryStorage())
     @property
     def callback(self) -> Optional[Callable[[str, Any, datetime], Awaitable[None]]]:
         return self._callback_func

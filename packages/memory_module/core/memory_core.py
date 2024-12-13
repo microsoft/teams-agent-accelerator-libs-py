@@ -1,6 +1,6 @@
 from typing import List, Literal, Optional
 
-from litellm import EmbeddingResponse
+from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field
 
 from memory_module.config import MemoryModuleConfig
@@ -8,6 +8,8 @@ from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.types import EmbedText, Memory, MemoryType, Message, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
+from packages.memory_module.interfaces.base_memory_storage import BaseMemoryStorage
+from packages.memory_module.storage.in_memory_storage import InMemoryStorage
 
 
 class MessageDigest(BaseModel):
@@ -60,7 +62,7 @@ class MemoryCore(BaseMemoryCore):
         self,
         config: MemoryModuleConfig,
         llm_service: LLMService,
-        storage: Optional[SQLiteMemoryStorage] = None,
+        storage: Optional[BaseMemoryStorage] = None,
     ):
         """Initialize the memory core.
 
@@ -70,7 +72,9 @@ class MemoryCore(BaseMemoryCore):
             storage: Optional storage implementation for memory persistence
         """
         self.lm = llm_service
-        self.storage = storage or SQLiteMemoryStorage(db_path=config.db_path)
+        self.storage = storage or (SQLiteMemoryStorage(db_path=config.db_path)
+                                   if config.db_path is not None
+                                   else InMemoryStorage())
 
     async def process_semantic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
@@ -86,9 +90,8 @@ class MemoryCore(BaseMemoryCore):
                         message_attributions=[message.id],
                         memory_type=MemoryType.SEMANTIC,
                     )
-                    embedResponse = await self.lm.embedding([fact.text])
-                    embed_vector = embedResponse.data[0]["embedding"]
-                    await self.storage.store_memory(memory, embedding_vector=embed_vector)
+                    embedding_vector = await self._create_memory_embedding(fact.text)
+                    await self.storage.store_memory(memory, embedding_vector=embedding_vector)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into episodic memories (specific events, experiences)."""
