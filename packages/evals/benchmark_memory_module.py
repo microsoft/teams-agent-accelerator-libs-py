@@ -13,7 +13,6 @@ import pandas as pd
 from tqdm import tqdm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
 from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.core.memory_module import MemoryModule, Message
@@ -80,7 +79,7 @@ def run_benchmark(
     # prepare dataset
     inputs = dataset["data"]
     df = pd.DataFrame({"inputs": inputs})
-    dataset_name = f"{dataset['title']} v{dataset['description']}"
+    dataset_name = f"{dataset['title']} v{dataset['version']}"
     dataset = mlflow.data.pandas_dataset.from_pandas(df, name=dataset_name)
 
     # benchmark function

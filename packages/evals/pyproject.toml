@@ -1,0 +1,16 @@
+[project]
+name = "evals"
+version = "0.1.0"
+description = "Benchmarks for the different components"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false
+dev-dependencies = [
+    "pandas",
+    "mlflow>=2.17.2",
+    "tqdm>=4.66.5",
+    "databricks-sdk",
+]

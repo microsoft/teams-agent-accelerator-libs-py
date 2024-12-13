@@ -9,6 +9,7 @@ resolution-markers = [
 members = [
     "agent-runtime",
     "customer-service-agent-sample",
+    "evals",
     "memory-module",
     "teams-memory-agents",
 ]
@@ -620,6 +621,29 @@ name = "emoji"
 version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/68/8a/b08dd0b946f0843cba782e3784cd979c33f144e5e7c37fb0162dc47acd43/emoji-1.7.0.tar.gz", hash = "sha256:65c54533ea3c78f30d0729288998715f418d7467de89ec258a31c0ce8660a1d1", size = 175436 }
+
+[[package]]
+name = "evals"
+version = "0.1.0"
+source = { virtual = "packages/evals" }
+
+[package.dev-dependencies]
+dev = [
+    { name = "databricks-sdk" },
+    { name = "mlflow" },
+    { name = "pandas" },
+    { name = "tqdm" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "databricks-sdk" },
+    { name = "mlflow", specifier = ">=2.17.2" },
+    { name = "pandas" },
+    { name = "tqdm", specifier = ">=4.66.5" },
+]
 
 [[package]]
 name = "filelock"
