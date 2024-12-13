@@ -42,16 +42,16 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         sorted_memories = [
             {
                 "id": value.id,
-                "score": self._cosine_similarity(embedText.embedding_vector, self.storage["embeddings"][value.id])
+                "distance": self._cosine_similarity(embedText.embedding_vector, self.storage["embeddings"][value.id])
             } for key, value in self.storage.items()]
-        sorted_memories = sorted(sorted_memories, key = lambda x:x["score"], reverse=True)[:limit]
-        return [self.storage[item["id"]] for item in sorted_memories]
+        sorted_memories = sorted(sorted_memories, key = lambda x:x["distance"], reverse=True)[:limit]
+        return [Memory(**{**self.storage[item["id"]], **item}) for item in sorted_memories]
 
     def _cosine_similarity(self, memory_vector: List[float], query_vector: List[float]) -> float:
         return np.dot(np.array(query_vector), np.array(memory_vector))
 
     async def clear_memories(self, user_id: str) -> None:
-        for key, value in self.storage.items():
+        for _key, value in self.storage.items():
             if value.user_id == user_id:
                 self.storage.pop(value.id)
 

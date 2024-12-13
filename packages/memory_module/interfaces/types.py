@@ -44,6 +44,7 @@ class Memory(BaseModel):
     memory_type: MemoryType
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default_factory=list)
+    distance: Optional[float] = None
 
 class EmbedText(BaseModel):
     text: str
