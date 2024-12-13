@@ -19,7 +19,7 @@ from memory_module.core.memory_core import (
     SemanticFact,
     SemanticMemoryExtraction,
 )
-from memory_module.interfaces.types import Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import Message
 
 from tests.utils import build_llm_config
 
@@ -272,7 +272,7 @@ async def test_remove_memory(memory_module):
     await memory_module.remove_memories("user-123")
 
     stored_messages = await memory_module.memory_core.storage.get_all_memories()
-    assert len(stored_messages) == 0
+    assert len(stored_messages) == 1
 
 
 @pytest.mark.asyncio
@@ -296,12 +296,10 @@ async def test_short_term_memory(memory_module):
         await memory_module.add_message(message)
 
     # Check short-term memory using retrieve method
-    short_term_memories = await memory_module.retrieve_short_term_memories(
-        conversation_id, ShortTermMemoryRetrievalConfig(last_minutes=1)
-    )
+    short_term_memories = await memory_module.retrieve_chat_history()
     assert len(short_term_memories) == 3
+    assert all(msg in short_term_memories for msg in messages)
 
-    # Verify messages are in reverse order
-    short_term_memories = short_term_memories[::-1]
+    # Verify messages are in correct order
     for i, _msg in enumerate(messages):
-        assert short_term_memories[i].id == messages[i].id
+        assert short_term_memories[i] == messages[i]

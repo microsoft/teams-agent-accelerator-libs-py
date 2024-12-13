@@ -1,3 +1,4 @@
+import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional
 
@@ -85,7 +86,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         """
         await self.delete_event(id)
 
-    async def retrieve_short_term_memories(
+    async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
@@ -97,7 +98,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         if config.n_messages is not None:
             messages = conversation_messages[-config.n_messages :]
         elif config.last_minutes is not None:
-            current_time = ...  # Get the current time
+            current_time = datetime.now()
             messages = [
                 msg
                 for msg in conversation_messages

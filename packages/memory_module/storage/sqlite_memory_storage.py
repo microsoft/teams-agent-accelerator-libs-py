@@ -302,7 +302,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 ),
             )
 
-    async def retrieve_short_term_memories(
+    async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""

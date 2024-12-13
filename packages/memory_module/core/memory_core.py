@@ -249,8 +249,8 @@ Here are the incoming messages:
     async def add_short_term_memory(self, message: Message) -> None:
         await self.storage.store_short_term_memory(message)
 
-    async def retrieve_short_term_memories(
+    async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
-        return await self.storage.retrieve_short_term_memories(conversation_ref, config)
+        return await self.storage.retrieve_chat_history(conversation_ref, config)

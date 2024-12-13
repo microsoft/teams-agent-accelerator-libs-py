@@ -18,12 +18,7 @@ class BaseMemoryModule(ABC):
         pass
 
     @abstractmethod
-    async def remove_memories(self, user_id: str) -> None:
-        """Remove memories based on user id."""
-        pass
-
-    @abstractmethod
-    async def retrieve_short_term_memories(
+    async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
