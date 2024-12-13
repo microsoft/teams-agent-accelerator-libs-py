@@ -83,6 +83,8 @@ class MemoryCore(BaseMemoryCore):
 
             if extraction.action == "add" and extraction.interesting_facts:
                 for fact in extraction.interesting_facts:
+                    if await self._has_similar_memory_in_storage(fact.text, None):
+                        continue
                     memory = Memory(
                         content=fact.text,
                         created_at=message.created_at,
@@ -90,9 +92,8 @@ class MemoryCore(BaseMemoryCore):
                         message_attributions=[message.id],
                         memory_type=MemoryType.SEMANTIC,
                     )
-                    embedResponse = await self.lm.embedding([fact.text])
-                    embed_vector = embedResponse.data[0]["embedding"]
-                    await self.storage.store_memory(memory, embedding_vector=embed_vector)
+                    embedding_vector = await self._create_memory_embedding(fact.text)
+                    await self.storage.store_memory(memory, embedding_vector=embedding_vector)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into episodic memories (specific events, experiences)."""
@@ -117,6 +118,10 @@ class MemoryCore(BaseMemoryCore):
 
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
+
+    async def _has_similar_memory_in_storage(self, fact: str, user_id: Optional[str] ) -> bool:
+        stored_memories = await self.retrieve(fact, user_id, 1)
+        return (stored_memories[0].distance or 0) > 0.99
 
     async def _extract_information_from_messages(self, messages: List[Message]) -> MessageDigest:
         """Extract meaningful information from messages using LLM.
