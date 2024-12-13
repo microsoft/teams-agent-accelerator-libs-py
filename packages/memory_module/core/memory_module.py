@@ -49,4 +49,3 @@ class MemoryModule(BaseMemoryModule):
     async def remove_memories(self, user_id: str) -> None:
         """Remove memories based on user id"""
         await self.memory_core.remove_memories(user_id)
-

@@ -187,6 +187,7 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
 
     assert extraction_called, "Episodic memory extraction should have been triggered by timeout"
 
+
 @pytest.mark.asyncio
 async def test_update_memory(memory_module):
     """Test memory update"""

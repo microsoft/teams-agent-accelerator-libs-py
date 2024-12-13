@@ -18,21 +18,12 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def retrieve(
-        self,
-        query: str,
-        user_id: Optional[str],
-        limit: Optional[int]
-    ) -> List[Memory]:
+    async def retrieve(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve memories based on a query."""
         pass
 
     @abstractmethod
-    async def update(
-        self,
-        memory_id: str,
-        updateMemory: str
-    ) -> None:
+    async def update(self, memory_id: str, updateMemory: str) -> None:
         """update memeory with new fact"""
         pass
 

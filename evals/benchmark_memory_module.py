@@ -1,11 +1,11 @@
-from datetime import datetime
+import asyncio
 import os
-from pathlib import Path
 import sys
+import uuid
+from datetime import datetime
+from pathlib import Path
 from typing import List
 
-import asyncio
-import uuid
 import click
 import mlflow
 import mlflow.data.pandas_dataset
@@ -15,19 +15,21 @@ from tqdm import tqdm
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
-from evals.metrics import string_check_metric
 from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.core.memory_module import MemoryModule, Message
-from evals.helpers import DatasetItem, setup_mlflow, Dataset, load_dataset
+
+from evals.helpers import Dataset, DatasetItem, load_dataset, setup_mlflow
+from evals.metrics import string_check_metric
 
 setup_mlflow(experiment_name="memory_module")
 
+
 class MemoryModuleManager:
-    def __init__(self, buffer_size = 5):
+    def __init__(self, buffer_size=5):
         self._buffer_size = buffer_size
         self._memory_module: MemoryModule = None
         self._db_path = Path(__file__).parent / "data" / f"memory_{uuid.uuid4().hex}.db"
-    
+
     def __enter__(self):
         # Create memory module
         llm = LLMConfig(
@@ -35,19 +37,16 @@ class MemoryModuleManager:
             embedding_model="text-embedding-3-small",
             api_key=os.getenv("OPENAI_API_KEY"),
         )
-        config = MemoryModuleConfig(
-            db_path=self._db_path,
-            buffer_size=self._buffer_size,
-            llm=llm
-        )
-        
+        config = MemoryModuleConfig(db_path=self._db_path, buffer_size=self._buffer_size, llm=llm)
+
         self._memory_module = MemoryModule(config=config)
         return self._memory_module
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         # Destroy memory module
         # TODO: Destroy database
         del self._memory_module
+
 
 async def add_messages(memory_module: MemoryModule, messages: List[dict]):
     def create_message(**kwargs):
@@ -60,11 +59,12 @@ async def add_messages(memory_module: MemoryModule, messages: List[dict]):
             created_at=datetime.now(),
             conversation_ref="conversation_ref",
         )
-    
+
     for message in messages:
-        is_assistant_message = message['role'] == "assistant"
-        msg = create_message(content=message['content'], is_assistant_message=is_assistant_message)
+        is_assistant_message = message["role"] == "assistant"
+        msg = create_message(content=message["content"], is_assistant_message=is_assistant_message)
         await memory_module.add_message(msg)
+
 
 def run_benchmark(
     name: str,
@@ -73,21 +73,21 @@ def run_benchmark(
 ):
     if not name:
         name = "memory module benchmark"
-    
+
     if run_one:
-        dataset.data = dataset['data'][0:1]
-    
+        dataset.data = dataset["data"][0:1]
+
     # prepare dataset
-    inputs = dataset['data']
+    inputs = dataset["data"]
     df = pd.DataFrame({"inputs": inputs})
     dataset_name = f"{dataset['title']} v{dataset['description']}"
     dataset = mlflow.data.pandas_dataset.from_pandas(df, name=dataset_name)
 
     # benchmark function
     async def benchmark_memory_module(input: DatasetItem):
-        session = input['session']
-        query = input['query']
-        expected_strings_in_memories = input['expected_strings_in_memories']
+        session = input["session"]
+        query = input["query"]
+        expected_strings_in_memories = input["expected_strings_in_memories"]
 
         # buffer size has to be the same as the session length to trigger sm processing
         with MemoryModuleManager(buffer_size=len(session)) as memory_module:
@@ -111,9 +111,7 @@ def run_benchmark(
 
         return pd.DataFrame(
             {
-                "predictions": [
-                    {"memories": result["output"]} for result in results
-                ],
+                "predictions": [{"memories": result["output"]} for result in results],
             }
         )
 

@@ -8,6 +8,7 @@ import sqlite_vec
 
 logger = logging.getLogger(__name__)
 
+
 class MigrationManager:
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -28,15 +29,11 @@ class MigrationManager:
                 if filename.endswith(".sql"):
                     migration_name = os.path.splitext(filename)[0]
                     if migration_name not in applied_migrations:
-                        logger.info(
-                            "Migrations", f"Applying migration: {migration_name}"
-                        )
+                        logger.info("Migrations", f"Applying migration: {migration_name}")
                         with open(os.path.join(migrations_dir, filename), "r") as f:
                             sql = f.read()
                         self.__apply_migration(conn, migration_name, sql)
-                        logger.info(
-                            "Migrations", f"Migration applied: {migration_name}"
-                        )
+                        logger.info("Migrations", f"Migration applied: {migration_name}")
 
     # Changed to double underscore for true private methods
     @contextmanager
@@ -69,15 +66,11 @@ class MigrationManager:
 
     def __apply_migration(self, conn, migration_name: str, sql: str):
         conn.executescript(sql)
-        conn.execute(
-            "INSERT INTO migrations (migration_name) VALUES (?)", (migration_name,)
-        )
+        conn.execute("INSERT INTO migrations (migration_name) VALUES (?)", (migration_name,))
 
     def get_last_applied_migration(self) -> Tuple[int, str]:
         with self.__get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT id, migration_name FROM migrations ORDER BY id DESC LIMIT 1"
-            )
+            cursor = conn.execute("SELECT id, migration_name FROM migrations ORDER BY id DESC LIMIT 1")
             result = cursor.fetchone()
             return result if result else (0, "No migrations applied")
 
