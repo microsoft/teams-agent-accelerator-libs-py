@@ -66,6 +66,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         return memory_id
 
     async def update_memory(self, memory: Memory, *, embedding_vector: List[float]) -> None:
+    async def update_memory(self, memory: Memory, *, embedding_vector: List[float]) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         serialized_embeddings = [
             sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
