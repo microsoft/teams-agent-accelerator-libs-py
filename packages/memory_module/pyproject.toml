@@ -14,3 +14,6 @@ dependencies = [
     "litellm==1.54.1",
 ]
 
+[tool.uv]
+dev-dependencies = []
+

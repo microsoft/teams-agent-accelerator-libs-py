@@ -24,9 +24,9 @@ class MessageBuffer:
         self.buffer_size = config.buffer_size
         self.timeout_seconds = config.timeout_seconds
         self._process_callback = process_callback
-        self.storage = storage or (SQLiteMessageBufferStorage(db_path=config.db_path)
-                                   if config.db_path is not None
-                                   else InMemoryStorage())
+        self.storage = storage or (
+            SQLiteMessageBufferStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
+        )
         self.scheduler = scheduler or ScheduledEventsService(config=config)
         self.scheduler.callback = self._handle_timeout
 
@@ -82,3 +82,7 @@ class MessageBuffer:
         if count >= self.buffer_size:
             await self._process_conversation_messages(message.conversation_ref)
             await self.scheduler.cancel_event(message.conversation_ref)
+
+    async def flush(self) -> None:
+        """Flush all messages from the buffer."""
+        await self.scheduler.flush()

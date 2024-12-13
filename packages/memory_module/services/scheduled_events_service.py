@@ -31,9 +31,28 @@ class ScheduledEventsService(BaseScheduledEventsService):
         """
         self._callback_func: Optional[Callable[[str, Any, datetime], Awaitable[None]]] = None
         self._tasks: Dict[str, asyncio.Task] = {}
-        self.storage = storage or (SQLiteScheduledEventsStorage(db_path=config.db_path)
-                                   if config.db_path is not None
-                                   else InMemoryStorage())
+        self.storage = storage or (
+            SQLiteScheduledEventsStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
+        )
+
+        self._initialize_tasks()
+
+    def _initialize_tasks(self) -> None:
+        """Asynchronously initialize tasks from storage."""
+
+        async def initialize_tasks_async():
+            events = await self.storage.get_all_events()
+            for event in events:
+                await self._create_task(event)
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        loop.create_task(initialize_tasks_async())
+
     @property
     def callback(self) -> Optional[Callable[[str, Any, datetime], Awaitable[None]]]:
         return self._callback_func
@@ -59,14 +78,18 @@ class ScheduledEventsService(BaseScheduledEventsService):
         # Store in persistent storage
         await self.storage.store_event(event)
 
+        await self._create_task(event)
+
+    async def _create_task(self, event: Event) -> None:
+        """Create a new task for the event."""
         # Calculate delay
         now = datetime.now()
-        delay = (time - now).total_seconds()
+        delay = (event.time - now).total_seconds()
         if delay < 0:
             delay = 0
 
         # Create and store new task
-        self._tasks[id] = asyncio.create_task(self._schedule_event(event, delay), name=id)
+        self._tasks[event.id] = asyncio.create_task(self._schedule_event(event, delay), name=event.id)
 
     async def _schedule_event(self, event: Event, delay: float) -> None:
         """Internal method to handle the scheduling and execution of an event."""
@@ -112,3 +135,15 @@ class ScheduledEventsService(BaseScheduledEventsService):
                 self._tasks.clear()
             except Exception as e:
                 logger.error("Error cleaning up scheduled events: %s", str(e))
+
+    async def flush(self) -> None:
+        """Flush all events from the storage. Process all immediately."""
+        # cancel all the tasks and
+        for task in self._tasks.values():
+            task.cancel()
+        self._tasks.clear()
+
+        # get all the events from storage and create tasks for them
+        events = await self.storage.get_all_events()
+        for event in events:
+            await self._callback_func(event.id, event.object, event.time)

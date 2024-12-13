@@ -41,11 +41,15 @@ class MemoryModule(BaseMemoryModule):
 
     async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
-        return await self.memory_core.retrieve(query, user_id, limit)
+        return await self.memory_core.retrieve_memories(query, user_id, limit)
 
     async def update_memory(self, memory_id: str, updated_memory: str) -> None:
         """Update memory with new fact"""
         return await self.memory_core.update_memory(memory_id, updated_memory)
+
+    async def remove_memories(self, user_id: str) -> None:
+        """Remove memories based on user id."""
+        return await self.memory_core.remove_memories(user_id)
 
     async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig

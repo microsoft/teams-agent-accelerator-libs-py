@@ -10,7 +10,6 @@ from memory_module.interfaces.base_message_buffer_storage import (
 from memory_module.interfaces.base_scheduled_events_service import Event
 from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
 from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
-from memory_module.services.llm_service import LLMService
 
 
 class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage):
@@ -30,23 +29,23 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self.storage[memory.id] = memory
         self.storage["embeddings"][memory.id] = embedding_vector
 
-    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector:List[float]) -> None:
+    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector: List[float]) -> None:
         if memory_id in self.storage:
             self.storage[memory_id].content = updateMemory
             self.storage["embeddings"][memory_id] = embedding_vector
 
     async def retrieve_memories(
-        self,
-        embedText: EmbedText,
-        user_id: Optional[str],
-        limit: Optional[int] = None) -> List[Memory]:
+        self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
+    ) -> List[Memory]:
         limit = limit or self.default_limit
         sorted_memories = [
             {
                 "id": value.id,
-                "distance": self._cosine_similarity(embedText.embedding_vector, self.storage["embeddings"][value.id])
-            } for key, value in self.storage.items()]
-        sorted_memories = sorted(sorted_memories, key = lambda x:x["distance"], reverse=True)[:limit]
+                "distance": self._cosine_similarity(embedText.embedding_vector, self.storage["embeddings"][value.id]),
+            }
+            for key, value in self.storage.items()
+        ]
+        sorted_memories = sorted(sorted_memories, key=lambda x: x["distance"], reverse=True)[:limit]
         return [Memory(**{**self.storage[item["id"]], **item}) for item in sorted_memories]
 
     def _cosine_similarity(self, memory_vector: List[float], query_vector: List[float]) -> float:

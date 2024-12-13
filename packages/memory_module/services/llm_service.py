@@ -60,7 +60,7 @@ class LLMService:
             raise ValueError("No LM model provided.")
 
         # TODO: This is hacky. Fix it later.
-        client = instructor.apatch(
+        client = instructor.patch(
             litellm.Router(
                 model_list=[
                     {
