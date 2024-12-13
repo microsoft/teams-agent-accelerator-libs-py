@@ -108,7 +108,7 @@ class MemoryCore(BaseMemoryCore):
 
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
-                metadata = await self._extract_metadata_from_fact(fact)
+                metadata = await self._extract_metadata_from_fact(fact.text)
                 message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
                 memory = Memory(
                     content=fact.text,
@@ -117,7 +117,7 @@ class MemoryCore(BaseMemoryCore):
                     message_attributions=message_ids,
                     memory_type=MemoryType.SEMANTIC,
                 )
-                embed_vectors = await self._get_semantic_fact_embeddings(fact, metadata)
+                embed_vectors = await self._get_semantic_fact_embeddings(fact.text, metadata)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
@@ -133,18 +133,18 @@ class MemoryCore(BaseMemoryCore):
         2. Find relevant memories
         3. Possibly rerank or filter results
         """
-        embedText = EmbedText(text=query, embedding_vector=await self._create_memory_embedding(query))
+        embedText = EmbedText(text=query, embedding_vector=await self._get_query_embedding(query))
         return await self.storage.retrieve_memories(embedText, user_id, limit)
 
-    async def update(self, memory_id: str, updateMemory: str) -> None:
-        embedResponse = await self.lm.embedding([updateMemory])
-        embed_vector = embedResponse.data[0]["embedding"]
-        await self.storage.update_memory(memory_id, updateMemory, embedding_vector=embed_vector)
+    async def update_memory(self, memory_id: str, updated_memory: str) -> None:
+        metadata = await self._extract_metadata_from_fact(updated_memory)
+        embed_vectors = await self._get_semantic_fact_embeddings(updated_memory, metadata)
+        await self.storage.update_memory(memory_id, updated_memory, embedding_vectors=embed_vectors)
 
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
 
-    async def _extract_metadata_from_fact(self, fact: SemanticFact) -> MessageDigest:
+    async def _extract_metadata_from_fact(self, fact: str) -> MessageDigest:
         """Extract meaningful information from messages using LLM.
 
         Args:
@@ -159,7 +159,7 @@ class MemoryCore(BaseMemoryCore):
                     "role": "system",
                     "content": "Your role is to rephrase the text in your own words and provide a summary of the text.",
                 },
-                {"role": "user", "content": fact.text},
+                {"role": "user", "content": fact},
             ],
             response_model=MessageDigest,
         )
@@ -169,10 +169,10 @@ class MemoryCore(BaseMemoryCore):
         res: EmbeddingResponse = await self.lm.embedding(input=[query])
         return res.data[0]["embedding"]
 
-    async def _get_semantic_fact_embeddings(self, fact: SemanticFact, metadata: MessageDigest) -> List[List[float]]:
+    async def _get_semantic_fact_embeddings(self, fact: str, metadata: MessageDigest) -> List[List[float]]:
         """Create embedding for semantic fact and metadata."""
         res: EmbeddingResponse = await self.lm.embedding(
-            input=[fact.text, metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
+            input=[fact, metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
         )
         return [data["embedding"] for data in res.data]
 

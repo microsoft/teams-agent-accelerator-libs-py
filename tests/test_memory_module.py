@@ -11,7 +11,6 @@ from tenacity import AsyncRetrying, wait_exponential
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from memory_module import MemoryModule
 from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import (
     EpisodicMemoryExtraction,
@@ -19,7 +18,8 @@ from memory_module.core.memory_core import (
     SemanticFact,
     SemanticMemoryExtraction,
 )
-from memory_module.interfaces.types import Message
+from memory_module.core.memory_module import MemoryModule
+from memory_module.interfaces.types import Message, ShortTermMemoryRetrievalConfig
 
 from tests.utils import build_llm_config
 
@@ -243,7 +243,7 @@ async def test_update_memory(memory_module):
             stored_memories = await memory_module.memory_core.storage.get_all_memories()
             assert len(stored_memories) >= 1
 
-    await memory_module.update_memories(1, "The user like San Diego city")
+    await memory_module.update_memory(1, "The user like San Diego city")
     updated_message = await memory_module.memory_core.storage.get_memory(1)
     assert "San Diego" in updated_message.content
 
@@ -272,7 +272,7 @@ async def test_remove_memory(memory_module):
     await memory_module.remove_memories("user-123")
 
     stored_messages = await memory_module.memory_core.storage.get_all_memories()
-    assert len(stored_messages) == 1
+    assert len(stored_messages) == 0
 
 
 @pytest.mark.asyncio
@@ -296,10 +296,13 @@ async def test_short_term_memory(memory_module):
         await memory_module.add_message(message)
 
     # Check short-term memory using retrieve method
-    short_term_memories = await memory_module.retrieve_chat_history()
-    assert len(short_term_memories) == 3
-    assert all(msg in short_term_memories for msg in messages)
+    chat_history_messages = await memory_module.retrieve_chat_history(
+        conversation_id, ShortTermMemoryRetrievalConfig(last_minutes=1)
+    )
+    assert len(chat_history_messages) == 3
+    assert all(msg in chat_history_messages for msg in messages)
 
-    # Verify messages are in correct order
-    for i, _msg in enumerate(messages):
-        assert short_term_memories[i] == messages[i]
+    # Verify messages are in reverse order
+    reversed_messages = messages[::-1]
+    for i, _msg in enumerate(reversed_messages):
+        assert chat_history_messages[i].id == reversed_messages[i].id
