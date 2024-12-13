@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import sqlite_vec
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
-from memory_module.interfaces.types import EmbedText, Memory
+from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
 from memory_module.storage.sqlite_storage import SQLiteStorage
 
 logger = logging.getLogger(__name__)
@@ -61,12 +61,8 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         return memory_id
 
     async def insert_memory_to_existing_record(
-            self,
-            memory_id: str,
-            memory: Memory,
-            *,
-            embedding_vector: List[float]
-        ) -> None:
+        self, memory_id: str, memory: Memory, *, embedding_vector: List[float]
+    ) -> None:
         """Once an async memory extraction process is done, update it with extracted fact and insert embedding"""
         serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
 
@@ -76,7 +72,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 """UPDATE memories
                     SET content = ?
                     WHERE id = ?""",
-                (memory.content, memory_id)
+                (memory.content, memory_id),
             )
 
             # Store embedding in embeddings table
@@ -92,41 +88,38 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 (embedding_id, serialized_embedding),
             )
 
-    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector:List[float]) -> None:
+    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector: List[float]) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
 
         async with self.storage.transaction() as cursor:
             # Update the memory content
-            await cursor.execute(
-                "UPDATE memories SET content = ? WHERE id = ?",
-                (updateMemory, memory_id)
-            )
+            await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (updateMemory, memory_id))
 
             # Update embedding in embeddings table
             await cursor.execute(
                 "UPDATE embeddings SET embedding = ? WHERE memory_id = ?",
-                (serialized_embedding, memory_id,),
+                (
+                    serialized_embedding,
+                    memory_id,
+                ),
             )
-            await cursor.execute(
-                "SELECT id FROM embeddings WHERE memory_id = ?",
-                (memory_id,)
-            )
+            await cursor.execute("SELECT id FROM embeddings WHERE memory_id = ?", (memory_id,))
 
             embedding_id = await cursor.fetchone()
-
 
             # Update in vec_items table
             await cursor.execute(
                 "UPDATE vec_items SET embedding = ? WHERE memory_embedding_id = ?",
-                (serialized_embedding, embedding_id[0], ),
+                (
+                    serialized_embedding,
+                    embedding_id[0],
+                ),
             )
 
     async def retrieve_memories(
-            self,
-            embedText: EmbedText,
-            user_id: Optional[str],
-            limit: Optional[int] = None) -> List[Memory]:
+        self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
+    ) -> List[Memory]:
         """Retrieve memories based on a query."""
         query = """
             WITH ranked_memories AS (
@@ -175,9 +168,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 }
 
             if row["message_id"]:
-                memories_dict[memory_id]["message_attributions"].append(
-                    row["message_id"]
-                )
+                memories_dict[memory_id]["message_attributions"].append(row["message_id"])
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
 
@@ -199,22 +190,21 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         async with self.storage.transaction() as cursor:
             await cursor.execute(
                 f"DELETE FROM vec_items WHERE memory_embedding_id in ({",".join(["?"]*len(embed_id_list))})",
-                tuple(embed_id_list)
+                tuple(embed_id_list),
             )
 
             await cursor.execute(
                 f"DELETE FROM embeddings WHERE memory_id in ({",".join(["?"]*len(memory_id_list))})",
-                tuple(memory_id_list)
+                tuple(memory_id_list),
             )
 
             await cursor.execute(
                 f"DELETE FROM memory_attributions WHERE memory_id in ({",".join(["?"]*len(memory_id_list))})",
-                tuple(memory_id_list)
+                tuple(memory_id_list),
             )
 
             await cursor.execute(
-                f"DELETE FROM memories WHERE id in ({",".join(["?"]*len(memory_id_list))})",
-                tuple(memory_id_list)
+                f"DELETE FROM memories WHERE id in ({",".join(["?"]*len(memory_id_list))})", tuple(memory_id_list)
             )
 
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
@@ -290,3 +280,38 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 memories_dict[memory_id]["message_attributions"].append(row["message_id"])
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
+
+    async def store_short_term_memory(self, message: Message) -> None:
+        """Store a short-term memory entry."""
+        async with self.storage.transaction() as cursor:
+            await cursor.execute(
+                """INSERT INTO messages (id, content, author_id, conversation_ref, created_at, is_assistant_message)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    message.id,
+                    message.content,
+                    message.author_id,
+                    message.conversation_ref,
+                    message.created_at,
+                    message.is_assistant_message,
+                ),
+            )
+
+    async def retrieve_chat_history(
+        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    ) -> List[Message]:
+        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
+        query = "SELECT * FROM messages WHERE conversation_ref = ?"
+        params = [conversation_ref]
+
+        if "n_messages" in config and config["n_messages"] is not None:
+            query += " ORDER BY created_at DESC LIMIT ?"
+            params.append(config["n_messages"])
+
+        if "last_minutes" in config and config["last_minutes"] is not None:
+            query += " AND created_at >= datetime('now', ?) ORDER BY created_at DESC"
+            params.append(f"-{config['last_minutes']} minutes")
+
+        rows = await self.storage.fetch_all(query, params)
+
+        return [Message(**row) for row in rows][::-1]

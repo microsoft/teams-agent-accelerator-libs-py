@@ -1,8 +1,9 @@
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class User(BaseModel):
@@ -18,9 +19,10 @@ class Message(BaseModel):
 
     id: str
     content: str
-    author_id: str
+    author_id: Optional[str]
     conversation_ref: str
     created_at: datetime
+    is_assistant_message: bool = False
 
 
 class MemoryAttribution(BaseModel):
@@ -45,6 +47,18 @@ class Memory(BaseModel):
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default_factory=list)
 
+
 class EmbedText(BaseModel):
     text: str
     embedding_vector: List[float]
+
+
+class ShortTermMemoryRetrievalConfig(BaseModel):
+    n_messages: Optional[int] = None  # Number of messages to retrieve
+    last_minutes: Optional[Decimal] = None  # Time frame in minutes
+
+    @model_validator(mode="after")
+    def check_parameters(self) -> "ShortTermMemoryRetrievalConfig":
+        if self.n_messages is None and self.last_minutes is None:
+            raise ValueError("Either n_messages or last_minutes must be provided")
+        return self
