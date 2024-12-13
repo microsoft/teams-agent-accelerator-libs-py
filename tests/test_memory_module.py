@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 def config():
     """Fixture to create test config."""
     llm_config = build_llm_config()
-    # if not llm_config.api_key:
-    #     pytest.skip("OpenAI API key not provided")
+    if not llm_config.api_key:
+        pytest.skip("OpenAI API key not provided")
     return MemoryModuleConfig(
         db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
         buffer_size=5,
