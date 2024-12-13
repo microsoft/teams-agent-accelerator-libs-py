@@ -38,7 +38,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         embedText: EmbedText,
         user_id: Optional[str],
         limit: Optional[int] = None) -> List[Memory]:
-        limit = limit or 3
+        limit = limit or self.default_limit
         sorted_memories = [
             {
                 "id": value.id,

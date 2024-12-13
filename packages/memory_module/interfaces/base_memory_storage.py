@@ -6,7 +6,7 @@ from memory_module.interfaces.types import EmbedText, Memory
 
 class BaseMemoryStorage(ABC):
     """Base class for the storage component."""
-
+    default_limit = 3
     @abstractmethod
     async def store_memory(
         self,

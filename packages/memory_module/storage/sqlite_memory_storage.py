@@ -156,7 +156,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             query,
             (
                 sqlite_vec.serialize_float32(embedText.embedding_vector),
-                limit or 3,
+                limit or self.default_limit,
                 1.0,
             ),
         )
