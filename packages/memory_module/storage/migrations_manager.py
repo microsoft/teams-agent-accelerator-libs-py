@@ -42,7 +42,7 @@ class MigrationManager:
             yield conn
 
     def __create_vector_search_table(self, conn):
-        print("Creating vector search table", self.db_path)
+        logger.info("Creating vector search table", self.db_path)
         conn.enable_load_extension(True)
         sqlite_vec.load(conn)
         conn.enable_load_extension(False)

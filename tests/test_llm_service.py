@@ -15,8 +15,6 @@ from memory_module.services.llm_service import LLMService
 
 from .utils import EnvLLMConfig, get_env_llm_config
 
-litellm.set_verbose = True
-
 load_dotenv()
 
 
@@ -53,7 +51,7 @@ async def _return_arguments(**kwargs):
 def mock_completion(monkeypatch):
     client = mock.Mock()
     router = mock.Mock()
-    monkeypatch.setattr(instructor, "apatch", client)
+    monkeypatch.setattr(instructor, "patch", client)
     monkeypatch.setattr(litellm, "Router", router)
 
     return client, router

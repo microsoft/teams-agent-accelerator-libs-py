@@ -27,7 +27,7 @@ class MessageQueue(BaseMessageQueue):
         self.memory_core = memory_core
         self.message_buffer = MessageBuffer(
             config=config,
-            process_callback=self._process_for_episodic_messages,
+            process_callback=self._process_for_semantic_messages,
             storage=message_buffer_storage,
         )
 
@@ -39,7 +39,7 @@ class MessageQueue(BaseMessageQueue):
         processed immediately as semantic memories.
         """
         # Process message immediately for semantic memory
-        await self._process_for_semantic_messages([message])
+        # await self._process_for_semantic_messages([message])
 
         # Buffer message for episodic memory processing
         await self.message_buffer.add_message(message)

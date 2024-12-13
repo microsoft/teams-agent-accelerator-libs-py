@@ -6,13 +6,15 @@ from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTerm
 
 class BaseMemoryStorage(ABC):
     """Base class for the storage component."""
+
     default_limit = 3
+
     @abstractmethod
     async def store_memory(
         self,
         memory: Memory,
         *,
-        embedding_vector: List[float],
+        embedding_vector: List[List[float]],
     ) -> int | None:
         """Store a memory in the storage system.
 
@@ -23,16 +25,10 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def update_memory(
-        self,
-        memory_id: str,
-        updateMemory: str,
-        *,
-        embedding_vector:List[float]
-    ) -> None:
+    async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         pass
-      
+
     @abstractmethod
     async def store_short_term_memory(self, message: Message) -> None:
         """Store a short-term memory entry.
