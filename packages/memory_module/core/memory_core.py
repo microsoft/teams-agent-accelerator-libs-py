@@ -27,7 +27,8 @@ class MessageDigest(BaseModel):
         default_factory=list,
         min_length=2,
         max_length=5,
-        description="Hypothetical questions about this memory that someone might ask to query for it. These can range from very specific to very general.",
+        description="Hypothetical questions about this memory that someone might ask to query for it. "
+        "These can range from very specific to very general.",
     )
 
 
