@@ -17,7 +17,7 @@ def check_strings_in_retrieved_memories(expected_strings: List[str], actual_stri
 
     Args:
         expected_strings (List[str]): The list of strings to check in the retrieved memories
-        actual_strings (_type_): The strings to compare against the expected strings
+        actual_strings (Optional[List[str]]): The strings to compare against the expected strings
 
     Returns:
         bool: True if all expected strings are present in atleast one of the actual strings, False otherwise

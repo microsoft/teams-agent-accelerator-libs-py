@@ -16,7 +16,7 @@ def setup_mlflow(experiment_name: str):
     if env == "local":
         mlflow.set_tracking_uri("http://localhost:5000")
     else:
-        print("Using Remote Databricks")
+        logging.info("Using Remote Databricks")
         mlflow.set_tracking_uri("databricks://memorymodule-evals")
         mlflow.set_experiment(experiment_name)
     autolog()
