@@ -19,9 +19,11 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         self.db_path = db_path or DEFAULT_DB_PATH
         self.storage = SQLiteStorage(self.db_path)
 
-    async def store_memory(self, memory: Memory, *, embedding_vector: List[float]) -> int | None:
+    async def store_memory(self, memory: Memory, *, embedding_vectors: List[List[float]]) -> int | None:
         """Store a memory and its message attributions."""
-        serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
+        serialized_embeddings = [
+            sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
+        ]
 
         async with self.storage.transaction() as cursor:
             # Store the memory
@@ -47,16 +49,19 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 )
 
             # Store embedding in embeddings table
-            await cursor.execute(
+            await cursor.executemany(
                 "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-                (memory_id, serialized_embedding),
+                [(memory_id, serialized_embedding) for serialized_embedding in serialized_embeddings],
             )
-            embedding_id = cursor.lastrowid
 
-            # Store in vec_items table
             await cursor.execute(
-                "INSERT INTO vec_items (memory_embedding_id, embedding) VALUES (?, ?)",
-                (embedding_id, serialized_embedding),
+                """
+                INSERT INTO vec_items (memory_embedding_id, embedding)
+                SELECT id, embedding
+                FROM embeddings
+                WHERE memory_id = ?
+                """,
+                (memory_id,),
             )
         return memory_id
 

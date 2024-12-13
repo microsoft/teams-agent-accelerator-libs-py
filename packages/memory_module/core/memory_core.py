@@ -19,12 +19,14 @@ class MessageDigest(BaseModel):
     summary: str = Field(..., description="A summary of the message(s).")
     keywords: list[str] = Field(
         default_factory=list,
+        min_length=2,
+        max_length=5,
         description="Keywords that the message(s) is about. These can range from very specific to very general.",
     )
     hypothetical_questions: list[str] = Field(
         default_factory=list,
-        min_length=5,
-        max_length=8,
+        min_length=2,
+        max_length=5,
         description="Hypothetical questions about this memory that someone might ask to query for it. These can range from very specific to very general.",
     )
 

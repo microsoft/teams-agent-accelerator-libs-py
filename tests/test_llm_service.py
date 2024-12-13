@@ -15,8 +15,6 @@ from memory_module.services.llm_service import LLMService
 
 from .utils import EnvLLMConfig, get_env_llm_config
 
-litellm.set_verbose = True
-
 load_dotenv()
 
 

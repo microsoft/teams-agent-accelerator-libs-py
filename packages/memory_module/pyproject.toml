@@ -14,3 +14,8 @@ dependencies = [
     "litellm==1.54.1",
 ]
 
+[tool.uv]
+dev-dependencies = [
+    "tenacity>=9.0.0",
+]
+

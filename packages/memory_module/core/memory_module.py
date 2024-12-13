@@ -47,6 +47,10 @@ class MemoryModule(BaseMemoryModule):
         """Update memory with new fact"""
         return await self.memory_core.update(memory_id, updateMemory)
 
+    async def remove_memories(self, user_id: str) -> None:
+        """Remove memories based on user id."""
+        return await self.memory_core.remove_memories(user_id)
+
     async def retrieve_short_term_memories(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
     ) -> List[Message]:
