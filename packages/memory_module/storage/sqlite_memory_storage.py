@@ -65,61 +65,33 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
         return memory_id
 
-    async def insert_memory_to_existing_record(
-        self, memory_id: str, memory: Memory, *, embedding_vector: List[float]
-    ) -> None:
-        """Once an async memory extraction process is done, update it with extracted fact and insert embedding"""
-        serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
-
-        async with self.storage.transaction() as cursor:
-            # Update the memory content
-            await cursor.execute(
-                """UPDATE memories
-                    SET content = ?
-                    WHERE id = ?""",
-                (memory.content, memory_id),
-            )
-
-            # Store embedding in embeddings table
-            await cursor.execute(
-                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-                (memory_id, serialized_embedding),
-            )
-            embedding_id = cursor.lastrowid
-
-            # Store in vec_items table
-            await cursor.execute(
-                "INSERT INTO vec_items (memory_embedding_id, embedding) VALUES (?, ?)",
-                (embedding_id, serialized_embedding),
-            )
-
-    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector: List[float]) -> None:
+    async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
         """replace an existing memory with new extracted fact and embedding"""
-        serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
+        serialized_embeddings = [
+            sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
+        ]
 
         async with self.storage.transaction() as cursor:
             # Update the memory content
-            await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (updateMemory, memory_id))
+            await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (updated_memory, memory_id))
+
+            # remove all the embeddings for this memory
+            await cursor.execute("DELETE FROM embeddings WHERE memory_id = ?", (memory_id,))
 
             # Update embedding in embeddings table
-            await cursor.execute(
-                "UPDATE embeddings SET embedding = ? WHERE memory_id = ?",
-                (
-                    serialized_embedding,
-                    memory_id,
-                ),
+            await cursor.executemany(
+                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
+                [(memory_id, serialized_embedding) for serialized_embedding in serialized_embeddings],
             )
-            await cursor.execute("SELECT id FROM embeddings WHERE memory_id = ?", (memory_id,))
 
-            embedding_id = await cursor.fetchone()
-
-            # Update in vec_items table
             await cursor.execute(
-                "UPDATE vec_items SET embedding = ? WHERE memory_embedding_id = ?",
-                (
-                    serialized_embedding,
-                    embedding_id[0],
-                ),
+                """
+                INSERT INTO vec_items (memory_embedding_id, embedding)
+                SELECT id, embedding
+                FROM embeddings
+                WHERE memory_id = ?
+                """,
+                (memory_id,),
             )
 
     async def retrieve_memories(
@@ -142,7 +114,8 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 m.created_at,
                 m.user_id,
                 m.memory_type,
-                ma.message_id
+                ma.message_id,
+                rm.distance
             FROM ranked_memories rm
             JOIN memories m ON m.id = rm.memory_id
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
@@ -153,7 +126,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             query,
             (
                 sqlite_vec.serialize_float32(embedText.embedding_vector),
-                limit or 3,
+                limit or self.default_limit,
                 1.0,
             ),
         )
@@ -170,6 +143,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     "user_id": row["user_id"],
                     "memory_type": row["memory_type"],
                     "message_attributions": [],
+                    "distance": row["distance"],
                 }
 
             if row["message_id"]:
@@ -302,7 +276,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 ),
             )
 
-    async def retrieve_short_term_memories(
+    async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""

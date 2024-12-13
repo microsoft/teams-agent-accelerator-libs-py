@@ -2,7 +2,7 @@ import datetime
 import logging
 from typing import List, Literal, Optional
 
-from litellm import EmbeddingResponse
+from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field
 
 from memory_module.config import MemoryModuleConfig
@@ -10,6 +10,8 @@ from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.types import EmbedText, Memory, MemoryType, Message, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
+from packages.memory_module.interfaces.base_memory_storage import BaseMemoryStorage
+from packages.memory_module.storage.in_memory_storage import InMemoryStorage
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +21,16 @@ class MessageDigest(BaseModel):
     summary: str = Field(..., description="A summary of the message(s).")
     keywords: list[str] = Field(
         default_factory=list,
+        min_length=2,
+        max_length=5,
         description="Keywords that the message(s) is about. These can range from very specific to very general.",
     )
     hypothetical_questions: list[str] = Field(
         default_factory=list,
-        min_length=5,
-        max_length=8,
-        description="Hypothetical questions about this memory that someone might ask to query for it. These can range from very specific to very general.",
+        min_length=2,
+        max_length=5,
+        description="Hypothetical questions about this memory that someone might ask to query for it. "
+        "These can range from very specific to very general.",
     )
 
 
@@ -72,7 +77,7 @@ class MemoryCore(BaseMemoryCore):
         self,
         config: MemoryModuleConfig,
         llm_service: LLMService,
-        storage: Optional[SQLiteMemoryStorage] = None,
+        storage: Optional[BaseMemoryStorage] = None,
     ):
         """Initialize the memory core.
 
@@ -82,7 +87,9 @@ class MemoryCore(BaseMemoryCore):
             storage: Optional storage implementation for memory persistence
         """
         self.lm = llm_service
-        self.storage = storage or SQLiteMemoryStorage(db_path=config.db_path)
+        self.storage = storage or (
+            SQLiteMemoryStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
+        )
 
     async def process_semantic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
@@ -101,8 +108,7 @@ class MemoryCore(BaseMemoryCore):
 
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
-                metadata = await self._extract_metadata_from_fact(fact)
-                print(f"Extracted metadata: {metadata}")
+                metadata = await self._extract_metadata_from_fact(fact.text)
                 message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
                 memory = Memory(
                     content=fact.text,
@@ -111,10 +117,7 @@ class MemoryCore(BaseMemoryCore):
                     message_attributions=message_ids,
                     memory_type=MemoryType.SEMANTIC,
                 )
-                embedResponse = await self.lm.embedding(
-                    [fact.text, metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
-                )
-                embed_vectors = [data["embedding"] for data in embedResponse.data]
+                embed_vectors = await self._get_semantic_fact_embeddings(fact.text, metadata)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
@@ -122,7 +125,7 @@ class MemoryCore(BaseMemoryCore):
         # TODO: Implement episodic memory processing
         await self._extract_episodic_memory_from_messages(messages)
 
-    async def retrieve(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
+    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve memories based on a query.
 
         Steps:
@@ -130,18 +133,18 @@ class MemoryCore(BaseMemoryCore):
         2. Find relevant memories
         3. Possibly rerank or filter results
         """
-        embedText = EmbedText(text=query, embedding_vector=await self._create_memory_embedding(query))
+        embedText = EmbedText(text=query, embedding_vector=await self._get_query_embedding(query))
         return await self.storage.retrieve_memories(embedText, user_id, limit)
 
-    async def update(self, memory_id: str, updateMemory: str) -> None:
-        embedResponse = await self.lm.embedding([updateMemory])
-        embed_vector = embedResponse.data[0]["embedding"]
-        await self.storage.update_memory(memory_id, updateMemory, embedding_vector=embed_vector)
+    async def update_memory(self, memory_id: str, updated_memory: str) -> None:
+        metadata = await self._extract_metadata_from_fact(updated_memory)
+        embed_vectors = await self._get_semantic_fact_embeddings(updated_memory, metadata)
+        await self.storage.update_memory(memory_id, updated_memory, embedding_vectors=embed_vectors)
 
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
 
-    async def _extract_metadata_from_fact(self, fact: SemanticFact) -> MessageDigest:
+    async def _extract_metadata_from_fact(self, fact: str) -> MessageDigest:
         """Extract meaningful information from messages using LLM.
 
         Args:
@@ -156,15 +159,22 @@ class MemoryCore(BaseMemoryCore):
                     "role": "system",
                     "content": "Your role is to rephrase the text in your own words and provide a summary of the text.",
                 },
-                {"role": "user", "content": fact.text},
+                {"role": "user", "content": fact},
             ],
             response_model=MessageDigest,
         )
 
-    async def _create_memory_embedding(self, content: str) -> List[float]:
+    async def _get_query_embedding(self, query: str) -> List[float]:
         """Create embedding for memory content."""
-        res: EmbeddingResponse = await self.lm.embedding(input=[content])
+        res: EmbeddingResponse = await self.lm.embedding(input=[query])
         return res.data[0]["embedding"]
+
+    async def _get_semantic_fact_embeddings(self, fact: str, metadata: MessageDigest) -> List[List[float]]:
+        """Create embedding for semantic fact and metadata."""
+        res: EmbeddingResponse = await self.lm.embedding(
+            input=[fact, metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
+        )
+        return [data["embedding"] for data in res.data]
 
     async def _extract_semantic_fact_from_messages(
         self, messages: List[Message], memory_message: str = ""
@@ -178,7 +188,7 @@ class MemoryCore(BaseMemoryCore):
         Returns:
             SemanticMemoryExtraction containing the action and extracted facts
         """
-        print("Extracting semantic facts from messages")
+        logger.info("Extracting semantic facts from messages")
         messages_str = ""
         for idx, message in enumerate(messages):
             if not message.is_assistant_message:
@@ -213,8 +223,6 @@ Here is the transcript of the conversation:
         ]
 
         res = await self.lm.completion(messages=messages, response_model=SemanticMemoryExtraction)
-        print(messages_str)
-        print(f"Extracted semantic facts: {res}")
         return res
 
     async def _extract_episodic_memory_from_messages(self, messages: List[Message]) -> EpisodicMemoryExtraction:
@@ -250,8 +258,8 @@ Here are the incoming messages:
     async def add_short_term_memory(self, message: Message) -> None:
         await self.storage.store_short_term_memory(message)
 
-    async def retrieve_short_term_memories(
+    async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
-        return await self.storage.retrieve_short_term_memories(conversation_ref, config)
+        return await self.storage.retrieve_chat_history(conversation_ref, config)

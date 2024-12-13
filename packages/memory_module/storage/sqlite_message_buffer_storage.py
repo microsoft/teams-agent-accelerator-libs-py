@@ -44,7 +44,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
     async def get_buffered_messages(self, conversation_ref: str) -> List[Message]:
         """Retrieve all buffered messages for a conversation."""
         query = """
-            SELECT 
+            SELECT
                 m.id,
                 m.content,
                 m.author_id,

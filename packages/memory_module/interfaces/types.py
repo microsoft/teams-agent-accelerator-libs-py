@@ -3,8 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing_extensions import TypedDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class User(BaseModel):
@@ -47,6 +46,7 @@ class Memory(BaseModel):
     memory_type: MemoryType
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default_factory=list)
+    distance: Optional[float] = None
 
 
 class EmbedText(BaseModel):
@@ -54,6 +54,12 @@ class EmbedText(BaseModel):
     embedding_vector: List[float]
 
 
-class ShortTermMemoryRetrievalConfig(TypedDict):
+class ShortTermMemoryRetrievalConfig(BaseModel):
     n_messages: Optional[int] = None  # Number of messages to retrieve
-    last_minutes: Optional[Decimal] = None  # Time frame in minutes 0
+    last_minutes: Optional[Decimal] = None  # Time frame in minutes
+
+    @model_validator(mode="after")
+    def check_parameters(self) -> "ShortTermMemoryRetrievalConfig":
+        if self.n_messages is None and self.last_minutes is None:
+            raise ValueError("Either n_messages or last_minutes must be provided")
+        return self

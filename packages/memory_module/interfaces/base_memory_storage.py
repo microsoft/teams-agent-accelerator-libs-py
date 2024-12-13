@@ -7,6 +7,8 @@ from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTerm
 class BaseMemoryStorage(ABC):
     """Base class for the storage component."""
 
+    default_limit = 3
+
     @abstractmethod
     async def store_memory(
         self,
@@ -20,6 +22,11 @@ class BaseMemoryStorage(ABC):
             memory: The Memory object to store
             embedding_vector: Optional embedding vector for the memory
         """
+        pass
+
+    @abstractmethod
+    async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
+        """replace an existing memory with new extracted fact and embedding"""
         pass
 
     @abstractmethod
@@ -65,7 +72,7 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def retrieve_short_term_memories(
+    async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
