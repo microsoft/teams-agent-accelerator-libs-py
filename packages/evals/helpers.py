@@ -10,6 +10,7 @@ from mlflow.openai import autolog
 
 load_dotenv()
 
+
 def setup_mlflow(experiment_name: str):
     if not experiment_name.startswith("/"):
         experiment_name = f"/{experiment_name}"
