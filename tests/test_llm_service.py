@@ -51,7 +51,7 @@ async def _return_arguments(**kwargs):
 def mock_completion(monkeypatch):
     client = mock.Mock()
     router = mock.Mock()
-    monkeypatch.setattr(instructor, "apatch", client)
+    monkeypatch.setattr(instructor, "patch", client)
     monkeypatch.setattr(litellm, "Router", router)
 
     return client, router
