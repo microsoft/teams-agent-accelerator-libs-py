@@ -7,7 +7,6 @@ from uuid import uuid4
 
 import pytest
 import pytest_asyncio
-from tenacity import AsyncRetrying, wait_exponential
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -30,8 +29,8 @@ logger = logging.getLogger(__name__)
 def config():
     """Fixture to create test config."""
     llm_config = build_llm_config()
-    # if not llm_config.api_key:
-    #     pytest.skip("OpenAI API key not provided")
+    if not llm_config.api_key:
+        pytest.skip("OpenAI API key not provided")
     return MemoryModuleConfig(
         db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
         buffer_size=5,
@@ -140,10 +139,9 @@ async def test_simple_conversation(memory_module):
     for message in messages:
         await memory_module.add_message(message)
 
-    async for attempt in AsyncRetrying(wait=wait_exponential(multiplier=1, min=1, max=5)):
-        with attempt:
-            stored_memories = await memory_module.memory_core.storage.get_all_memories()
-            assert len(stored_memories) == 2
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_memories) == 2
     assert any("pie" in message.content for message in stored_memories)
     assert any(message.id in stored_memories[0].message_attributions for message in messages)
     assert all(memory.memory_type == "semantic" for memory in stored_memories)
@@ -216,9 +214,8 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
     for message in messages:
         await memory_module.add_message(message)
 
-    async for attempt in AsyncRetrying(wait=wait_exponential(multiplier=1, min=1, max=5)):
-        with attempt:
-            assert extraction_called, "Episodic memory extraction should have been triggered by timeout"
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+    assert extraction_called, "Episodic memory extraction should have been triggered by timeout"
 
 
 @pytest.mark.asyncio
@@ -238,10 +235,9 @@ async def test_update_memory(memory_module):
     for message in messages:
         await memory_module.add_message(message)
 
-    async for attempt in AsyncRetrying(wait=wait_exponential(multiplier=1, min=1, max=5)):
-        with attempt:
-            stored_memories = await memory_module.memory_core.storage.get_all_memories()
-            assert len(stored_memories) >= 1
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_memories) >= 1
 
     await memory_module.update_memory(1, "The user like San Diego city")
     updated_message = await memory_module.memory_core.storage.get_memory(1)
@@ -264,10 +260,9 @@ async def test_remove_memory(memory_module):
 
     for message in messages:
         await memory_module.add_message(message)
-    async for attempt in AsyncRetrying(wait=wait_exponential(multiplier=1, min=1, max=5)):
-        with attempt:
-            stored_messages = await memory_module.memory_core.storage.get_all_memories()
-            assert len(stored_messages) >= 0
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+    stored_messages = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_messages) >= 0
 
     await memory_module.remove_memories("user-123")
 
