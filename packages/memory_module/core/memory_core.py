@@ -188,7 +188,7 @@ class MemoryCore(BaseMemoryCore):
         Returns:
             SemanticMemoryExtraction containing the action and extracted facts
         """
-        print("Extracting semantic facts from messages")
+        logger.info("Extracting semantic facts from messages")
         messages_str = ""
         for idx, message in enumerate(messages):
             if not message.is_assistant_message:
