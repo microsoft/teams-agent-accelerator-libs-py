@@ -17,6 +17,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
     def __init__(self):
         self.storage: Dict = {
             "embeddings": {},
+            "messages": {},
             "buffered_messages": defaultdict(list),  # type: Dict[str, List[Message]]
             "scheduled_events": {},
         }
@@ -30,10 +31,15 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self.storage[memory.id] = memory
         self.storage["embeddings"][memory.id] = embedding_vector
 
-    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector:List[float]) -> None:
-        if memory_id in self.storage:
-            self.storage[memory_id].content = updateMemory
-            self.storage["embeddings"][memory_id] = embedding_vector
+    async def update_memory(self, memory: Memory, *, embedding_vector:List[float]) -> None:
+        if memory.id in self.storage:
+            self.storage[memory.id].content = memory
+            self.storage["embeddings"][memory.id] = embedding_vector
+
+    async def store_short_term_message(self, message: Message) -> None:
+        if message.conversation_ref not in self.storage["messages"]:
+            self.storage["messages"][message.conversation_ref] = []
+        self.storage["messages"][message.conversation_ref].append(message)
 
     async def retrieve_memories(
         self,

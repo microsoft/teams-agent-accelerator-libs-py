@@ -60,51 +60,23 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
         return memory_id
 
-    async def insert_memory_to_existing_record(
-        self, memory_id: str, memory: Memory, *, embedding_vector: List[float]
-    ) -> None:
-        """Once an async memory extraction process is done, update it with extracted fact and insert embedding"""
-        serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
-
-        async with self.storage.transaction() as cursor:
-            # Update the memory content
-            await cursor.execute(
-                """UPDATE memories
-                    SET content = ?
-                    WHERE id = ?""",
-                (memory.content, memory_id),
-            )
-
-            # Store embedding in embeddings table
-            await cursor.execute(
-                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-                (memory_id, serialized_embedding),
-            )
-            embedding_id = cursor.lastrowid
-
-            # Store in vec_items table
-            await cursor.execute(
-                "INSERT INTO vec_items (memory_embedding_id, embedding) VALUES (?, ?)",
-                (embedding_id, serialized_embedding),
-            )
-
-    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector: List[float]) -> None:
+    async def update_memory(self, memory: Memory, *, embedding_vector: List[float]) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         serialized_embedding = sqlite_vec.serialize_float32(embedding_vector)
 
         async with self.storage.transaction() as cursor:
             # Update the memory content
-            await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (updateMemory, memory_id))
+            await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (memory.content, memory.id))
 
             # Update embedding in embeddings table
             await cursor.execute(
                 "UPDATE embeddings SET embedding = ? WHERE memory_id = ?",
                 (
                     serialized_embedding,
-                    memory_id,
+                    memory.id,
                 ),
             )
-            await cursor.execute("SELECT id FROM embeddings WHERE memory_id = ?", (memory_id,))
+            await cursor.execute("SELECT id FROM embeddings WHERE memory_id = ?", (memory.id,))
 
             embedding_id = await cursor.fetchone()
 
@@ -116,6 +88,17 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     embedding_id[0],
                 ),
             )
+
+            # Update memory_attributions
+            await cursor.execute(
+                "DELETE FROM memory_attributions WHERE memory_id = ?",
+                (memory.id,)
+            )
+            if memory.message_attributions:
+                await cursor.executemany(
+                    "INSERT INTO memory_attributions (memory_id, message_id) VALUES (?, ?)",
+                    [(memory.id, msg_id) for msg_id in memory.message_attributions],
+                )
 
     async def retrieve_memories(
         self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
@@ -283,7 +266,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
 
-    async def store_short_term_memory(self, message: Message) -> None:
+    async def store_short_term_message(self, message: Message) -> None:
         """Store a short-term memory entry."""
         async with self.storage.transaction() as cursor:
             await cursor.execute(
