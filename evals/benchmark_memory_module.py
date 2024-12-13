@@ -43,9 +43,9 @@ class MemoryModuleManager:
         return self._memory_module
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # Destroy memory module
-        # TODO: Destroy database
+        # Destroy memory module and database
         del self._memory_module
+        os.remove(self._db_path)
 
 
 async def add_messages(memory_module: MemoryModule, messages: List[dict]):
