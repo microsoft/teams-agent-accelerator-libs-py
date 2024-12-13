@@ -15,11 +15,10 @@ from tqdm import tqdm
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
-from evals.scorer import build_ml_metric
+from evals.metrics import string_check_metric
 from memory_module.config import LLMConfig, MemoryModuleConfig
-from evals.dataset import Dataset, DatasetItem, SessionMessage, load_memory_module_dataset
 from memory_module.core.memory_module import MemoryModule, Message
-from evals.helpers import setup_mlflow
+from evals.helpers import DatasetItem, setup_mlflow, Dataset, load_dataset
 
 setup_mlflow(experiment_name="memory_module")
 
@@ -56,7 +55,7 @@ async def add_messages(memory_module: MemoryModule, messages: List[dict]):
             id=str(uuid.uuid4()),
             content=kwargs["content"],
             is_assistant_message=kwargs["is_assistant_message"],
-            # author_id="assistant" if kwargs["is_assistant_message"] else "user", # TODO: Figure out why multiple authors isn't working correctly
+            # author_id="user" if not kwargs["is_assistant_message"] else None,
             author_id="user",
             created_at=datetime.now(),
             conversation_ref="conversation_ref",
@@ -74,15 +73,18 @@ def run_benchmark(
 ):
     if not name:
         name = "memory module benchmark"
-
-    inputs = dataset.data[0:1] if run_one else dataset.data
-    inputs = [input.model_dump() for input in inputs]
+    
+    if run_one:
+        dataset.data = dataset['data'][0:1]
+    
+    # prepare dataset
+    inputs = dataset['data']
     df = pd.DataFrame({"inputs": inputs})
-    dataset_name = f"{dataset.title} v{dataset.version}"
+    dataset_name = f"{dataset['title']} v{dataset['description']}"
     dataset = mlflow.data.pandas_dataset.from_pandas(df, name=dataset_name)
-    # tracker = LLMTracker()
 
-    async def benchmark_memory_module(input):
+    # benchmark function
+    async def benchmark_memory_module(input: DatasetItem):
         session = input['session']
         query = input['query']
         expected_strings_in_memories = input['expected_strings_in_memories']
@@ -99,9 +101,9 @@ def run_benchmark(
                 "expected_strings_in_memories": expected_strings_in_memories,
             },
             "output": "No memories" if len(memories) == 0 else [memory.content for memory in memories],
-            # "llm_usage": current_usage,
         }
 
+    # iterate over benchmark cases
     def iterate_benchmark_cases(inputs: pd.Series):
         results = []
         for row in tqdm(inputs.itertuples(), total=inputs.size):
@@ -115,7 +117,8 @@ def run_benchmark(
             }
         )
 
-    mlflow_metric = build_ml_metric()
+    # run benchmark
+    mlflow_metric = string_check_metric()
     with mlflow.start_run(run_name=name):
         mlflow.log_params({"dataset": dataset_name})
         mlflow.evaluate(iterate_benchmark_cases, dataset, extra_metrics=[mlflow_metric])
@@ -125,7 +128,7 @@ def run_benchmark(
 @click.option("--name", type=str, required=False, help="Name of the benchmark")
 @click.option("--run_one", type=bool, default=False, help="Run only one benchmark case")
 def main(name, run_one):
-    dataset = load_memory_module_dataset()
+    dataset = load_dataset()
     run_benchmark(name, dataset, run_one)
 
 
