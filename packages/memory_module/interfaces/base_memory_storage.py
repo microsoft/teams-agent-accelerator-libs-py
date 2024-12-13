@@ -29,7 +29,7 @@ class BaseMemoryStorage(ABC):
         self,
         memory: Memory,
         *,
-        embedding_vector:List[float]
+        embedding_vectors:List[List[float]]
     ) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         pass

@@ -65,8 +65,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
         return memory_id
 
-    async def update_memory(self, memory: Memory, *, embedding_vector: List[float]) -> None:
-    async def update_memory(self, memory: Memory, *, embedding_vector: List[float]) -> None:
+    async def update_memory(self, memory: Memory, *, embedding_vectors: List[List[float]]) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         serialized_embeddings = [
             sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
@@ -75,23 +74,14 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         async with self.storage.transaction() as cursor:
             # Update the memory content
             await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (memory.content, memory.id))
-            await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (updated_memory, memory_id))
 
             # remove all the embeddings for this memory
-            await cursor.execute("DELETE FROM embeddings WHERE memory_id = ?", (memory_id,))
+            await cursor.execute("DELETE FROM embeddings WHERE memory_id = ?", (memory.id,))
 
             # Update embedding in embeddings table
             await cursor.executemany(
                 "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-                [(memory_id, serialized_embedding) for serialized_embedding in serialized_embeddings],
-            )
-
-            await cursor.execute(
-                "UPDATE vec_items SET embedding = ? WHERE memory_embedding_id = ?",
-                (
-                    serialized_embedding,
-                    embedding_id[0],
-                ),
+                [(memory.id, serialized_embedding) for serialized_embedding in serialized_embeddings],
             )
 
             # Update memory_attributions
