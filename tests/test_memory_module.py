@@ -271,7 +271,7 @@ async def test_short_term_memory(memory_module):
         await memory_module.add_message(message)
 
     # Check short-term memory using retrieve method
-    short_term_memories = await memory_module.retrieve_short_term_memories()
+    short_term_memories = await memory_module.retrieve_chat_history()
     assert len(short_term_memories) == 3
     assert all(msg in short_term_memories for msg in messages)
 
