@@ -89,7 +89,7 @@ async def test_extract_episodic_memory_from_messages(config):
 
 
 @pytest.mark.asyncio()
-async def test_create_memory_embedding_from_messages(config):
+async def test_get_query_embedding_from_messages(config):
     if not config.openai_api_key:
         pytest.skip("OpenAI API key not provided")
 
@@ -102,6 +102,6 @@ async def test_create_memory_embedding_from_messages(config):
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
 
     content = "Which country has a maple leaf in its flag?"
-    res: list[float] = await memory_core._create_memory_embedding(content=content)
+    res: list[float] = await memory_core._get_query_embedding(content=content)
 
     assert len(res) >= 512  # 512 is the smallest configurable embedding size for the text-embedding-3-small model
