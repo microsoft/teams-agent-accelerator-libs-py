@@ -65,7 +65,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
         return memory_id
 
-    async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
+    async def update_memory(self, memory: Memory, *, embedding_vector: List[float]) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         serialized_embeddings = [
             sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
@@ -73,6 +73,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         async with self.storage.transaction() as cursor:
             # Update the memory content
+            await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (memory.content, memory.id))
             await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (updated_memory, memory_id))
 
             # remove all the embeddings for this memory
@@ -85,14 +86,23 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
 
             await cursor.execute(
-                """
-                INSERT INTO vec_items (memory_embedding_id, embedding)
-                SELECT id, embedding
-                FROM embeddings
-                WHERE memory_id = ?
-                """,
-                (memory_id,),
+                "UPDATE vec_items SET embedding = ? WHERE memory_embedding_id = ?",
+                (
+                    serialized_embedding,
+                    embedding_id[0],
+                ),
             )
+
+            # Update memory_attributions
+            await cursor.execute(
+                "DELETE FROM memory_attributions WHERE memory_id = ?",
+                (memory.id,)
+            )
+            if memory.message_attributions:
+                await cursor.executemany(
+                    "INSERT INTO memory_attributions (memory_id, message_id) VALUES (?, ?)",
+                    [(memory.id, msg_id) for msg_id in memory.message_attributions],
+                )
 
     async def retrieve_memories(
         self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
@@ -260,7 +270,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
 
-    async def store_short_term_memory(self, message: Message) -> None:
+    async def store_short_term_message(self, message: Message) -> None:
         """Store a short-term memory entry."""
         async with self.storage.transaction() as cursor:
             await cursor.execute(

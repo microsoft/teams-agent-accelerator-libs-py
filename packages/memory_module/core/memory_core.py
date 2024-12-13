@@ -256,7 +256,7 @@ Here are the incoming messages:
         return await self.lm.completion(messages=messages, response_model=EpisodicMemoryExtraction)
 
     async def add_short_term_memory(self, message: Message) -> None:
-        await self.storage.store_short_term_memory(message)
+        await self.storage.store_short_term_message(message)
 
     async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
