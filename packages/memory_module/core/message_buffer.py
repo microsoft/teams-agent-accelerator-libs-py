@@ -6,8 +6,8 @@ from memory_module.interfaces.base_message_buffer_storage import BaseMessageBuff
 from memory_module.interfaces.base_scheduled_events_service import BaseScheduledEventsService
 from memory_module.interfaces.types import Message
 from memory_module.services.scheduled_events_service import ScheduledEventsService
+from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_message_buffer_storage import SQLiteMessageBufferStorage
-from packages.memory_module.storage.in_memory_storage import InMemoryStorage
 
 
 class MessageBuffer:
