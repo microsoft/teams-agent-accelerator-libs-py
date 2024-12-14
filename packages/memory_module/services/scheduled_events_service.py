@@ -9,8 +9,8 @@ from memory_module.interfaces.base_scheduled_events_service import (
     Event,
 )
 from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
+from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_scheduled_events_storage import SQLiteScheduledEventsStorage
-from packages.memory_module.storage.in_memory_storage import InMemoryStorage
 
 logger = logging.getLogger(__name__)
 
