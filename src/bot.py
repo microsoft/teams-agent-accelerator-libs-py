@@ -88,20 +88,6 @@ class FieldToMemorize(BaseModel):
     field_value: str
 
 
-# class MemorizeFields(BaseModel):
-#     fields_to_memorize: list[FieldToMemorize]
-
-
-class PromptUser(BaseModel):
-    model_config = {"json_schema_extra": {"additionalProperties": False}}
-    query_for_user: str
-
-
-class InformUser(BaseModel):
-    model_config = {"json_schema_extra": {"additionalProperties": False}}
-    message: str
-
-
 class UserDetail(BaseModel):
     model_config = {"json_schema_extra": {"additionalProperties": False}}
     field_name: str
@@ -121,23 +107,17 @@ async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
 
 async def get_memorized_fields(fields_to_retrieve: GetMemorizedFields) -> str:
     empty_obj = {}
-    for field in fields_to_retrieve.queries_for_fields:
-        result = await memory_module.retrieve_memories(field, None, None)
-        print(f"result for {field}: {result}")
+    for query in fields_to_retrieve.queries_for_fields:
+        result = await memory_module.retrieve_memories(query, None, None)
+        print("Getting memorized queries", query)
+        print(result)
+        print("---")
+
         if result:
-            empty_obj[field] = ", ".join([r.content for r in result])
+            empty_obj[query] = ", ".join([r.content for r in result])
         else:
-            empty_obj[field] = None
+            empty_obj[query] = None
     return json.dumps(empty_obj)
-
-
-# async def memorize_fields(fields_to_memorize: MemorizeFields) -> str:
-#     return "Fields memorized"
-
-
-async def prompt_user(query_for_user: PromptUser, context: TurnContext) -> str:
-    await context.send_activity(query_for_user.query_for_user)
-    return query_for_user.query_for_user
 
 
 async def execute_task(task_name: ExecuteTask, context: TurnContext) -> str:
@@ -159,11 +139,6 @@ Come up with a solution to the user's issue.
     return res.choices[0].message.content
 
 
-async def inform_user(message: InformUser, context: TurnContext) -> str:
-    await context.send_activity(message.message)
-    return message.message
-
-
 def get_available_functions():
     return [
         {
@@ -175,14 +150,6 @@ def get_available_functions():
                 "strict": True,
             },
         },
-        # {
-        #     "type": "function",
-        #     "function": {
-        #         "name": "inform_user",
-        #         "description": "Send a message to the user",
-        #         "parameters": InformUser.schema(),
-        #     },
-        # },
         {
             "type": "function",
             "function": {
@@ -191,22 +158,6 @@ def get_available_functions():
                 "parameters": GetMemorizedFields.schema(),
             },
         },
-        # {
-        #     "type": "function",
-        #     "function": {
-        #         "name": "prompt_user",
-        #         "description": "Ask the user for specific information",
-        #         "parameters": PromptUser.schema(),
-        #     },
-        # },
-        # {
-        #     "type": "function",
-        #     "function": {
-        #         "name": "memorize_fields",
-        #         "description": "Store field values for later use",
-        #         "parameters": MemorizeFields.schema(),
-        #     },
-        # },
         {
             "type": "function",
             "function": {
@@ -240,7 +191,6 @@ async def add_message(
         print("conversation_ref_dict.conversation is None")
         return False
     user_aad_object_id = conversation_ref_dict.user.aad_object_id
-    bot_id = conversation_ref_dict.bot.id
     message_id = str(uuid.uuid4()) if override_message_id else context.activity.id
     print(
         "Adding message",
@@ -308,9 +258,7 @@ If the user ends the conversation, display "Thank you! Let me know if you need a
 <INSTRUCTIONS>
 Run the provided PROGRAM by executing each step.
 """
-    messages = await memory_module.retrieve_short_term_memories(
-        conversation_ref_dict.conversation.id, {"last_minutes": 1}
-    )
+    messages = await memory_module.retrieve_chat_history(conversation_ref_dict.conversation.id, {"last_minutes": 1})
     print("messages", messages)
     llm_messages = [
         {
@@ -336,14 +284,10 @@ Run the provided PROGRAM by executing each step.
             tool_choice="auto",
             temperature=0,
         )
-        print("llm_messages", llm_messages)
-        print("tools", get_available_functions())
-        print("response", response)
 
         message = response.choices[0].message
 
         if message.tool_calls is None and message.content is not None:
-            print("Adding dm", response.id)
             await add_message(context, message.content, True, datetime.datetime.now(datetime.timezone.utc), True)
             await context.send_activity(message.content)
             break
@@ -355,36 +299,19 @@ Run the provided PROGRAM by executing each step.
             function_name = tool_call.function.name
             function_args = tool_call.function.arguments
 
-            print(f"--ToolCall {tool_call.id}--")
-            print(function_name)
-            print(function_args)
-            print(f"--ToolCall {tool_call.id}--")
-
             if function_name == "get_candidate_tasks":
                 args = GetCandidateTasks.model_validate_json(function_args)
                 res = await get_candidate_tasks(args)
             elif function_name == "get_memorized_fields":
                 args = GetMemorizedFields.model_validate_json(function_args)
                 res = await get_memorized_fields(args)
-            # elif function_name == "memorize_fields":
-            #     args = MemorizeFields.model_validate_json(function_args)
-            #     res = await memorize_fields(args)
-            elif function_name == "prompt_user":
-                args = PromptUser.model_validate_json(function_args)
-                res = await prompt_user(args, context)
             elif function_name == "execute_task":
                 args = ExecuteTask.model_validate_json(function_args)
                 res = await execute_task(args, context)
-            elif function_name == "inform_user":
-                args = InformUser.model_validate_json(function_args)
-                res = await inform_user(args, context)
             else:
                 res = None
 
             if res is not None:
-                print("--res--")
-                print(res)
-                print("--res--")
                 llm_messages.append(
                     {
                         "role": "assistant",
