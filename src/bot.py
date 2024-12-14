@@ -9,9 +9,8 @@ from typing import List, Literal
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
 from botbuilder.core import MemoryStorage, TurnContext
+from litellm import acompletion
 from memory_module import LLMConfig, MemoryModule, MemoryModuleConfig, Message
-from openai import AsyncAzureOpenAI
-from openai.types.chat import ChatCompletion
 from pydantic import BaseModel, Field
 from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.state import TurnState
@@ -19,22 +18,27 @@ from teams.state import TurnState
 from config import Config
 
 config = Config()
-# client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
-client = AsyncAzureOpenAI(
-    api_key=config.AZURE_OPENAI_API_KEY,
-    api_version=config.AZURE_OPENAI_API_VERSION,
-    azure_endpoint=config.AZURE_OPENAI_API_BASE,
-    azure_deployment=config.AZURE_OPENAI_DEPLOYMENT,
-)
+
+memory_llm_config = {
+    "model": f"azure/{config.AZURE_OPENAI_DEPLOYMENT}" if config.AZURE_OPENAI_DEPLOYMENT else config.OPENAI_MODEL_NAME,
+    "api_key": config.AZURE_OPENAI_API_KEY or config.OPENAI_API_KEY,
+    "api_base": config.AZURE_OPENAI_API_BASE,
+    "api_version": config.AZURE_OPENAI_API_VERSION,
+    "embedding_model": f"azure/{config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT}"
+    if config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+    else config.OPENAI_EMBEDDING_MODEL_NAME,
+}
+
+completions_llm_config = {
+    "model": memory_llm_config["model"],
+    "api_key": memory_llm_config["api_key"],
+    "api_base": memory_llm_config["api_base"],
+    "api_version": memory_llm_config["api_version"],
+}
+
 memory_module = MemoryModule(
     config=MemoryModuleConfig(
-        llm=LLMConfig(
-            model="azure/gpt-4o",
-            api_base=config.AZURE_OPENAI_API_BASE,
-            api_key=config.AZURE_OPENAI_API_KEY,
-            api_version=config.AZURE_OPENAI_API_VERSION,
-            embedding_model="azure/text-embedding-3-small",
-        ),
+        llm=LLMConfig(**memory_llm_config),
         db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
         timeout_seconds=60,
     )
@@ -130,8 +134,8 @@ The user's details are: {task_name.user_details}
 
 Come up with a solution to the user's issue.
 """
-    res = await client.chat.completions.create(
-        model="gpt-4o",
+    res = await acompletion(
+        **completions_llm_config,
         messages=[{"role": "system", "content": system_prompt}],
         temperature=0.9,
     )
@@ -277,8 +281,8 @@ Run the provided PROGRAM by executing each step.
     max_turns = 5
     should_break = False  # Flag to indicate if we should break the outer loop
     for _ in range(max_turns):
-        response: ChatCompletion = await client.chat.completions.create(
-            model=config.AZURE_OPENAI_DEPLOYMENT,
+        response = await acompletion(
+            **completions_llm_config,
             messages=llm_messages,
             tools=get_available_functions(),
             tool_choice="auto",

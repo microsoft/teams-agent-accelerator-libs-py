@@ -11,6 +11,7 @@ dependencies = [
     "teams-ai",
     "botbuilder",
     "pydantic>=2.10.3",
+    "litellm==1.54.1",
 ]
 
 [tool.uv.sources]

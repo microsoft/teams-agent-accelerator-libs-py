@@ -17,7 +17,8 @@ class Config:
     APP_ID = os.environ.get("BOT_ID", "")
     APP_PASSWORD = os.environ.get("BOT_PASSWORD", "")
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", None)  # OpenAI API key
-    OPENAI_MODEL_NAME = "gpt-4o-mini"  # OpenAI model name. You can use any other model name from OpenAI.
+    OPENAI_MODEL_NAME = os.environ.get("OPENAI_MODEL_NAME", None)
+    OPENAI_EMBEDDING_MODEL_NAME = os.environ.get("OPENAI_EMBEDDING_MODEL_NAME", None)
     AZURE_OPENAI_API_KEY = os.environ["AZURE_OPENAI_API_KEY"]
     AZURE_OPENAI_DEPLOYMENT = os.environ["AZURE_OPENAI_DEPLOYMENT"]
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT = os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"]
