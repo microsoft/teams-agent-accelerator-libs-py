@@ -34,7 +34,7 @@ class BaseMemoryStorage(ABC):
     @abstractmethod
     async def update_memory(
         self,
-        memory: Memory,
+        updated_memory: Memory,
         *,
         embedding_vectors:List[List[float]]
     ) -> None:
@@ -63,6 +63,20 @@ class BaseMemoryStorage(ABC):
 
         Returns:
             List of Memory objects matching the query and user_id
+        """
+        pass
+
+    @abstractmethod
+    async def get_most_similar_memory_with_embeddings(
+        self, embeddings: List[List[float]], user_id: Optional[str]
+    ) -> Memory:
+        """Retrieve most similar memory based on embeddings
+        Args:
+            embeddings: A list of embeddings to find similarity in database
+            user_id: The ID of the user whose memories to retrieve
+
+        Returns:
+            Memory that most similar to the input embeddings
         """
         pass
 

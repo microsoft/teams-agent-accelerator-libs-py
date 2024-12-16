@@ -1,4 +1,5 @@
 import datetime
+import heapq
 import logging
 import uuid
 from pathlib import Path
@@ -42,12 +43,13 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             # Store the memory
             await cursor.execute(
                 """INSERT INTO memories
-                    (id, content, created_at, user_id, memory_type)
-                    VALUES (?, ?, ?, ?, ?)""",
+                    (id, content, created_at, updated_at, user_id, memory_type)
+                    VALUES (?, ?, ?, ?, ?, ?)""",
                 (
                     memory_id,
                     memory.content,
                     memory.created_at.isoformat(),
+                    memory.updated_at,
                     memory.user_id,
                     memory.memory_type.value,
                 ),
@@ -77,34 +79,59 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
         return memory_id
 
-    async def update_memory(self, memory: Memory, *, embedding_vectors: List[List[float]]) -> None:
-        """replace an existing memory with new extracted fact and embedding"""
+    async def update_memory(self, updated_memory: Memory, *, embedding_vectors: List[List[float]]) -> None:
+        """replace an existing memory with new extracted fact, attributions and embedding"""
         serialized_embeddings = [
             sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
         ]
 
         async with self.storage.transaction() as cursor:
             # Update the memory content
-            await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (memory.content, memory.id))
+            await cursor.execute(
+                "UPDATE memories SET content = ?, updated_at = ?  WHERE id = ?",
+                (updated_memory.content, updated_memory.updated_at, updated_memory.id)
+            )
 
-            # remove all the embeddings for this memory
-            await cursor.execute("DELETE FROM embeddings WHERE memory_id = ?", (memory.id,))
+            # Remove all existing embeddings from `vec_items` table
+            await cursor.execute("""
+                DELETE FROM vec_items
+                WHERE EXISTS (
+                    SELECT id, memory_id
+                    FROM embeddings
+                    WHERE vec_items.memory_embedding_id = id AND memory_id = ?
+                )""",
+                (updated_memory.id,)
+            )
 
-            # Update embedding in embeddings table
+            # Remove all existing embeddings for `embeddings` table
+            await cursor.execute("DELETE FROM embeddings WHERE memory_id = ?", (updated_memory.id,))
+
+            # Add new embeddings in `embeddings` table
             await cursor.executemany(
                 "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-                [(memory.id, serialized_embedding) for serialized_embedding in serialized_embeddings],
+                [(updated_memory.id, serialized_embedding) for serialized_embedding in serialized_embeddings],
+            )
+
+            # Add new embeddings in `vec_items` table
+            await cursor.execute(
+                """
+                INSERT INTO vec_items (memory_embedding_id, embedding)
+                SELECT id, embedding
+                FROM embeddings
+                WHERE memory_id = ?
+                """,
+                (updated_memory.id,),
             )
 
             # Update memory_attributions
             await cursor.execute(
                 "DELETE FROM memory_attributions WHERE memory_id = ?",
-                (memory.id,)
+                (updated_memory.id,)
             )
-            if memory.message_attributions:
+            if updated_memory.message_attributions:
                 await cursor.executemany(
                     "INSERT INTO memory_attributions (memory_id, message_id) VALUES (?, ?)",
-                    [(memory.id, msg_id) for msg_id in memory.message_attributions],
+                    [(updated_memory.id, msg_id) for msg_id in updated_memory.message_attributions],
                 )
 
     async def retrieve_memories(
@@ -132,6 +159,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             FROM ranked_memories rm
             JOIN memories m ON m.id = rm.memory_id
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
+            WHERE m.user_id = ?
             ORDER BY rm.distance ASC
         """
 
@@ -141,6 +169,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 sqlite_vec.serialize_float32(embedText.embedding_vector),
                 limit or self.default_limit,
                 1.0,
+                user_id
             ),
         )
 
@@ -163,6 +192,19 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 memories_dict[memory_id]["message_attributions"].append(row["message_id"])
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
+
+    async def get_most_similar_memory_with_embeddings(
+        self, embeddings: List[List[float]], user_id: Optional[str]
+    ) -> Memory:
+        candidates = []
+        for embedding in embeddings:
+
+            embedText = EmbedText(embedding_vector=embedding, text="")
+            similar_memory = await self.retrieve_memories(embedText, user_id, 1)
+            if len(similar_memory) >= 1:
+                candidates.append(similar_memory[0])
+        heapq.heapify(candidates)
+        return heapq.heappop(candidates)
 
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given user."""
@@ -206,6 +248,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 m.id,
                 m.content,
                 m.created_at,
+                m.updated_at,
                 m.user_id,
                 m.memory_type,
                 ma.message_id
@@ -224,6 +267,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             "id": rows[0]["id"],
             "content": rows[0]["content"],
             "created_at": rows[0]["created_at"],
+            "updated_at": rows[0]["updated_at"],
             "user_id": rows[0]["user_id"],
             "memory_type": rows[0]["memory_type"],
             "message_attributions": [row["message_id"] for row in rows if row["message_id"]],

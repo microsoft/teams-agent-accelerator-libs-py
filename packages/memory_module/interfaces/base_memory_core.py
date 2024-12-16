@@ -23,8 +23,8 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def update_memory(self, memory_id: str, updated_memory: str) -> None:
-        """Update memory with new fact."""
+    async def update_memory(self, updated_memory: Memory) -> None:
+        """Update existing memory with new fact."""
         pass
 
     @abstractmethod
