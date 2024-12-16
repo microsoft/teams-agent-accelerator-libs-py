@@ -56,6 +56,8 @@ class SemanticMemoryExtraction(BaseModel):
         description="One or more facts about the user. If the action is 'ignore'," "this field should be empty.",
     )
 
+class ProcessSemanticMemoryDecision(BaseModel):
+    decision: Literal["add", "replace", "drop"] = Field(..., description="Action to take on the new memory")
 
 class EpisodicMemoryExtraction(BaseModel):
     action: Literal["add", "update", "ignore"] = Field(..., description="Action to take on the extracted fact")
@@ -68,7 +70,6 @@ class EpisodicMemoryExtraction(BaseModel):
         "include some details about the update including the latest state. Do not"
         "use real names (you can say 'The user' instead) and avoid pronouns. Be concise.",
     )
-
 
 class MemoryCore(BaseMemoryCore):
     """Implementation of the memory core component."""
@@ -117,8 +118,8 @@ class MemoryCore(BaseMemoryCore):
                     message_attributions=message_ids,
                     memory_type=MemoryType.SEMANTIC,
                 )
-                embed_vectors = await self._get_semantic_fact_embeddings(fact.text, metadata)
-                await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
+                embedding_vectors = await self._get_semantic_fact_embeddings(fact.text, metadata)
+                await self.storage.store_memory(memory, embedding_vectors=embedding_vectors)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into episodic memories (specific events, experiences)."""
@@ -136,10 +137,10 @@ class MemoryCore(BaseMemoryCore):
         embedText = EmbedText(text=query, embedding_vector=await self._get_query_embedding(query))
         return await self.storage.retrieve_memories(embedText, user_id, limit)
 
-    async def update_memory(self, memory_id: str, updated_memory: str) -> None:
-        metadata = await self._extract_metadata_from_fact(updated_memory)
-        embed_vectors = await self._get_semantic_fact_embeddings(updated_memory, metadata)
-        await self.storage.update_memory(memory_id, updated_memory, embedding_vectors=embed_vectors)
+    async def update_memory(self, updated_memory: Memory) -> None:
+        metadata = await self._extract_metadata_from_fact(updated_memory.content)
+        embedding_vectors = await self._get_semantic_fact_embeddings(updated_memory.content, metadata)
+        await self.storage.update_memory(updated_memory, embedding_vectors=embedding_vectors)
 
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
@@ -163,6 +164,34 @@ class MemoryCore(BaseMemoryCore):
             ],
             response_model=MessageDigest,
         )
+
+    async def _get_add_memory_processing_decision(self, new_memory_fact: str, new_memory_embeddings: List[List[float]], user_id: Optional[str])-> str:
+        similar_memory = await self.storage.get_most_similar_memory_with_embeddings(new_memory_embeddings, user_id)
+        decision = await self._extract_memory_processing_decision(new_memory_fact, similar_memory.content, user_id)
+        return decision.decision
+
+
+    async def _extract_memory_processing_decision(self, new_memory: str, old_memory: str, user_id: Optional[str] ) -> ProcessSemanticMemoryDecision:
+        """Determine whether to add, replace or drop this memory"""
+
+        system_message = f"""You are a semantic memory management agent. Your goal is to do content similarity
+            comparasion between new memory and old memory, and determine whether to add new memory to database
+            while keep old memory, replace old memory with new memory, or ignore new memory due to duplication.
+
+            Return value:
+            - Add: add new memory to database while keep old memory
+            - Replace: replace old memory with new memory
+            - Drop: ignore new memory
+
+            Here is the old memory
+            {old_memory}
+            Here is the new memory
+            {new_memory}
+            """
+        messages = [{"role": "system", "content": system_message}]
+
+        decision = await self.lm.completion(messages=messages, response_model=ProcessSemanticMemoryDecision)
+        return decision
 
     async def _get_query_embedding(self, query: str) -> List[float]:
         """Create embedding for memory content."""

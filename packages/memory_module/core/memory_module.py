@@ -43,9 +43,9 @@ class MemoryModule(BaseMemoryModule):
         """Retrieve relevant memories based on a query."""
         return await self.memory_core.retrieve_memories(query, user_id, limit)
 
-    async def update_memory(self, memory_id: str, updated_memory: str) -> None:
-        """Update memory with new fact"""
-        return await self.memory_core.update_memory(memory_id, updated_memory)
+    async def update_memory(self, updated_memory: Memory) -> None:
+        """Update existing memory with new fact"""
+        return await self.memory_core.update_memory(updated_memory)
 
     async def remove_memories(self, user_id: str) -> None:
         """Remove memories based on user id."""

@@ -8,6 +8,8 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
+from packages.memory_module.interfaces.types import Memory, MemoryType
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.config import MemoryModuleConfig
@@ -222,13 +224,14 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
 async def test_update_memory(memory_module):
     """Test memory update"""
     conversation_id = str(uuid4())
+    created_at = datetime.now()
     messages = [
         Message(
             id=str(uuid4()),
             content="Seattle is my favorite city!",
             author_id="user-123",
             conversation_ref=conversation_id,
-            created_at=datetime.now(),
+            created_at=created_at,
         ),
     ]
 
@@ -239,9 +242,22 @@ async def test_update_memory(memory_module):
     stored_memories = await memory_module.memory_core.storage.get_all_memories()
     assert len(stored_memories) >= 1
 
-    await memory_module.update_memory(1, "The user like San Diego city")
-    updated_message = await memory_module.memory_core.storage.get_memory(1)
-    assert "San Diego" in updated_message.content
+    updated_conversation_id = str(uuid4())
+    updated_at = datetime.now()
+    updated_memory = Memory(
+        id = 1,
+        content = "The user like San Diego city",
+        created_at=created_at,
+        updated_at=updated_at,
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[updated_conversation_id]
+    )
+
+    await memory_module.update_memory(updated_memory)
+    result_memory = await memory_module.memory_core.storage.get_memory(1)
+    assert "San Diego" in result_memory.content
+    assert result_memory.updated_at == updated_at
+    assert updated_conversation_id in result_memory.message_attributions
 
 
 @pytest.mark.asyncio
@@ -301,3 +317,39 @@ async def test_short_term_memory(memory_module):
     reversed_messages = messages[::-1]
     for i, _msg in enumerate(reversed_messages):
         assert chat_history_messages[i].id == reversed_messages[i].id
+
+
+@pytest.mark.asyncio
+async def test_add_memory_processing_decision(memory_module):
+    """Test whether to process adding memory"""
+    conversation_id = str(uuid4())
+    created_at = datetime.now()
+    old_message = Message(
+            id=str(uuid4()),
+            content="I have a Mac book.",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=created_at,
+        )
+
+    new_message = [
+        Message(
+            id=str(uuid4()),
+            content="My Mac book no longer works. I have a new Thinkpad",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=created_at,
+        )
+    ]
+
+    await memory_module.add_message(old_message)
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+
+    extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(new_message)
+
+    if extraction.action == "add" and extraction.facts:
+        for fact in extraction.facts:
+            metadata = await memory_module.memory_core._extract_metadata_from_fact(fact.text)
+            embedding_vectors = await memory_module.memory_core._get_semantic_fact_embeddings(fact.text, metadata)
+            decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, embedding_vectors, "user-123")
+            print(decision)

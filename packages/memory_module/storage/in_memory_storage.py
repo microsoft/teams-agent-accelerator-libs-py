@@ -25,15 +25,15 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self,
         memory: Memory,
         *,
-        embedding_vector: List[List[float]],
+        embedding_vectors: List[List[float]],
     ) -> None:
         self.storage[memory.id] = memory
-        self.storage["embeddings"][memory.id] = embedding_vector
+        self.storage["embeddings"][memory.id] = embedding_vectors
 
-    async def update_memory(self, memory: Memory, *, embedding_vectors:List[List[float]]) -> None:
-        if memory.id in self.storage:
-            self.storage[memory.id].content = memory
-            self.storage["embeddings"][memory.id] = embedding_vectors
+    async def update_memory(self, updated_memory: Memory, *, embedding_vectors:List[List[float]]) -> None:
+        if updated_memory.id in self.storage:
+            self.storage[updated_memory.id].content = updated_memory
+            self.storage["embeddings"][updated_memory.id] = embedding_vectors
 
     async def store_short_term_message(self, message: Message) -> None:
         if message.conversation_ref not in self.storage["messages"]:

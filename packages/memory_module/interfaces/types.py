@@ -38,12 +38,16 @@ class MemoryType(str, Enum):
 class Memory(BaseModel):
     """Represents a processed memory."""
 
+    def __lt__(self, nxt):
+        return self.distance > nxt.distance
+
     model_config = ConfigDict(from_attributes=True)
 
     id: Optional[int] = None
     content: str
     created_at: datetime
     memory_type: MemoryType
+    updated_at: Optional[datetime] = None
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default_factory=list)
     distance: Optional[float] = None
