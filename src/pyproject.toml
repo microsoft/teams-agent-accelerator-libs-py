@@ -4,4 +4,15 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["memory-module", "python-dotenv", "aiohttp", "teams-ai", "botbuilder"]
+dependencies = [
+    "memory-module",
+    "python-dotenv",
+    "aiohttp",
+    "teams-ai",
+    "botbuilder",
+    "pydantic>=2.10.3",
+    "litellm==1.54.1",
+]
+
+[tool.uv.sources]
+memory-module = { workspace = true }

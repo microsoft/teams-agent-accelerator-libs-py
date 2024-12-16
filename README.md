@@ -65,6 +65,9 @@ For test cases marked with `@pytest.mark.asyncio`, find the play icon left to it
 Mac: `PYTHONPATH=$PYTHONPATH:. pytest tests/test_memory_module.py`  
 Window: `$env:PYTHONPATH = "$env:PYTHONPATH;."; pytest tests/test_memory_module.py`
 
+## Run with test bot
+Please refer to src/README.md for more details.
+
 ## Contributing
 
 This project welcomes contributions and suggestions. Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us the rights to use your contribution.
