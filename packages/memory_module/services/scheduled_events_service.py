@@ -35,15 +35,15 @@ class ScheduledEventsService(BaseScheduledEventsService):
             SQLiteScheduledEventsStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
         )
 
-        self._initialize_tasks()
-
     def _initialize_tasks(self) -> None:
         """Asynchronously initialize tasks from storage."""
 
         async def initialize_tasks_async():
             events = await self.storage.get_all_events()
-            for event in events:
-                await self._create_task(event)
+            if events:
+                logger.info("Found %d events in storage", len(events))
+                for event in events:
+                    await self._create_task(event)
 
         try:
             loop = asyncio.get_running_loop()
