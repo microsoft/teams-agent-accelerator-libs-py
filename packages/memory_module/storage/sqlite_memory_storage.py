@@ -1,4 +1,5 @@
 import logging
+import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -25,27 +26,28 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         self.db_path = db_path or DEFAULT_DB_PATH
         self.storage = SQLiteStorage(self.db_path)
 
-    async def store_memory(self, memory: BaseMemoryInput, *, embedding_vectors: List[List[float]]) -> int | None:
+    async def store_memory(self, memory: BaseMemoryInput, *, embedding_vectors: List[List[float]]) -> str:
         """Store a memory and its message attributions."""
         serialized_embeddings = [
             sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
         ]
 
+        memory_id = str(uuid.uuid4())
+
         async with self.storage.transaction() as cursor:
             # Store the memory
             await cursor.execute(
                 """INSERT INTO memories
-                    (content, created_at, user_id, memory_type)
-                    VALUES (?, ?, ?, ?)""",
+                    (id, content, created_at, user_id, memory_type)
+                    VALUES (?, ?, ?, ?, ?)""",
                 (
+                    memory_id,
                     memory.content,
                     memory.created_at,
                     memory.user_id,
                     memory.memory_type.value,
                 ),
             )
-
-            memory_id = cursor.lastrowid
 
             # Store message attributions
             if memory.message_attributions:
@@ -344,7 +346,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
 
-    async def get_messages(self, memory_ids: List[int]) -> Dict[int, List[Message]]:
+    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         """Get messages based on memory ids."""
         query = """
             SELECT ma.memory_id, m.*
@@ -357,7 +359,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         messages_dict = {}
         for row in rows:
-            memory_id = int(row["memory_id"])
+            memory_id = row["memory_id"]
             if memory_id not in messages_dict:
                 messages_dict[memory_id] = []
 

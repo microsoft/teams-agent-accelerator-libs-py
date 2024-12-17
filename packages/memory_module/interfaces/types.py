@@ -27,7 +27,7 @@ class Message(BaseModel):
 
 
 class MemoryAttribution(BaseModel):
-    memory_id: int
+    memory_id: str
     message_id: str
 
 
@@ -51,7 +51,7 @@ class BaseMemoryInput(BaseModel):
 class Memory(BaseMemoryInput):
     """Represents a processed memory."""
 
-    id: int
+    id: str
 
 
 class EmbedText(BaseModel):

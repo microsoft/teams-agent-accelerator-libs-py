@@ -46,7 +46,7 @@ class MemoryModule(BaseMemoryModule):
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return await self.memory_core.get_memories(memory_ids)
 
-    async def get_messages(self, memory_ids: List[int]) -> Dict[int, List[Message]]:
+    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         return await self.memory_core.get_messages(memory_ids)
 
     async def update_memory(self, memory_id: str, updated_memory: str) -> None:

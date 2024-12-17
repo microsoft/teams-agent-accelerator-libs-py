@@ -15,7 +15,7 @@ class BaseMemoryStorage(ABC):
         memory: BaseMemoryInput,
         *,
         embedding_vectors: List[List[float]],
-    ) -> int | None:
+    ) -> str | None:
         """Store a memory in the storage system.
 
         Args:
@@ -65,7 +65,7 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_messages(self, memory_ids: List[int]) -> Dict[int, List[Message]]:
+    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         """Get messages based on memory ids."""
         pass
 
