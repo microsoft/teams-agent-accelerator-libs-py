@@ -15,12 +15,12 @@
         "outline": "outline.png"
     },
     "name": {
-        "short": "customer_service_ag_sample${{APP_NAME_SUFFIX}}",
-        "full": "full name for customer_service_ag_sample"
+        "short": "Tech Support Agent ${{APP_NAME_SUFFIX}}",
+        "full": "A sample tech suport agent"
     },
     "description": {
-        "short": "short description for customer_service_ag_sample",
-        "full": "full description for customer_service_ag_sample"
+        "short": "A sample tech support agent",
+        "full": "A sample tech support agent"
     },
     "accentColor": "#FFFFFF",
     "bots": [
