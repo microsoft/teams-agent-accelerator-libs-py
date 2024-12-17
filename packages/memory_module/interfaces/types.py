@@ -54,12 +54,6 @@ class Memory(BaseMemoryInput):
     id: int
 
 
-class Memory(BaseMemoryInput):
-    """Represents a processed memory."""
-
-    id: int
-
-
 class EmbedText(BaseModel):
     text: str
     embedding_vector: List[float]
