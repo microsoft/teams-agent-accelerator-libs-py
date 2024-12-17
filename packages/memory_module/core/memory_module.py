@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import MemoryCore
@@ -42,6 +42,12 @@ class MemoryModule(BaseMemoryModule):
     async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
         return await self.memory_core.retrieve_memories(query, user_id, limit)
+
+    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
+        return await self.memory_core.get_memories(memory_ids)
+
+    async def get_messages(self, memory_ids: List[int]) -> Dict[int, List[Message]]:
+        return await self.memory_core.get_messages(memory_ids)
 
     async def update_memory(self, memory_id: str, updated_memory: str) -> None:
         """Update memory with new fact"""

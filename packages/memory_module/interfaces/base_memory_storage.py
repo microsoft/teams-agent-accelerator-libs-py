@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Dict, List, Optional
 
-from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import BaseMemoryInput, EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
 
 
 class BaseMemoryStorage(ABC):
@@ -12,9 +12,9 @@ class BaseMemoryStorage(ABC):
     @abstractmethod
     async def store_memory(
         self,
-        memory: Memory,
+        memory: BaseMemoryInput,
         *,
-        embedding_vector: List[List[float]],
+        embedding_vectors: List[List[float]],
     ) -> int | None:
         """Store a memory in the storage system.
 
@@ -57,6 +57,16 @@ class BaseMemoryStorage(ABC):
     @abstractmethod
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given conversation."""
+        pass
+
+    @abstractmethod
+    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
+        """Get memories based on memory ids."""
+        pass
+
+    @abstractmethod
+    async def get_messages(self, memory_ids: List[int]) -> Dict[int, List[Message]]:
+        """Get messages based on memory ids."""
         pass
 
     @abstractmethod

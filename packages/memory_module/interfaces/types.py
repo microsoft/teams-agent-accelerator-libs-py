@@ -23,6 +23,7 @@ class Message(BaseModel):
     conversation_ref: str
     created_at: datetime
     is_assistant_message: bool = False
+    deep_link: Optional[str] = None
 
 
 class MemoryAttribution(BaseModel):
@@ -35,18 +36,23 @@ class MemoryType(str, Enum):
     EPISODIC = "episodic"
 
 
-class Memory(BaseModel):
+class BaseMemoryInput(BaseModel):
     """Represents a processed memory."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: Optional[int] = None
     content: str
     created_at: datetime
     memory_type: MemoryType
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default_factory=list)
     distance: Optional[float] = None
+
+
+class Memory(BaseMemoryInput):
+    """Represents a processed memory."""
+
+    id: int
 
 
 class EmbedText(BaseModel):
