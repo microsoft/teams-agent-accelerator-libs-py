@@ -10,7 +10,7 @@ from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.core.memory_core import EpisodicMemoryExtraction, MemoryCore
 from memory_module.services.llm_service import LLMService
 
-from .utils import create_test_message, get_env_llm_config
+from tests.memory_module.utils import create_test_message, get_env_llm_config
 
 
 def includes(text: str, phrase):

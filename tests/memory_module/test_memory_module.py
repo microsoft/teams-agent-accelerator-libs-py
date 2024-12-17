@@ -20,7 +20,7 @@ from memory_module.core.memory_core import (
 from memory_module.core.memory_module import MemoryModule
 from memory_module.interfaces.types import Message, ShortTermMemoryRetrievalConfig
 
-from tests.utils import build_llm_config
+from tests.memory_module.utils import build_llm_config
 
 logger = logging.getLogger(__name__)
 
