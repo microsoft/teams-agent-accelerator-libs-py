@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field
@@ -8,7 +8,14 @@ from pydantic import BaseModel, Field
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
-from memory_module.interfaces.types import EmbedText, Memory, MemoryType, Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import (
+    BaseMemoryInput,
+    EmbedText,
+    Memory,
+    MemoryType,
+    Message,
+    ShortTermMemoryRetrievalConfig,
+)
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
@@ -110,7 +117,7 @@ class MemoryCore(BaseMemoryCore):
             for fact in extraction.facts:
                 metadata = await self._extract_metadata_from_fact(fact.text)
                 message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
-                memory = Memory(
+                memory = BaseMemoryInput(
                     content=fact.text,
                     created_at=datetime.datetime.now(),
                     user_id=author_id,
@@ -263,3 +270,9 @@ Here are the incoming messages:
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         return await self.storage.retrieve_chat_history(conversation_ref, config)
+
+    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
+        return await self.storage.get_memories(memory_ids)
+
+    async def get_messages(self, memory_ids: List[int]) -> Dict[int, List[Message]]:
+        return await self.storage.get_messages(memory_ids)

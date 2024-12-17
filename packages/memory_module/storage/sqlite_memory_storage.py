@@ -1,10 +1,16 @@
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import sqlite_vec
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
-from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import (
+    BaseMemoryInput,
+    EmbedText,
+    Memory,
+    Message,
+    ShortTermMemoryRetrievalConfig,
+)
 from memory_module.storage.sqlite_storage import SQLiteStorage
 
 logger = logging.getLogger(__name__)
@@ -19,7 +25,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         self.db_path = db_path or DEFAULT_DB_PATH
         self.storage = SQLiteStorage(self.db_path)
 
-    async def store_memory(self, memory: Memory, *, embedding_vectors: List[List[float]]) -> int | None:
+    async def store_memory(self, memory: BaseMemoryInput, *, embedding_vectors: List[List[float]]) -> int | None:
         """Store a memory and its message attributions."""
         serialized_embeddings = [
             sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
@@ -264,8 +270,15 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         """Store a short-term memory entry."""
         async with self.storage.transaction() as cursor:
             await cursor.execute(
-                """INSERT INTO messages (id, content, author_id, conversation_ref, created_at, is_assistant_message)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO messages (
+                    id,
+                    content,
+                    author_id,
+                    conversation_ref,
+                    created_at,
+                    is_assistant_message,
+                    deep_link
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (
                     message.id,
                     message.content,
@@ -273,6 +286,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     message.conversation_ref,
                     message.created_at,
                     message.is_assistant_message,
+                    message.deep_link,
                 ),
             )
 
@@ -294,3 +308,59 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         rows = await self.storage.fetch_all(query, params)
 
         return [Message(**row) for row in rows][::-1]
+
+    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
+        query = """
+            SELECT
+                m.id,
+                m.content,
+                m.created_at,
+                m.user_id,
+                m.memory_type,
+                ma.message_id
+            FROM memories m
+            LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
+            WHERE m.id IN ({})
+        """.format(",".join(["?"] * len(memory_ids)))
+
+        rows = await self.storage.fetch_all(query, tuple(memory_ids))
+
+        # Group rows by memory_id
+        memories_dict = {}
+        for row in rows:
+            memory_id = row["id"]
+            if memory_id not in memories_dict:
+                memories_dict[memory_id] = {
+                    "id": memory_id,
+                    "content": row["content"],
+                    "created_at": row["created_at"],
+                    "user_id": row["user_id"],
+                    "memory_type": row["memory_type"],
+                    "message_attributions": [],
+                }
+
+            if row["message_id"]:
+                memories_dict[memory_id]["message_attributions"].append(row["message_id"])
+
+        return [Memory(**memory_data) for memory_data in memories_dict.values()]
+
+    async def get_messages(self, memory_ids: List[int]) -> Dict[int, List[Message]]:
+        """Get messages based on memory ids."""
+        query = """
+            SELECT ma.memory_id, m.*
+            FROM memory_attributions ma
+            JOIN messages m ON ma.message_id = m.id
+            WHERE ma.memory_id IN ({})
+        """.format(",".join(["?"] * len(memory_ids)))
+
+        rows = await self.storage.fetch_all(query, tuple(memory_ids))
+
+        messages_dict = {}
+        for row in rows:
+            memory_id = int(row["memory_id"])
+            if memory_id not in messages_dict:
+                messages_dict[memory_id] = []
+
+            messages_dict[memory_id].append(Message(**row))
+
+        return messages_dict
