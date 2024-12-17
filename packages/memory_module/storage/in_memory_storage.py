@@ -9,58 +9,106 @@ from memory_module.interfaces.base_message_buffer_storage import (
 )
 from memory_module.interfaces.base_scheduled_events_service import Event
 from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
-from memory_module.interfaces.types import EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import BaseMemoryInput, EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
 
 
 class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage):
     def __init__(self):
         self.storage: Dict = {
             "embeddings": {},
-            "buffered_messages": defaultdict(list),  # type: Dict[str, List[Message]]
+            "buffered_messages": defaultdict(list),
             "scheduled_events": {},
+            "memories": {},
         }
 
     async def store_memory(
         self,
-        memory: Memory,
+        memory: BaseMemoryInput,
         *,
-        embedding_vector: List[float],
-    ) -> None:
-        self.storage[memory.id] = memory
-        self.storage["embeddings"][memory.id] = embedding_vector
+        embedding_vectors: List[List[float]],
+    ) -> int | None:
+        memory_id = str(len(self.storage["memories"]) + 1)
+        self.storage["memories"][memory_id] = memory
+        self.storage["embeddings"][memory_id] = embedding_vectors
+        return int(memory_id)
 
-    async def update_memory(self, memory_id: str, updateMemory: str, *, embedding_vector: List[float]) -> None:
-        if memory_id in self.storage:
-            self.storage[memory_id].content = updateMemory
-            self.storage["embeddings"][memory_id] = embedding_vector
+    async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
+        if memory_id in self.storage["memories"]:
+            self.storage["memories"][memory_id].content = updated_memory
+            self.storage["embeddings"][memory_id] = embedding_vectors
+
+    async def store_short_term_memory(self, message: Message) -> None:
+        await self.store_buffered_message(message)
 
     async def retrieve_memories(
         self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
     ) -> List[Memory]:
         limit = limit or self.default_limit
-        sorted_memories = [
-            {
-                "id": value.id,
-                "distance": self._cosine_similarity(embedText.embedding_vector, self.storage["embeddings"][value.id]),
-            }
-            for key, value in self.storage.items()
+        sorted_memories = []
+
+        for memory_id, embeddings in self.storage["embeddings"].items():
+            memory = self.storage["memories"][memory_id]
+            if user_id and memory.user_id != user_id:
+                continue
+
+            # Find the embedding with highest similarity (lowest distance)
+            best_similarity = float("-inf")
+            for embedding in embeddings:
+                similarity = self._cosine_similarity(embedText.embedding_vector, embedding)
+                best_similarity = max(best_similarity, similarity)
+
+            sorted_memories.append(
+                {
+                    "id": memory_id,
+                    "memory": memory,
+                    "distance": best_similarity,
+                }
+            )
+
+        sorted_memories.sort(key=lambda x: x["distance"], reverse=True)
+        return [Memory(id=item["id"], **item["memory"].__dict__) for item in sorted_memories[:limit]]
+
+    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
+        return [
+            self.storage["memories"][memory_id].copy()
+            for memory_id in memory_ids
+            if memory_id in self.storage["memories"]
         ]
-        sorted_memories = sorted(sorted_memories, key=lambda x: x["distance"], reverse=True)[:limit]
-        return [Memory(**{**self.storage[item["id"]], **item}) for item in sorted_memories]
+
+    async def get_messages(self, memory_ids: List[int]) -> Dict[int, List[Message]]:
+        messages_dict: Dict[int, List[Message]] = {}
+        for memory_id in memory_ids:
+            str_id = str(memory_id)
+            if str_id in self.storage["memories"]:
+                memory = self.storage["memories"][str_id]
+                if hasattr(memory, "message_attributions"):
+                    messages = []
+                    for msg_id in memory.message_attributions:
+                        # Search through buffered messages to find matching message
+                        for conv_messages in self.storage["buffered_messages"].values():
+                            for msg in conv_messages:
+                                if msg.id == msg_id:
+                                    messages.append(msg)
+                    messages_dict[memory_id] = messages
+        return messages_dict
 
     def _cosine_similarity(self, memory_vector: List[float], query_vector: List[float]) -> float:
         return np.dot(np.array(query_vector), np.array(memory_vector))
 
     async def clear_memories(self, user_id: str) -> None:
-        for _key, value in self.storage.items():
-            if value.user_id == user_id:
-                self.storage.pop(value.id)
+        memory_ids_for_user = [
+            memory_id for memory_id, memory in self.storage["memories"].items() if memory.user_id == user_id
+        ]
+        # remove all memories for user
+        for memory_id in memory_ids_for_user:
+            self.storage["embeddings"].pop(str(memory_id), None)
+            self.storage["memories"].pop(str(memory_id), None)
 
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
-        return self.storage[memory_id]
+        return self.storage["memories"].get(str(memory_id))
 
     async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
-        return [value for key, value in self.storage.items()][:limit]
+        return [value for key, value in self.storage["memories"].items()][:limit]
 
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer."""
@@ -118,7 +166,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         if config.n_messages is not None:
             messages = conversation_messages[-config.n_messages :]
         elif config.last_minutes is not None:
-            current_time = datetime.now()
+            current_time = datetime.datetime.now()
             messages = [
                 msg
                 for msg in conversation_messages
