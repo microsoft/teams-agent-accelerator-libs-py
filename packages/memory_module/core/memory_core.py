@@ -7,11 +7,11 @@ from pydantic import BaseModel, Field
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
+from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import EmbedText, Memory, MemoryType, Message, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
+from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
-from packages.memory_module.interfaces.base_memory_storage import BaseMemoryStorage
-from packages.memory_module.storage.in_memory_storage import InMemoryStorage
 
 logger = logging.getLogger(__name__)
 
