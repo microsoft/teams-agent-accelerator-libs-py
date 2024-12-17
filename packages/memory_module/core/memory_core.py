@@ -173,29 +173,33 @@ class MemoryCore(BaseMemoryCore):
             response_model=MessageDigest,
         )
 
-    async def _get_add_memory_processing_decision(self, new_memory_fact: str, new_memory_embeddings: List[List[float]], user_id: Optional[str])-> str:
+    async def _get_add_memory_processing_decision(
+            self, new_memory_fact: str, new_memory_embeddings: List[List[float]], user_id: Optional[str]
+        )-> str:
         similar_memory = await self.storage.get_most_similar_memory_with_embeddings(new_memory_embeddings, user_id)
         decision = await self._extract_memory_processing_decision(new_memory_fact, similar_memory.content, user_id)
         return decision.decision
 
 
-    async def _extract_memory_processing_decision(self, new_memory: str, old_memory: str, user_id: Optional[str] ) -> ProcessSemanticMemoryDecision:
+    async def _extract_memory_processing_decision(
+            self, new_memory: str, old_memory: str, user_id: Optional[str]
+        ) -> ProcessSemanticMemoryDecision:
         """Determine whether to add, replace or drop this memory"""
 
         system_message = f"""You are a semantic memory management agent. Your goal is to do content similarity
-            comparasion between new memory and old memory, and determine whether to add new memory to database
-            while keep old memory, replace old memory with new memory, or ignore new memory due to duplication.
+comparasion between new memory and old memory, and determine whether to add new memory to database while keep
+old memory, replace old memory with new memory, or ignore new memory due to duplication.
 
-            Return value:
-            - Add: add new memory to database while keep old memory
-            - Replace: replace old memory with new memory
-            - Drop: ignore new memory
+Return value:
+- Add: add new memory to database while keep old memory
+- Replace: replace old memory with new memory
+- Drop: ignore new memory
 
-            Here is the old memory
-            {old_memory}
-            Here is the new memory
-            {new_memory}
-            """
+Here is the old memory
+{old_memory}
+Here is the new memory
+{new_memory}
+"""
         messages = [{"role": "system", "content": system_message}]
 
         decision = await self.lm.completion(messages=messages, response_model=ProcessSemanticMemoryDecision)
