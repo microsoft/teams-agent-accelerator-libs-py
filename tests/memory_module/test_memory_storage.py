@@ -9,14 +9,17 @@ from memory_module.interfaces.types import (
     Message,
     ShortTermMemoryRetrievalConfig,
 )
+from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 
 
-@pytest.fixture
-def memory_storage():
-    with tempfile.NamedTemporaryFile() as tmp:
-        storage = SQLiteMemoryStorage(tmp.name)
-        yield storage
+@pytest.fixture(params=["sqlite", "in_memory"])
+def memory_storage(request):
+    if request.param == "sqlite":
+        with tempfile.NamedTemporaryFile() as tmp:
+            yield SQLiteMemoryStorage(tmp.name)
+    else:
+        yield InMemoryStorage()
 
 
 @pytest.fixture
@@ -89,6 +92,23 @@ async def test_retrieve_memories(memory_storage, sample_memory_input, sample_emb
     memories = await memory_storage.retrieve_memories(query, "test_user", limit=1)
     assert len(memories) > 0
     assert memories[0].content == sample_memory_input.content
+
+
+@pytest.mark.asyncio
+async def test_retrieve_memories_multiple_embeddings(memory_storage, sample_memory_input):
+    # Test with multiple embeddings per memory
+    embeddings = [
+        [0.1] * 1536,  # First embedding with low similarity
+        [1.0] * 1536,  # Second embedding with high similarity
+    ]
+
+    await memory_storage.store_memory(sample_memory_input, embedding_vectors=embeddings)
+
+    # Query should match the second embedding better
+    query = EmbedText(text="test query", embedding_vector=[1.0] * 1536)
+
+    memories = await memory_storage.retrieve_memories(query, "test_user", limit=1)
+    assert len(memories) == 1
 
 
 @pytest.mark.asyncio
