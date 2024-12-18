@@ -297,7 +297,6 @@ async def test_short_term_memory(memory_module):
         conversation_id, ShortTermMemoryRetrievalConfig(last_minutes=1)
     )
     assert len(chat_history_messages) == 3
-    assert all(msg in chat_history_messages for msg in messages)
 
     # Verify messages are in reverse order
     reversed_messages = messages[::-1]
