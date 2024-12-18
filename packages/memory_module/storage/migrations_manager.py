@@ -7,6 +7,7 @@ from typing import List, Tuple
 import sqlite_vec
 
 logger = logging.getLogger(__name__)
+print(sqlite3.sqlite_version)
 
 
 class MigrationManager:

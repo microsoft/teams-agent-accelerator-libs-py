@@ -1,7 +1,8 @@
+from abc import ABC
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import ClassVar, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -12,18 +13,52 @@ class User(BaseModel):
     id: str
 
 
-class Message(BaseModel):
-    """Represents a message in a conversation."""
+class BaseMessageInput(ABC, BaseModel):
+    content: str
+    author_id: str
+    conversation_ref: str
 
+
+class InternalMessageInput(BaseMessageInput):
+    model_config = ConfigDict(from_attributes=True)
+    type: ClassVar = "internal"
+    created_at: Optional[datetime] = None
+
+
+class InternalMessage(InternalMessageInput):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    content: str
-    author_id: Optional[str]
-    conversation_ref: str
-    created_at: datetime
-    type: Literal["user", "assistant", "internal"] | None = None
+    created_at: datetime  # type: ignore Ignoring because this will exist in the concrete class
+
+
+class UserMessageInput(BaseMessageInput):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    type: ClassVar = "user"
     deep_link: Optional[str] = None
+    created_at: datetime
+
+
+class UserMessage(UserMessageInput):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AssistantMessageInput(BaseMessageInput):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    type: ClassVar = "assistant"
+    deep_link: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class AssistantMessage(AssistantMessageInput):
+    model_config = ConfigDict(from_attributes=True)
+    created_at: datetime  # type: ignore Ignoring because this will exist in the concrete class
+
+
+type MessageInput = InternalMessageInput | UserMessageInput | AssistantMessageInput
+type Message = InternalMessage | UserMessage | AssistantMessage
 
 
 class MemoryAttribution(BaseModel):

@@ -1,3 +1,4 @@
+import datetime
 import logging
 import uuid
 from pathlib import Path
@@ -8,11 +9,14 @@ from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import (
     BaseMemoryInput,
     EmbedText,
+    InternalMessageInput,
     Memory,
     Message,
+    MessageInput,
     ShortTermMemoryRetrievalConfig,
 )
 from memory_module.storage.sqlite_storage import SQLiteStorage
+from memory_module.storage.utils import build_message_from_dict
 
 logger = logging.getLogger(__name__)
 
@@ -268,29 +272,44 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
 
-    async def store_short_term_memory(self, message: Message) -> None:
+    async def store_short_term_memory(self, message: MessageInput) -> Message:
         """Store a short-term memory entry."""
-        async with self.storage.transaction() as cursor:
-            await cursor.execute(
-                """INSERT INTO messages (
-                    id,
-                    content,
-                    author_id,
-                    conversation_ref,
-                    created_at,
-                    type,
-                    deep_link
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    message.id,
-                    message.content,
-                    message.author_id,
-                    message.conversation_ref,
-                    message.created_at,
-                    message.type,
-                    message.deep_link,
-                ),
-            )
+        if isinstance(message, InternalMessageInput):
+            id = str(uuid.uuid4())
+        else:
+            id = message.id
+
+        created_at = message.created_at or datetime.datetime.now()
+
+        if isinstance(message, InternalMessageInput):
+            deep_link = None
+        else:
+            deep_link = message.deep_link
+        await self.storage.execute(
+            """INSERT INTO messages (
+                id,
+                content,
+                author_id,
+                conversation_ref,
+                created_at,
+                type,
+                deep_link
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (
+                id,
+                message.content,
+                message.author_id,
+                message.conversation_ref,
+                created_at,
+                message.type,
+                deep_link,
+            ),
+        )
+
+        row = await self.storage.fetch_one("SELECT * FROM messages WHERE id = ?", (id,))
+        if not row:
+            raise ValueError(f"Message with id {id} not found in storage")
+        return build_message_from_dict(row)
 
     async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
@@ -309,7 +328,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         rows = await self.storage.fetch_all(query, params)
 
-        return [Message(**row) for row in rows][::-1]
+        return [build_message_from_dict(row) for row in rows][::-1]
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         query = """
@@ -363,6 +382,6 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             if memory_id not in messages_dict:
                 messages_dict[memory_id] = []
 
-            messages_dict[memory_id].append(Message(**row))
+            messages_dict[memory_id].append(build_message_from_dict(row))
 
         return messages_dict
