@@ -3,7 +3,7 @@ function initializeTeamsOrBrowser() {
     try {
         return microsoftTeams.app.initialize();
     } catch (err) {
-        console.log('Teams SDK not loaded - running in browser mode');
+        console.log('Teams SDK not loaded - running in browser mode:', err);
         return Promise.resolve();
     }
 }
