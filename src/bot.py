@@ -314,7 +314,7 @@ async def add_message(
             author_id=user_aad_object_id,
             conversation_ref=conversation_ref_dict.conversation.id,
             created_at=created_at or datetime.datetime.now(datetime.timezone.utc),
-            type=type,
+            type=message_type,
             deep_link=build_deep_link(context, context.activity.id),
         )
     )
