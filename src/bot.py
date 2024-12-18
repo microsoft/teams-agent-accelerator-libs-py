@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 import sys
@@ -11,13 +10,12 @@ from botbuilder.core import CardFactory, MemoryStorage, TurnContext
 from botbuilder.schema import Activity
 from litellm import acompletion
 from memory_module import (
-    AssistantMessageInput,
     InternalMessageInput,
     LLMConfig,
     Memory,
+    MemoryMiddleware,
     MemoryModule,
     MemoryModuleConfig,
-    UserMessageInput,
 )
 from pydantic import BaseModel, Field
 from teams import Application, ApplicationOptions, TeamsAdapter
@@ -62,6 +60,8 @@ bot_app = Application[TurnState](
         adapter=TeamsAdapter(config),
     )
 )
+
+bot_app.adapter.use(MemoryMiddleware(memory_module))
 
 
 class TaskConfig(BaseModel):
@@ -281,75 +281,6 @@ def get_available_functions():
     ]
 
 
-def build_deep_link(context: TurnContext, message_id: str):
-    conversation_ref = TurnContext.get_conversation_reference(context.activity)
-    if conversation_ref.conversation and conversation_ref.conversation.is_group:
-        deeplink_conversation_id = conversation_ref.conversation.id
-    elif conversation_ref.user and conversation_ref.bot:
-        user_aad_object_id = conversation_ref.user.aad_object_id
-        bot_id = conversation_ref.bot.id.replace("28:", "")
-        deeplink_conversation_id = f"19:{user_aad_object_id}_{bot_id}@unq.gbl.spaces"
-    else:
-        return None
-    return f"https://teams.microsoft.com/l/message/{deeplink_conversation_id}/{message_id}?context=%7B%22contextType%22%3A%22chat%22%7D"
-
-
-async def add_user_message(context: TurnContext):
-    conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
-    content = context.activity.text
-    if not content:
-        print("content is not text, so ignoring...")
-        return False
-    if conversation_ref_dict is None:
-        print("conversation_ref_dict is None")
-        return False
-    if conversation_ref_dict.user is None:
-        print("conversation_ref_dict.user is None")
-        return False
-    if conversation_ref_dict.conversation is None:
-        print("conversation_ref_dict.conversation is None")
-        return False
-    user_aad_object_id = conversation_ref_dict.user.aad_object_id
-    message_id = context.activity.id
-    await memory_module.add_message(
-        UserMessageInput(
-            id=message_id,
-            content=context.activity.text,
-            author_id=user_aad_object_id,
-            conversation_ref=conversation_ref_dict.conversation.id,
-            created_at=context.activity.timestamp if context.activity.timestamp else datetime.datetime.now(),
-            deep_link=build_deep_link(context, context.activity.id),
-        )
-    )
-    return True
-
-
-async def add_agent_message(context: TurnContext, message_id: str, content: str):
-    conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
-    if not content:
-        print("content is not text, so ignoring...")
-        return False
-    if conversation_ref_dict is None:
-        print("conversation_ref_dict is None")
-        return False
-    if conversation_ref_dict.bot is None:
-        print("conversation_ref_dict.bot is None")
-        return False
-    if conversation_ref_dict.conversation is None:
-        print("conversation_ref_dict.conversation is None")
-        return False
-    await memory_module.add_message(
-        AssistantMessageInput(
-            id=message_id,
-            content=content,
-            author_id=conversation_ref_dict.bot.id,
-            conversation_ref=conversation_ref_dict.conversation.id,
-            deep_link=build_deep_link(context, message_id),
-        )
-    )
-    return True
-
-
 async def add_internal_message(context: TurnContext, content: str):
     conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
     if not content:
@@ -376,15 +307,12 @@ async def add_internal_message(context: TurnContext, content: str):
 
 @bot_app.conversation_update("membersAdded")
 async def on_members_added(context: TurnContext, state: TurnState):
-    result = await send_string_message(context, "Hello! I'm your IT Support Assistant. How can I assist you today?")
-    if result:
-        await add_agent_message(context, result, "Hello! I'm your IT Support Assistant. How can I assist you today?")
+    await send_string_message(context, "Hello! I'm your IT Support Assistant. How can I assist you today?")
 
 
 @bot_app.activity("message")
 async def on_message(context: TurnContext, state: TurnState):
     conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
-    await add_user_message(context)
     system_prompt = """
 You are an IT Chat Bot that helps users troubleshoot tasks
 
@@ -449,9 +377,7 @@ Run the provided PROGRAM by executing each step.
         message = response.choices[0].message
 
         if message.tool_calls is None and message.content is not None:
-            agent_message_id = await send_string_message(context, message.content)
-            if agent_message_id:
-                await add_agent_message(context, agent_message_id, message.content)
+            await send_string_message(context, message.content)
             break
         elif message.tool_calls is None and message.content is None:
             print("No tool calls and no content")
