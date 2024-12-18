@@ -20,12 +20,22 @@ class BaseMessageInput(ABC, BaseModel):
 
 
 class InternalMessageInput(BaseMessageInput):
+    """
+    Input parameter for an internal message. Used when creating a new message.
+    """
+
     model_config = ConfigDict(from_attributes=True)
     type: ClassVar = "internal"
     created_at: Optional[datetime] = None
 
 
 class InternalMessage(InternalMessageInput):
+    """
+    Represents a message that is not meant to be shown to the user.
+    Useful for keeping agentic transcript state.
+    These are not used as part of memory extraction
+    """
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str
@@ -33,6 +43,10 @@ class InternalMessage(InternalMessageInput):
 
 
 class UserMessageInput(BaseMessageInput):
+    """
+    Input parameter for a user message. Used when creating a new message.
+    """
+
     model_config = ConfigDict(from_attributes=True)
     id: str
     type: ClassVar = "user"
@@ -41,10 +55,18 @@ class UserMessageInput(BaseMessageInput):
 
 
 class UserMessage(UserMessageInput):
+    """
+    Represents a message that was sent by the user.
+    """
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class AssistantMessageInput(BaseMessageInput):
+    """
+    Input parameter for an assistant message. Used when creating a new message.
+    """
+
     model_config = ConfigDict(from_attributes=True)
     id: str
     type: ClassVar = "assistant"
@@ -53,6 +75,10 @@ class AssistantMessageInput(BaseMessageInput):
 
 
 class AssistantMessage(AssistantMessageInput):
+    """
+    Represents a message that was sent by the assistant.
+    """
+
     model_config = ConfigDict(from_attributes=True)
     created_at: datetime  # type: ignore Ignoring because this will exist in the concrete class
 
