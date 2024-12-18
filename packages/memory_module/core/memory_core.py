@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 import logging
 from typing import Dict, List, Literal, Optional
@@ -191,20 +192,21 @@ class MemoryCore(BaseMemoryCore):
         """Determine whether to add, replace or drop this memory"""
 
         old_memories_str = ",".join([f"{memory.content} created at {memory.created_at}" for memory in old_memories])
-        system_message = f"""You are a semantic memory management agent. Your goal is to do content similarity
-comparasion between new memory and some old memories, and determine whether to add new memory to database while keep
-old memories, or ignore new memory due to duplication.
+        system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new memory
+is duplicated with existing old memories. If not duplicated, add this new memory to database while keep old memories.
+Otherwise, ignore new memory due to duplication.
 
-Prioritize:
-- time based order: each old memory has a creation time. Please take creation time into consideration.
+Considerations:
+- Time-based order: Each old memory has a creation time. Please take creation time into consideration.
+- Repeated behavior: If the new memory indicates a repeated action or behavior over a period of time, it should be added to reflect the pattern.
 
 Return value:
 - Add: add new memory to database while keep old memories
 - Ignore: ignore new memory
 
-Here are the old memories
+Here are the old memories:
 {old_memories_str}
-Here is the new memory
+Here is the new memory:
 {new_memory} created now
 """
         messages = [{"role": "system", "content": system_message}]

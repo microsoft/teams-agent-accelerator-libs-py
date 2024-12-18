@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import List
 from uuid import uuid4
 
 import pytest
@@ -340,31 +341,42 @@ async def test_add_memory_processing_decision(memory_module):
         ),
         Message(
             id=str(uuid4()),
-            content="I just bought another Mac book.",
+            content="I bought another Mac book.",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.strptime("2024-10-12", "%Y-%m-%d"),
         ),
     ]
-    new_message = [
-        Message(
+    new_messages = [
+        [Message(
             id=str(uuid4()),
-            content="I bought one more Mac book",
+            content="I have Mac book",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
-        )
+        )],
+        [Message(
+            id=str(uuid4()),
+            content="I bought one more new Mac book",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        )],
     ]
 
     for message in old_messages:
         await memory_module.add_message(message)
     await memory_module.message_queue.message_buffer.scheduler.flush()
 
-    extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(new_message)
+    await _validate_decision(memory_module, new_messages[0], "ignore")
+    await _validate_decision(memory_module, new_messages[1], "add")
+
+async def _validate_decision(memory_module, message: List[Message], expected_decision: str):
+    extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(message)
 
     if extraction.action == "add" and extraction.facts:
         for fact in extraction.facts:
             metadata = await memory_module.memory_core._extract_metadata_from_fact(fact.text)
             embedding_vectors = await memory_module.memory_core._get_semantic_fact_embeddings(fact.text, metadata)
             decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, embedding_vectors, "user-123")
-            print(decision)
+            assert decision == expected_decision
