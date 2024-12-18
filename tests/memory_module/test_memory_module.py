@@ -148,7 +148,7 @@ async def test_simple_conversation(memory_module):
 
     result = await memory_module.retrieve_memories("apple pie", "", 1)
     assert len(result) == 1
-    assert result[0].id == 2
+    assert result[0].id == next(memory.id for memory in stored_memories if "apple pie" in memory.content)
 
 
 @pytest.mark.asyncio
@@ -239,8 +239,9 @@ async def test_update_memory(memory_module):
     stored_memories = await memory_module.memory_core.storage.get_all_memories()
     assert len(stored_memories) >= 1
 
-    await memory_module.update_memory(1, "The user like San Diego city")
-    updated_message = await memory_module.memory_core.storage.get_memory(1)
+    memory_id = next(memory.id for memory in stored_memories if "Seattle" in memory.content)
+    await memory_module.update_memory(memory_id, "The user like San Diego city")
+    updated_message = await memory_module.memory_core.storage.get_memory(memory_id)
     assert "San Diego" in updated_message.content
 
 

@@ -159,7 +159,7 @@ async def confirm_memorized_fields(fields_to_confirm: ConfirmMemorizedFields, co
     # group memories by field name
     user_details_with_memories: List[tuple[UserDetail, Memory | None]] = []
     for user_detail in fields_to_confirm.fields_to_confirm:
-        memories_for_user_detail = [memory for memory in memories if str(memory.id) in user_detail.memory_ids]
+        memories_for_user_detail = [memory for memory in memories if memory.id in user_detail.memory_ids]
         # just take the first one into account for citation (for now)
         user_details_with_memories.append(
             (user_detail, memories_for_user_detail[0] if memories_for_user_detail else None)

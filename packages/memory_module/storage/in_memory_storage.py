@@ -26,11 +26,11 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         memory: BaseMemoryInput,
         *,
         embedding_vectors: List[List[float]],
-    ) -> int | None:
+    ) -> str | None:
         memory_id = str(len(self.storage["memories"]) + 1)
         self.storage["memories"][memory_id] = memory
         self.storage["embeddings"][memory_id] = embedding_vectors
-        return int(memory_id)
+        return memory_id
 
     async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
         if memory_id in self.storage["memories"]:
@@ -75,10 +75,10 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             if memory_id in self.storage["memories"]
         ]
 
-    async def get_messages(self, memory_ids: List[int]) -> Dict[int, List[Message]]:
-        messages_dict: Dict[int, List[Message]] = {}
+    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
+        messages_dict: Dict[str, List[Message]] = {}
         for memory_id in memory_ids:
-            str_id = str(memory_id)
+            str_id = memory_id
             if str_id in self.storage["memories"]:
                 memory = self.storage["memories"][str_id]
                 if hasattr(memory, "message_attributions"):
@@ -101,11 +101,11 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         ]
         # remove all memories for user
         for memory_id in memory_ids_for_user:
-            self.storage["embeddings"].pop(str(memory_id), None)
-            self.storage["memories"].pop(str(memory_id), None)
+            self.storage["embeddings"].pop(memory_id, None)
+            self.storage["memories"].pop(memory_id, None)
 
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
-        return self.storage["memories"].get(str(memory_id))
+        return self.storage["memories"].get(memory_id)
 
     async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
         return [value for key, value in self.storage["memories"].items()][:limit]

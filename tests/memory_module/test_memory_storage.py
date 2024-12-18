@@ -73,7 +73,7 @@ async def test_update_memory(memory_storage, sample_memory_input, sample_embeddi
 
     # Update memory
     updated_content = "Updated memory content"
-    await memory_storage.update_memory(str(memory_id), updated_content, embedding_vectors=sample_embedding)
+    await memory_storage.update_memory(memory_id, updated_content, embedding_vectors=sample_embedding)
 
     # Verify update
     updated_memory = await memory_storage.get_memory(memory_id)
@@ -173,7 +173,7 @@ async def test_get_memories_by_ids(memory_storage, sample_memory_input, sample_e
     memory_id = await memory_storage.store_memory(sample_memory_input, embedding_vectors=sample_embedding)
 
     # Retrieve by ID
-    memories = await memory_storage.get_memories([str(memory_id)])
+    memories = await memory_storage.get_memories([memory_id])
     assert len(memories) == 1
     assert memories[0].content == sample_memory_input.content
 
