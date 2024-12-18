@@ -1298,7 +1298,6 @@ version = "0.0.0"
 source = { virtual = "packages/memory_module" }
 dependencies = [
     { name = "aiosqlite" },
-    { name = "botbuilder" },
     { name = "instructor" },
     { name = "litellm" },
     { name = "numpy" },
@@ -1310,7 +1309,6 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20.0" },
-    { name = "botbuilder", specifier = ">=0.0.1" },
     { name = "instructor", specifier = ">=1.6.4" },
     { name = "litellm", specifier = "==1.54.1" },
     { name = "numpy" },

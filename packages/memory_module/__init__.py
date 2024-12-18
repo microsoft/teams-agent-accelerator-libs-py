@@ -12,7 +12,6 @@ from memory_module.interfaces.types import (
     UserMessage,
     UserMessageInput,
 )
-from memory_module.utils.teams_bot_middlware import MemoryMiddleware
 
 __all__ = [
     "MemoryModule",
@@ -28,5 +27,4 @@ __all__ = [
     "AssistantMessage",
     "AssistantMessageInput",
     "ShortTermMemoryRetrievalConfig",
-    "MemoryMiddleware",
 ]
