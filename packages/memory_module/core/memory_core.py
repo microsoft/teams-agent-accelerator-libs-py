@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import logging
 from typing import Dict, List, Literal, Optional
 
@@ -65,7 +65,7 @@ class SemanticMemoryExtraction(BaseModel):
     )
 
 class ProcessSemanticMemoryDecision(BaseModel):
-    decision: Literal["add", "replace", "drop"] = Field(..., description="Action to take on the new memory")
+    decision: Literal["add", "ignore"] = Field(..., description="Action to take on the new memory")
 
 class EpisodicMemoryExtraction(BaseModel):
     action: Literal["add", "update", "ignore"] = Field(..., description="Action to take on the extracted fact")
@@ -121,7 +121,7 @@ class MemoryCore(BaseMemoryCore):
                 message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
                 memory = BaseMemoryInput(
                     content=fact.text,
-                    created_at=datetime.datetime.now(),
+                    created_at= messages[0].created_at or datetime.now(),
                     user_id=author_id,
                     message_attributions=message_ids,
                     memory_type=MemoryType.SEMANTIC,
@@ -176,29 +176,36 @@ class MemoryCore(BaseMemoryCore):
     async def _get_add_memory_processing_decision(
             self, new_memory_fact: str, new_memory_embeddings: List[List[float]], user_id: Optional[str]
         )-> str:
-        similar_memory = await self.storage.get_most_similar_memory_with_embeddings(new_memory_embeddings, user_id)
-        decision = await self._extract_memory_processing_decision(new_memory_fact, similar_memory.content, user_id)
+        similar_memories = await self.storage.get_top_similar_memories_with_embeddings(new_memory_embeddings, user_id)
+        decision = await self._extract_memory_processing_decision(
+            new_memory_fact,
+            similar_memories,
+            user_id
+        )
         return decision.decision
 
 
     async def _extract_memory_processing_decision(
-            self, new_memory: str, old_memory: str, user_id: Optional[str]
+            self, new_memory: str, old_memories: List[Memory], user_id: Optional[str]
         ) -> ProcessSemanticMemoryDecision:
         """Determine whether to add, replace or drop this memory"""
 
+        old_memories_str = ",".join([f"{memory.content} created at {memory.created_at}" for memory in old_memories])
         system_message = f"""You are a semantic memory management agent. Your goal is to do content similarity
-comparasion between new memory and old memory, and determine whether to add new memory to database while keep
-old memory, replace old memory with new memory, or ignore new memory due to duplication.
+comparasion between new memory and some old memories, and determine whether to add new memory to database while keep
+old memories, or ignore new memory due to duplication.
+
+Prioritize:
+- time based order: each old memory has a creation time. Please take creation time into consideration.
 
 Return value:
-- Add: add new memory to database while keep old memory
-- Replace: replace old memory with new memory
-- Drop: ignore new memory
+- Add: add new memory to database while keep old memories
+- Ignore: ignore new memory
 
-Here is the old memory
-{old_memory}
+Here are the old memories
+{old_memories_str}
 Here is the new memory
-{new_memory}
+{new_memory} created now
 """
         messages = [{"role": "system", "content": system_message}]
 
