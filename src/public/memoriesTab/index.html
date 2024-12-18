@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="/public/memoriesTab/custom.css" />
+    <script
+        src="https://res.cdn.office.net/teams-js/2.28.0/js/MicrosoftTeams.min.js"
+        integrity="sha384-gT2igbByugSUPXBgDA+rtfKk4JMSCfG+3DKSivyLqF2Riv4vTLqaC/tFpySw0eIM"
+        crossorigin="anonymous"
+    ></script>
+    <script src="/public/memoriesTab/teamsapp.js"></script>
+    <title>My Memories</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>My Memories</h1>
+        
+        <div class="add-memory-form">
+            <h2>Add New Memory</h2>
+            <form id="memoryForm">
+                <div class="form-group">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="4" required></textarea>
+                </div>
+                
+                <button type="submit">Save Memory</button>
+            </form>
+        </div>
+
+        <div class="memories-container" id="memoriesContainer">
+            <!-- Memories will be dynamically inserted here -->
+        </div>
+    </div>
+</body>
+</html>
