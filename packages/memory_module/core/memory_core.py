@@ -198,7 +198,7 @@ class MemoryCore(BaseMemoryCore):
         logger.info("Extracting semantic facts from messages")
         messages_str = ""
         for idx, message in enumerate(messages):
-            if not message.is_assistant_message:
+            if message.type == "user":
                 messages_str += f"{idx}. User: {message.content}\n"
             else:
                 messages_str += f"{idx}. Assistant: {message.content}\n"

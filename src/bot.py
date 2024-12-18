@@ -67,7 +67,7 @@ tasks_by_config = {
         task_name="troubleshoot_device_issue", required_fields=["OS", "Device Type", "Year"]
     ),
     "troubleshoot_connectivity_issue": TaskConfig(
-        task_name="troubleshoot_connectivity_issue", required_fields=["OS", "Device Type", "Year"]
+        task_name="troubleshoot_connectivity_issue", required_fields=["OS", "Device Type", "Router Location"]
     ),
     "troubleshoot_access_issue": TaskConfig(
         task_name="troubleshoot_access_issue", required_fields=["OS", "Device Type", "Year"]
@@ -288,7 +288,7 @@ def build_deep_link(context: TurnContext, message_id: str):
 async def add_message(
     context: TurnContext,
     content: str,
-    is_assistant_message: bool,
+    message_type: Literal["user", "assistant", "internal"] = "user",
     created_at: datetime.datetime | None = None,
     override_message_id: bool = False,
 ):
@@ -314,7 +314,7 @@ async def add_message(
             author_id=user_aad_object_id,
             conversation_ref=conversation_ref_dict.conversation.id,
             created_at=created_at or datetime.datetime.now(datetime.timezone.utc),
-            is_assistant_message=is_assistant_message,
+            type=type,
             deep_link=build_deep_link(context, context.activity.id),
         )
     )
@@ -344,7 +344,7 @@ To identify tasks:
 Note: Step 2 - Gather necessary information for the selected task.
 To gather missing fields for the task:
     Step 2a: Use the "get_memorized_fields" function to check if any required fields are already known.
-    Step 2b (If necessary): Use the "confirm_memorized_fields" function to confirm the fields if they are already known. You should only call this if the user has alraedy previously provided this information.
+    Step 2b (If necessary): Use the "confirm_memorized_fields" function to confirm the fields if they are already known.
     Step 2c (If necessary): For each missing field, prompt the user to provide the required information.
 
 Note: Step 3 - Execute the task.
@@ -373,7 +373,7 @@ Run the provided PROGRAM by executing each step.
         },
         *[
             {
-                "role": "assistant" if message.is_assistant_message else "user",
+                "role": "user" if message.type == "user" else "assistant",
                 "content": message.content,
             }
             for message in messages

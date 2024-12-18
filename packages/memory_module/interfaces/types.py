@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -22,7 +22,7 @@ class Message(BaseModel):
     author_id: Optional[str]
     conversation_ref: str
     created_at: datetime
-    is_assistant_message: bool = False
+    type: Literal["user", "assistant", "internal"] | None = None
     deep_link: Optional[str] = None
 
 

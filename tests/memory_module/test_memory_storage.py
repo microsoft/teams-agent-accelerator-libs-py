@@ -41,7 +41,7 @@ def sample_message():
         author_id="user1",
         conversation_ref="conv1",
         created_at=datetime.now(),
-        is_assistant_message=False,
+        type="user",
     )
 
 
@@ -188,7 +188,7 @@ async def test_get_messages(memory_storage):
             author_id="user1",
             conversation_ref="conv1",
             created_at=datetime.now(),
-            is_assistant_message=False,
+            type="user",
             deep_link="link1",
         ),
         Message(
@@ -197,7 +197,7 @@ async def test_get_messages(memory_storage):
             author_id="user1",
             conversation_ref="conv1",
             created_at=datetime.now(),
-            is_assistant_message=True,
+            type="assistant",
             deep_link="link2",
         ),
     ]
