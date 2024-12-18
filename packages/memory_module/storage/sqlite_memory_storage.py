@@ -47,7 +47,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 (
                     memory_id,
                     memory.content,
-                    memory.created_at.isoformat(),
+                    memory.created_at,
                     memory.user_id,
                     memory.memory_type.value,
                 ),
@@ -300,7 +300,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 message.content,
                 message.author_id,
                 message.conversation_ref,
-                created_at.isoformat(),
+                created_at,
                 message.type,
                 deep_link,
             ),
