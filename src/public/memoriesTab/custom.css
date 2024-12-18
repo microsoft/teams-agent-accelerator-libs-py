@@ -9,34 +9,44 @@ body {
 }
 
 .memories-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #3d3d3d;
+    padding: 2px;
+    border-radius: 8px;
     margin-top: 20px;
 }
 
-.memory-card {
+.memory-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 200px;
+    gap: 2px;
+    align-items: center;
     background: #2d2c2c;
-    border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    border: 1px solid #3d3d3d;
 }
 
-.memory-card h3 {
-    margin: 0 0 8px 0;
+.memory-header {
+    font-weight: bold;
     color: #ffffff;
+    padding: 12px 16px;
+    background: #464775;
 }
 
-.memory-card .date {
-    color: #c8c8c8;
-    font-size: 0.9em;
-    margin-bottom: 12px;
+.memory-cell {
+    padding: 12px 16px;
 }
 
-.memory-card .description {
+.memory-id {
+    color: #888;
+}
+
+.memory-content {
     color: #e0e0e0;
-    line-height: 1.5;
+}
+
+.memory-date {
+    color: #888;
 }
 
 .add-memory-form {
@@ -95,4 +105,92 @@ h1, h2 {
 
 ::placeholder {
     color: #888888;
+}
+
+.loading {
+    color: #c8c8c8;
+    text-align: center;
+    padding: 2rem;
+}
+
+.no-memories {
+    color: #c8c8c8;
+    text-align: center;
+    padding: 2rem;
+    font-style: italic;
+}
+
+.error {
+    color: #ff6b6b;
+    text-align: center;
+    padding: 2rem;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 8px;
+}
+
+.add-button {
+    margin-bottom: 20px;
+    background: #464775;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.add-button:hover {
+    background: #5b5fc7;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.form-actions button[type="button"] {
+    background: #3d3d3d;
+}
+
+.form-actions button[type="button"]:hover {
+    background: #4d4d4d;
+}
+
+.memory-type-toggle {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 20px;
+}
+
+.memory-type-toggle button {
+    background: #2d2c2c;
+    border: none;
+    padding: 10px 20px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.memory-type-toggle button.active {
+    background: #464775;
+}
+
+.memory-metadata {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 0.8em;
+}
+
+.metadata-item {
+    background: #3d3d3d;
+    border-radius: 12px;
+    padding: 2px 8px;
+}
+
+.metadata-label {
+    color: #888;
+    margin-right: 4px;
 }

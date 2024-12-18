@@ -10,7 +10,7 @@
         crossorigin="anonymous"
     ></script>
     <script src="/public/memoriesTab/teamsapp.js"></script>
-    <title>My Memories</title>
+    <title>Memories</title>
 </head>
 
 <body>
@@ -22,9 +22,17 @@
     </div>
 
     <div class="container">
-        <h1>My Memories</h1>
+        <h1>Memories</h1>
         
-        <div class="add-memory-form">
+        <div class="memory-type-toggle">
+            <button id="semantic-toggle" class="active">Semantic Memories</button>
+            <button id="episodic-toggle">Episodic Memories</button>
+        </div>
+
+        <!-- Add memory button (commented out for now) -->
+        <!-- <button id="showAddMemoryBtn" class="add-button">+ Add Memory</button> -->
+        
+        <div class="add-memory-form" style="display: none;">
             <h2>Add New Memory</h2>
             <form id="memoryForm">
                 <div class="form-group">
@@ -42,12 +50,15 @@
                     <textarea id="description" name="description" rows="4" required></textarea>
                 </div>
                 
-                <button type="submit">Save Memory</button>
+                <div class="form-actions">
+                    <button type="submit">Save Memory</button>
+                    <button type="button" id="cancelAddMemory">Cancel</button>
+                </div>
             </form>
         </div>
 
         <div class="memories-container" id="memoriesContainer">
-            <!-- Memories will be dynamically inserted here -->
+            <div class="loading">Loading memories...</div>
         </div>
     </div>
 </body>
