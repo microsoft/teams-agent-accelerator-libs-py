@@ -323,26 +323,41 @@ async def test_short_term_memory(memory_module):
 async def test_add_memory_processing_decision(memory_module):
     """Test whether to process adding memory"""
     conversation_id = str(uuid4())
-    created_at = datetime.now()
-    old_message = Message(
+    old_messages = [
+        Message(
             id=str(uuid4()),
-            content="I have a Mac book.",
+            content="I have a Pokemon limited version Mac book.",
             author_id="user-123",
             conversation_ref=conversation_id,
-            created_at=created_at,
-        )
-
+            created_at=datetime.strptime("2024-09-01", "%Y-%m-%d"),
+        ),
+        Message(
+            id=str(uuid4()),
+            content="I have a pink iphone.",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.strptime("2024-09-03", "%Y-%m-%d"),
+        ),
+        Message(
+            id=str(uuid4()),
+            content="I just bought another Mac book.",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.strptime("2024-10-12", "%Y-%m-%d"),
+        ),
+    ]
     new_message = [
         Message(
             id=str(uuid4()),
-            content="My Mac book no longer works. I have a new Thinkpad",
+            content="I bought one more Mac book",
             author_id="user-123",
             conversation_ref=conversation_id,
-            created_at=created_at,
+            created_at=datetime.now(),
         )
     ]
 
-    await memory_module.add_message(old_message)
+    for message in old_messages:
+        await memory_module.add_message(message)
     await memory_module.message_queue.message_buffer.scheduler.flush()
 
     extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(new_message)

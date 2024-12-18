@@ -60,9 +60,9 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_most_similar_memory_with_embeddings(
-        self, embeddings: List[List[float]], user_id: Optional[str]
-    ) -> Memory:
+    async def get_top_similar_memories_with_embeddings(
+        self, embeddings: List[List[float]], user_id: Optional[str], limit: Optional[int] = None
+    ) -> List[Memory]:
         """Retrieve most similar memory based on embeddings
         Args:
             embeddings: A list of embeddings to find similarity in database
