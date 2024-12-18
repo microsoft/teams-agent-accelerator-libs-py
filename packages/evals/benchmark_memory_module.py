@@ -52,16 +52,16 @@ async def add_messages(memory_module: MemoryModule, messages: List[dict]):
         return Message(
             id=str(uuid.uuid4()),
             content=kwargs["content"],
-            is_assistant_message=kwargs["is_assistant_message"],
-            # author_id="user" if not kwargs["is_assistant_message"] else None,
+            type=kwargs["type"],
+            # author_id="user" if kwargs["type"] == "user" else None,
             author_id="user",
             created_at=datetime.now(),
             conversation_ref="conversation_ref",
         )
 
     for message in messages:
-        is_assistant_message = message["role"] == "assistant"
-        msg = create_message(content=message["content"], is_assistant_message=is_assistant_message)
+        type = "assistant" if message["role"] == "assistant" else "user"
+        msg = create_message(content=message["content"], type=type)
         await memory_module.add_message(msg)
 
 

@@ -19,6 +19,7 @@ def create_test_message(content: str):
         conversation_ref="123",
         created_at=datetime.now(),
         content=content,
+        type="user",
     )
 
 

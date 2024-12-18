@@ -126,6 +126,7 @@ async def test_simple_conversation(memory_module):
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
+            type="user",
         ),
         Message(
             id=str(uuid4()),
@@ -133,6 +134,7 @@ async def test_simple_conversation(memory_module):
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
+            type="user",
         ),
     ]
 
@@ -206,7 +208,7 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
-            role="user",
+            type="user",
         )
         for i in range(3)
     ]
@@ -229,6 +231,7 @@ async def test_update_memory(memory_module):
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
+            type="user",
         ),
     ]
 
@@ -256,6 +259,7 @@ async def test_remove_memory(memory_module):
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
+            type="user",
         ),
     ]
 
@@ -282,7 +286,7 @@ async def test_short_term_memory(memory_module):
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
-            role="user",
+            type="user",
         )
         for i in range(3)
     ]

@@ -278,7 +278,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     author_id,
                     conversation_ref,
                     created_at,
-                    is_assistant_message,
+                    type,
                     deep_link
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (
@@ -287,7 +287,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     message.author_id,
                     message.conversation_ref,
                     message.created_at,
-                    message.is_assistant_message,
+                    message.type,
                     message.deep_link,
                 ),
             )
