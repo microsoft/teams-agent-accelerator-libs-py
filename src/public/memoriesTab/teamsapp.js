@@ -11,18 +11,18 @@ function initializeTeamsOrBrowser() {
 // Replace the existing initialization with this one
 initializeTeamsOrBrowser().then(() => {
     loadMemories();
-    
+
     // Handle form submission
     document.getElementById('memoryForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         const memory = {
             id: Date.now(),
             title: document.getElementById('title').value,
             date: document.getElementById('date').value,
             description: document.getElementById('description').value
         };
-        
+
         saveMemory(memory);
         document.getElementById('memoryForm').reset();
     });
@@ -50,12 +50,12 @@ async function loadMemories(type = 'semantic') {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const memories = await response.json();
-        
+
         // Filter memories by type
-        const filteredMemories = memories.filter(memory => 
+        const filteredMemories = memories.filter(memory =>
             (memory.type || 'SEMANTIC').toUpperCase() === type.toUpperCase()
         );
-        
+
         if (filteredMemories.length === 0) {
             memoriesContainer.innerHTML = '<div class="no-memories">No memories found</div>';
             return;
@@ -79,7 +79,7 @@ async function loadMemories(type = 'semantic') {
                     <div class="memory-metadata">
                         <span class="metadata-item">
                             <span class="metadata-label">Type:</span>
-                            ${memory.type === 'SEMANTIC' ? 'Semantic (Fact/Preference)' : 'Episodic (Event/Experience)'}
+                            ${memory.type === 'SEMANTIC' ? 'Semantic' : 'Episodic'}
                         </span>
                     </div>
                 </div>
@@ -111,4 +111,3 @@ function toggleMemoryType(type) {
     document.getElementById('episodic-toggle').classList.toggle('active', type === 'episodic');
     loadMemories(type);
 }
-  
