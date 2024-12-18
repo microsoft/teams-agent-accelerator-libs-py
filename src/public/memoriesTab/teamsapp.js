@@ -1,5 +1,15 @@
-// Initialize the Teams SDK
-microsoftTeams.app.initialize().then(() => {
+// Initialize the Teams SDK with fallback for browser testing
+function initializeTeamsOrBrowser() {
+    try {
+        return microsoftTeams.app.initialize();
+    } catch (err) {
+        console.log('Teams SDK not loaded - running in browser mode');
+        return Promise.resolve();
+    }
+}
+
+// Replace the existing initialization with this one
+initializeTeamsOrBrowser().then(() => {
     // Load existing memories from localStorage
     loadMemories();
     
