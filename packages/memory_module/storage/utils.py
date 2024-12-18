@@ -13,4 +13,4 @@ def build_message_from_dict(row: Dict) -> Message:
     elif row["type"] == "assistant":
         return AssistantMessage(**row)
     else:
-        raise ValueError(f"Invalid message type: {row['type']}")
+        raise ValueError(f"Invalid message type: {row['type']}. Expected one of: 'internal', 'user', 'assistant'")
