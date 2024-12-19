@@ -286,7 +286,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         else:
             deep_link = message.deep_link
         await self.storage.execute(
-            """INSERT INTO messages (
+            """INSERT OR REPLACE INTO messages (
                 id,
                 content,
                 author_id,
