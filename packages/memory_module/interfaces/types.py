@@ -1,6 +1,5 @@
 from abc import ABC
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
 from typing import ClassVar, List, Optional
 
@@ -27,6 +26,7 @@ class InternalMessageInput(BaseMessageInput):
     model_config = ConfigDict(from_attributes=True)
     type: ClassVar = "internal"
     created_at: Optional[datetime] = None
+    deep_link: ClassVar[None] = None
 
 
 class InternalMessage(InternalMessageInput):
@@ -122,7 +122,7 @@ class EmbedText(BaseModel):
 
 class ShortTermMemoryRetrievalConfig(BaseModel):
     n_messages: Optional[int] = None  # Number of messages to retrieve
-    last_minutes: Optional[Decimal] = None  # Time frame in minutes
+    last_minutes: Optional[float] = None  # Time frame in minutes
 
     @model_validator(mode="after")
     def check_parameters(self) -> "ShortTermMemoryRetrievalConfig":
