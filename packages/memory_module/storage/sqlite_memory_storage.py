@@ -279,7 +279,12 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         else:
             id = message.id
 
-        created_at = message.created_at or datetime.datetime.now().astimezone(datetime.timezone.utc)
+        if message.created_at:
+            created_at = message.created_at
+            created_at = created_at.astimezone(datetime.timezone.utc)
+            created_at = created_at.isoformat()
+        else:
+            created_at = datetime.datetime.now().astimezone(datetime.timezone.utc).isoformat()
 
         if isinstance(message, InternalMessageInput):
             deep_link = None
@@ -300,7 +305,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 message.content,
                 message.author_id,
                 message.conversation_ref,
-                created_at.astimezone(datetime.timezone.utc).isoformat(),
+                created_at,
                 message.type,
                 deep_link,
             ),
