@@ -3,11 +3,12 @@ from datetime import datetime
 
 import pytest
 from memory_module.interfaces.types import (
+    AssistantMessageInput,
     BaseMemoryInput,
     EmbedText,
     MemoryType,
-    Message,
     ShortTermMemoryRetrievalConfig,
+    UserMessageInput,
 )
 from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
@@ -35,13 +36,12 @@ def sample_memory_input():
 
 @pytest.fixture
 def sample_message():
-    return Message(
+    return UserMessageInput(
         id="msg1",
         content="Test message",
         author_id="user1",
         conversation_ref="conv1",
         created_at=datetime.now(),
-        type="user",
     )
 
 
@@ -182,22 +182,19 @@ async def test_get_memories_by_ids(memory_storage, sample_memory_input, sample_e
 async def test_get_messages(memory_storage):
     # Test data
     test_messages = [
-        Message(
+        UserMessageInput(
             id="msg1",
             content="Test message 1",
             author_id="user1",
             conversation_ref="conv1",
             created_at=datetime.now(),
-            type="user",
             deep_link="link1",
         ),
-        Message(
+        AssistantMessageInput(
             id="msg2",
             content="Test message 2",
             author_id="user1",
             conversation_ref="conv1",
-            created_at=datetime.now(),
-            type="assistant",
             deep_link="link2",
         ),
     ]

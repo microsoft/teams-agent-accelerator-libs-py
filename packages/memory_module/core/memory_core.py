@@ -14,6 +14,7 @@ from memory_module.interfaces.types import (
     Memory,
     MemoryType,
     Message,
+    MessageInput,
     ShortTermMemoryRetrievalConfig,
 )
 from memory_module.services.llm_service import LLMService
@@ -94,7 +95,7 @@ class MemoryCore(BaseMemoryCore):
             storage: Optional storage implementation for memory persistence
         """
         self.lm = llm_service
-        self.storage = storage or (
+        self.storage: BaseMemoryStorage = storage or (
             SQLiteMemoryStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
         )
 
@@ -200,8 +201,11 @@ class MemoryCore(BaseMemoryCore):
         for idx, message in enumerate(messages):
             if message.type == "user":
                 messages_str += f"{idx}. User: {message.content}\n"
-            else:
+            elif message.type == "assistant":
                 messages_str += f"{idx}. Assistant: {message.content}\n"
+            else:
+                # we explicitly ignore internal messages
+                continue
 
         system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests
 that will remain relevant over time, even if the user is mentioning short-term plans or events.
@@ -262,8 +266,8 @@ Here are the incoming messages:
 
         return await self.lm.completion(messages=messages, response_model=EpisodicMemoryExtraction)
 
-    async def add_short_term_memory(self, message: Message) -> None:
-        await self.storage.store_short_term_memory(message)
+    async def add_short_term_memory(self, message: MessageInput) -> Message:
+        return await self.storage.store_short_term_memory(message)
 
     async def retrieve_chat_history(
         self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig

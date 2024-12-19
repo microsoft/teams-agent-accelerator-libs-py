@@ -7,6 +7,7 @@ from memory_module.interfaces.base_message_buffer_storage import (
 )
 from memory_module.interfaces.types import Message
 from memory_module.storage.sqlite_storage import SQLiteStorage
+from memory_module.storage.utils import build_message_from_dict
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
             (
                 message.id,
                 message.conversation_ref,
-                message.created_at,
+                message.created_at.isoformat(),
             ),
         )
 
@@ -45,20 +46,14 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         """Retrieve all buffered messages for a conversation."""
         query = """
             SELECT
-                m.id,
-                m.content,
-                m.author_id,
-                m.conversation_ref,
-                m.created_at,
-                m.type,
-                m.deep_link
+                m.*
             FROM buffered_messages b
             JOIN messages m ON b.message_id = m.id
             WHERE b.conversation_ref = ?
             ORDER BY b.created_at ASC
         """
         results = await self.storage.fetch_all(query, (conversation_ref,))
-        return [Message(**row) for row in results]
+        return [build_message_from_dict(row) for row in results]
 
     async def clear_buffered_messages(self, conversation_ref: str) -> None:
         """Remove all buffered messages for a conversation."""

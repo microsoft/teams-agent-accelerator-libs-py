@@ -18,7 +18,10 @@ from memory_module.core.memory_core import (
     SemanticMemoryExtraction,
 )
 from memory_module.core.memory_module import MemoryModule
-from memory_module.interfaces.types import Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import (
+    ShortTermMemoryRetrievalConfig,
+    UserMessageInput,
+)
 
 from tests.memory_module.utils import build_llm_config
 
@@ -120,21 +123,19 @@ async def test_simple_conversation(memory_module):
     """Test a simple conversation about pie."""
     conversation_id = str(uuid4())
     messages = [
-        Message(
+        UserMessageInput(
             id=str(uuid4()),
             content="I love pie!",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
-            type="user",
         ),
-        Message(
+        UserMessageInput(
             id=str(uuid4()),
             content="Apple pie is the best!",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
-            type="user",
         ),
     ]
 
@@ -202,13 +203,12 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
 
     conversation_id = str(uuid4())
     messages = [
-        Message(
+        UserMessageInput(
             id=str(uuid4()),
             content=f"Message {i} about pie",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
-            type="user",
         )
         for i in range(3)
     ]
@@ -225,13 +225,12 @@ async def test_update_memory(memory_module):
     """Test memory update"""
     conversation_id = str(uuid4())
     messages = [
-        Message(
+        UserMessageInput(
             id=str(uuid4()),
             content="Seattle is my favorite city!",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
-            type="user",
         ),
     ]
 
@@ -253,13 +252,12 @@ async def test_remove_memory(memory_module):
     """Test a simple conversation removal based on user id."""
     conversation_id = str(uuid4())
     messages = [
-        Message(
+        UserMessageInput(
             id=str(uuid4()),
             content="I like pho a lot!",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
-            type="user",
         ),
     ]
 
@@ -280,13 +278,12 @@ async def test_short_term_memory(memory_module):
     """Test that messages are stored in short-term memory."""
     conversation_id = str(uuid4())
     messages = [
-        Message(
+        UserMessageInput(
             id=str(uuid4()),
             content=f"Test message {i}",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
-            type="user",
         )
         for i in range(3)
     ]
@@ -300,7 +297,6 @@ async def test_short_term_memory(memory_module):
         conversation_id, ShortTermMemoryRetrievalConfig(last_minutes=1)
     )
     assert len(chat_history_messages) == 3
-    assert all(msg in chat_history_messages for msg in messages)
 
     # Verify messages are in reverse order
     reversed_messages = messages[::-1]

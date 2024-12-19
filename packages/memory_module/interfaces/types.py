@@ -1,7 +1,7 @@
+from abc import ABC
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import ClassVar, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -12,18 +12,79 @@ class User(BaseModel):
     id: str
 
 
-class Message(BaseModel):
-    """Represents a message in a conversation."""
+class BaseMessageInput(ABC, BaseModel):
+    content: str
+    author_id: str
+    conversation_ref: str
+
+
+class InternalMessageInput(BaseMessageInput):
+    """
+    Input parameter for an internal message. Used when creating a new message.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+    type: ClassVar = "internal"
+    created_at: Optional[datetime] = None
+    deep_link: ClassVar[None] = None
+
+
+class InternalMessage(InternalMessageInput):
+    """
+    Represents a message that is not meant to be shown to the user.
+    Useful for keeping agentic transcript state.
+    These are not used as part of memory extraction
+    """
 
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    content: str
-    author_id: Optional[str]
-    conversation_ref: str
-    created_at: datetime
-    type: Literal["user", "assistant", "internal"] | None = None
+    created_at: datetime  # type: ignore Ignoring because this will exist in the concrete class
+
+
+class UserMessageInput(BaseMessageInput):
+    """
+    Input parameter for a user message. Used when creating a new message.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    type: ClassVar = "user"
     deep_link: Optional[str] = None
+    created_at: datetime
+
+
+class UserMessage(UserMessageInput):
+    """
+    Represents a message that was sent by the user.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AssistantMessageInput(BaseMessageInput):
+    """
+    Input parameter for an assistant message. Used when creating a new message.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    type: ClassVar = "assistant"
+    deep_link: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class AssistantMessage(AssistantMessageInput):
+    """
+    Represents a message that was sent by the assistant.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+    created_at: datetime  # type: ignore Ignoring because this will exist in the concrete class
+
+
+type MessageInput = InternalMessageInput | UserMessageInput | AssistantMessageInput
+type Message = InternalMessage | UserMessage | AssistantMessage
 
 
 class MemoryAttribution(BaseModel):
@@ -61,7 +122,7 @@ class EmbedText(BaseModel):
 
 class ShortTermMemoryRetrievalConfig(BaseModel):
     n_messages: Optional[int] = None  # Number of messages to retrieve
-    last_minutes: Optional[Decimal] = None  # Time frame in minutes
+    last_minutes: Optional[float] = None  # Time frame in minutes
 
     @model_validator(mode="after")
     def check_parameters(self) -> "ShortTermMemoryRetrievalConfig":

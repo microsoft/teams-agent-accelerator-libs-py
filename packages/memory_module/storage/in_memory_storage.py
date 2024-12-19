@@ -1,6 +1,7 @@
 import datetime
+import uuid
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TypedDict
 
 import numpy as np
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
@@ -9,12 +10,32 @@ from memory_module.interfaces.base_message_buffer_storage import (
 )
 from memory_module.interfaces.base_scheduled_events_service import Event
 from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
-from memory_module.interfaces.types import BaseMemoryInput, EmbedText, Memory, Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import (
+    AssistantMessage,
+    AssistantMessageInput,
+    BaseMemoryInput,
+    EmbedText,
+    InternalMessage,
+    InternalMessageInput,
+    Memory,
+    Message,
+    MessageInput,
+    ShortTermMemoryRetrievalConfig,
+    UserMessage,
+    UserMessageInput,
+)
+
+
+class InMemoryInternalStore(TypedDict):
+    memories: Dict[str, Memory]
+    embeddings: Dict[str, List[List[float]]]
+    buffered_messages: Dict[str, List[Message]]
+    scheduled_events: Dict[str, Event]
 
 
 class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage):
     def __init__(self):
-        self.storage: Dict = {
+        self.storage: InMemoryInternalStore = {
             "embeddings": {},
             "buffered_messages": defaultdict(list),
             "scheduled_events": {},
@@ -28,7 +49,8 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         embedding_vectors: List[List[float]],
     ) -> str | None:
         memory_id = str(len(self.storage["memories"]) + 1)
-        self.storage["memories"][memory_id] = memory
+        memory_obj = Memory(**memory.model_dump(), id=memory_id)
+        self.storage["memories"][memory_id] = memory_obj
         self.storage["embeddings"][memory_id] = embedding_vectors
         return memory_id
 
@@ -37,8 +59,48 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             self.storage["memories"][memory_id].content = updated_memory
             self.storage["embeddings"][memory_id] = embedding_vectors
 
-    async def store_short_term_memory(self, message: Message) -> None:
-        await self.store_buffered_message(message)
+    async def store_short_term_memory(self, message: MessageInput) -> Message:
+        if isinstance(message, InternalMessageInput):
+            id = str(uuid.uuid4())
+        else:
+            id = message.id
+
+        created_at = message.created_at or datetime.datetime.now()
+
+        if isinstance(message, InternalMessageInput):
+            deep_link = None
+        else:
+            deep_link = message.deep_link
+
+        if isinstance(message, UserMessageInput):
+            message_obj = UserMessage(
+                id=id,
+                content=message.content,
+                created_at=created_at,
+                conversation_ref=message.conversation_ref,
+                deep_link=deep_link,
+                author_id=message.author_id,
+            )
+        elif isinstance(message, AssistantMessageInput):
+            message_obj = AssistantMessage(
+                id=id,
+                content=message.content,
+                created_at=created_at,
+                conversation_ref=message.conversation_ref,
+                deep_link=deep_link,
+                author_id=message.author_id,
+            )
+        else:
+            message_obj = InternalMessage(
+                id=id,
+                content=message.content,
+                created_at=created_at,
+                conversation_ref=message.conversation_ref,
+                author_id=message.author_id,
+            )
+
+        await self.store_buffered_message(message_obj)
+        return message_obj
 
     async def retrieve_memories(
         self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
@@ -66,7 +128,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             )
 
         sorted_memories.sort(key=lambda x: x["distance"], reverse=True)
-        return [Memory(id=item["id"], **item["memory"].__dict__) for item in sorted_memories[:limit]]
+        return [Memory(**item["memory"].__dict__) for item in sorted_memories[:limit]]
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return [
@@ -84,7 +146,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             str_id = memory_id
             if str_id in self.storage["memories"]:
                 memory = self.storage["memories"][str_id]
-                if hasattr(memory, "message_attributions"):
+                if memory.message_attributions:
                     messages = []
                     for msg_id in memory.message_attributions:
                         # Search through buffered messages to find matching message
@@ -107,7 +169,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             self.storage["embeddings"].pop(memory_id, None)
             self.storage["memories"].pop(memory_id, None)
 
-    async def get_memory(self, memory_id: int) -> Optional[Memory]:
+    async def get_memory(self, memory_id: str) -> Optional[Memory]:
         return self.storage["memories"].get(memory_id)
 
     async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
