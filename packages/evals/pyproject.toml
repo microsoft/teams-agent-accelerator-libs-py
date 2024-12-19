@@ -5,14 +5,12 @@ description = "Benchmarks for the different components"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "memory-module"
-]
-
-[tool.uv]
-package = false
-dev-dependencies = [
+    "memory-module",
     "pandas",
     "mlflow>=2.17.2",
     "tqdm>=4.66.5",
     "databricks-sdk",
 ]
+
+[tool.uv]
+package = false

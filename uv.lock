@@ -631,23 +631,17 @@ name = "evals"
 version = "0.1.0"
 source = { virtual = "packages/evals" }
 dependencies = [
-    { name = "memory-module" },
-]
-
-[package.dev-dependencies]
-dev = [
     { name = "databricks-sdk" },
+    { name = "memory-module" },
     { name = "mlflow" },
     { name = "pandas" },
     { name = "tqdm" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "memory-module", virtual = "packages/memory_module" }]
-
-[package.metadata.requires-dev]
-dev = [
+requires-dist = [
     { name = "databricks-sdk" },
+    { name = "memory-module", virtual = "packages/memory_module" },
     { name = "mlflow", specifier = ">=2.17.2" },
     { name = "pandas" },
     { name = "tqdm", specifier = ">=4.66.5" },
@@ -1318,6 +1312,9 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "sqlite-vec", specifier = ">=0.1.6" },
 ]
+
+[package.metadata.requires-dev]
+dev = []
 
 [[package]]
 name = "mlflow"
