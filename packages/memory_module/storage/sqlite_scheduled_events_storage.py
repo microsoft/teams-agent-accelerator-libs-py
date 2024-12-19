@@ -1,6 +1,6 @@
+import datetime
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
@@ -37,7 +37,7 @@ class SQLiteScheduledEventsStorage(BaseScheduledEventsStorage):
             (
                 event.id,
                 json.dumps(event.object),  # Serialize to JSON
-                event.time.isoformat(),
+                event.time.astimezone(datetime.timezone.utc).isoformat(),
             ),
         )
 
@@ -54,7 +54,7 @@ class SQLiteScheduledEventsStorage(BaseScheduledEventsStorage):
         result = await self.storage.fetch_one(query, (event_id,))
         if result:
             result["object"] = json.loads(result["object"])  # Deserialize from JSON
-            result["time"] = datetime.fromisoformat(result["time"])
+            result["time"] = datetime.datetime.fromisoformat(result["time"])
             return Event(**result)
         return None
 
@@ -73,7 +73,7 @@ class SQLiteScheduledEventsStorage(BaseScheduledEventsStorage):
             Event(
                 id=row["id"],
                 object=json.loads(row["object"]),  # Deserialize from JSON
-                time=datetime.fromisoformat(row["time"]),
+                time=datetime.datetime.fromisoformat(row["time"]),
             )
             for row in results
         ]

@@ -47,7 +47,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 (
                     memory_id,
                     memory.content,
-                    memory.created_at.isoformat(),
+                    memory.created_at.astimezone(datetime.timezone.utc).isoformat(),
                     memory.user_id,
                     memory.memory_type.value,
                 ),
@@ -279,14 +279,19 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         else:
             id = message.id
 
-        created_at = message.created_at or datetime.datetime.now()
+        if message.created_at:
+            created_at = message.created_at
+            created_at = created_at.astimezone(datetime.timezone.utc)
+            created_at = created_at.isoformat()
+        else:
+            created_at = datetime.datetime.now().astimezone(datetime.timezone.utc).isoformat()
 
         if isinstance(message, InternalMessageInput):
             deep_link = None
         else:
             deep_link = message.deep_link
         await self.storage.execute(
-            """INSERT INTO messages (
+            """INSERT OR REPLACE INTO messages (
                 id,
                 content,
                 author_id,
@@ -300,7 +305,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 message.content,
                 message.author_id,
                 message.conversation_ref,
-                created_at.isoformat(),
+                created_at,
                 message.type,
                 deep_link,
             ),
@@ -316,15 +321,17 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
-        params = [conversation_ref]
+        params = (conversation_ref,)
 
-        if "n_messages" in config and config["n_messages"] is not None:
+        if config.n_messages is not None:
             query += " ORDER BY created_at DESC LIMIT ?"
-            params.append(config["n_messages"])
+            params += (str(config.n_messages),)
 
-        if "last_minutes" in config and config["last_minutes"] is not None:
-            query += " AND created_at >= datetime('now', ?) ORDER BY created_at DESC"
-            params.append(f"-{config['last_minutes']} minutes")
+        if config.last_minutes is not None:
+            query += (
+                " AND created_at >= strftime('%Y-%m-%dT%H:%M:%S.000Z', datetime('now', ?)) ORDER BY created_at DESC"
+            )
+            params += (f"-{config.last_minutes} minutes",)
 
         rows = await self.storage.fetch_all(query, params)
 
