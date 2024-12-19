@@ -115,6 +115,9 @@ class TechAssistantAgent(Agent):
                 else:
                     break
 
+                if should_break:
+                    break
+
             if should_break:
                 break  # Break the outer loop
 

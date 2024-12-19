@@ -12,7 +12,7 @@ To identify tasks:
 Note: Step 2 - Gather necessary information for the selected task.
 To gather missing fields for the task:
     Step 2a: Use the "get_memorized_fields" function to check if any required fields are already known.
-    Step 2b (If necessary): Use the "confirm_memorized_fields" function to confirm the fields if they are already known.
+    Step 2b (If necessary): Use the "confirm_memorized_fields" function to confirm the fields if they are already known. You don't need to confirm it if the user just provided the information.
     Step 2c (If necessary): For each missing field, prompt the user to provide the required information.
 
 Note: Step 3 - Execute the task.
@@ -31,7 +31,7 @@ If the user ends the conversation, display "Thank you! Let me know if you need a
 
 <INSTRUCTIONS>
 Run the provided PROGRAM by executing each step.
-"""
+"""  # noqa: E501
 
 execute_task_prompt = """
 You are an IT Support Assistant. You make up some common solutions to common issues. Be creative.

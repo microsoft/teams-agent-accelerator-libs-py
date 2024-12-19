@@ -11,7 +11,7 @@ tasks_by_config = {
         task_name="troubleshoot_device_issue", required_fields=["OS", "Device Type", "Year"]
     ),
     "troubleshoot_connectivity_issue": TaskConfig(
-        task_name="troubleshoot_connectivity_issue", required_fields=["OS", "Device Type", "Router Location"]
+        task_name="troubleshoot_connectivity_issue", required_fields=["OS", "Device Type"]
     ),
     "troubleshoot_access_issue": TaskConfig(
         task_name="troubleshoot_access_issue", required_fields=["OS", "Device Type", "Year"]
