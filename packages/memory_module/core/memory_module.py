@@ -6,7 +6,7 @@ from memory_module.core.message_queue import MessageQueue
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.base_memory_module import BaseMemoryModule
 from memory_module.interfaces.base_message_queue import BaseMessageQueue
-from memory_module.interfaces.types import Memory, Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import Memory, Message, MessageInput, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
 
 
@@ -31,13 +31,17 @@ class MemoryModule(BaseMemoryModule):
         self.config = config
 
         self.llm_service = llm_service or LLMService(config=config.llm)
-        self.memory_core = memory_core or MemoryCore(config=config, llm_service=self.llm_service)
-        self.message_queue = message_queue or MessageQueue(config=config, memory_core=self.memory_core)
+        self.memory_core: BaseMemoryCore = memory_core or MemoryCore(config=config, llm_service=self.llm_service)
+        self.message_queue: BaseMessageQueue = message_queue or MessageQueue(
+            config=config, memory_core=self.memory_core
+        )
 
-    async def add_message(self, message: Message) -> None:
+    async def add_message(self, message: MessageInput) -> Message:
         """Add a message to be processed into memory."""
-        await self.memory_core.add_short_term_memory(message)
-        await self.message_queue.enqueue(message)
+        message_res = await self.memory_core.add_short_term_memory(message)
+        await self.message_queue.enqueue(message_res)
+
+        return message_res
 
     async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve relevant memories based on a query."""

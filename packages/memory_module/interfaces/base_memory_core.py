@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
-from memory_module.interfaces.types import Memory, Message, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import Memory, Message, MessageInput, ShortTermMemoryRetrievalConfig
 
 
 class BaseMemoryCore(ABC):
@@ -43,7 +43,7 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def add_short_term_memory(self, message: Message) -> None:
+    async def add_short_term_memory(self, message: MessageInput) -> Message:
         """Add a short-term memory entry."""
         pass
 
