@@ -20,7 +20,10 @@ class TechSupportAgent(Agent):
         super().__init__()
 
     async def run(self, context: TurnContext):
-        system_prompt = execute_task_prompt.format()
+        system_prompt = execute_task_prompt.format(
+            summary_of_issue=self.execute_task_args.succint_summary_of_issue,
+            user_details=self.execute_task_args.user_details,
+        )
         response = await acompletion(
             **self._llm_config,
             messages=[{"role": "system", "content": system_prompt}],

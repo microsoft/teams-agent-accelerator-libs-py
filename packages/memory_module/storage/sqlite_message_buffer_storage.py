@@ -1,3 +1,4 @@
+import datetime
 import logging
 from pathlib import Path
 from typing import List, Optional
@@ -38,7 +39,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
             (
                 message.id,
                 message.conversation_ref,
-                message.created_at.isoformat(),
+                message.created_at.astimezone(datetime.timezone.utc).isoformat(),
             ),
         )
 

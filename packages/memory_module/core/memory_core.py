@@ -102,12 +102,16 @@ class MemoryCore(BaseMemoryCore):
     async def process_semantic_messages(self, messages: List[Message]) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         # make sure there is an author, and only one author
-        author_id = next((message.author_id for message in messages if message.author_id), None)
+        author_id = next(
+            (message.author_id for message in messages if message.author_id and message.type == "user"), None
+        )
         if not author_id:
             logger.error("No author found in messages")
             return
         # check if there are any other authors
-        other_authors = [message.author_id for message in messages if message.author_id != author_id]
+        other_authors = [
+            message.author_id for message in messages if message.type == "user" and message.author_id != author_id
+        ]
         if other_authors:
             logger.error("Multiple authors found in messages")
             return

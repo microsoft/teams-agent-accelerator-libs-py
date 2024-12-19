@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -283,7 +283,7 @@ async def test_short_term_memory(memory_module):
             content=f"Test message {i}",
             author_id="user-123",
             conversation_ref=conversation_id,
-            created_at=datetime.now(),
+            created_at=datetime.now() + timedelta(seconds=-i * 10),
         )
         for i in range(3)
     ]
