@@ -3,62 +3,38 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" type="text/css" href="/public/memoriesTab/custom.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
     <script
-        src="https://res.cdn.office.net/teams-js/2.28.0/js/MicrosoftTeams.min.js"
-        integrity="sha384-gT2igbByugSUPXBgDA+rtfKk4JMSCfG+3DKSivyLqF2Riv4vTLqaC/tFpySw0eIM"
-        crossorigin="anonymous"
-    ></script>
-    <script src="/public/memoriesTab/teamsapp.js"></script>
+  src="https://res.cdn.office.net/teams-js/2.30.0/js/MicrosoftTeams.min.js"
+  integrity="sha384-8I0Bv4bWDPSX5ZYhJcChnvrBNoieX3zASTxmZ9URwnjEVx70hsrN0ZUy/C46u8dw"
+  crossorigin="anonymous"
+></script>
+    <script src="/memoriesTab/teamsapp.js"></script>
     <title>Memories</title>
 </head>
 
-<body>
-    <!-- Add this for browser testing -->
-    <div id="teamsContainer">
-        <div style="padding: 1rem; color: #c8c8c8;">
-            <span>⚠️ Teams SDK not loaded. Testing in browser mode...</span>
-        </div>
-    </div>
-
-    <div class="container">
-        <h1>Memories</h1>
+<body class="bg-gray-900 text-gray-100 p-6">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">Memories</h1>
         
-        <div class="memory-type-toggle">
-            <button id="semantic-toggle" class="active">Semantic Memories</button>
-            <button id="episodic-toggle">Episodic Memories</button>
-        </div>
-
-        <!-- Add memory button (commented out for now) -->
-        <!-- <button id="showAddMemoryBtn" class="add-button">+ Add Memory</button> -->
-        
-        <div class="add-memory-form" style="display: none;">
-            <h2>Add New Memory</h2>
-            <form id="memoryForm">
-                <div class="form-group">
-                    <label for="title">Title</label>
-                    <input type="text" id="title" name="title" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="date">Date</label>
-                    <input type="date" id="date" name="date" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea id="description" name="description" rows="4" required></textarea>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit">Save Memory</button>
-                    <button type="button" id="cancelAddMemory">Cancel</button>
-                </div>
-            </form>
-        </div>
-
-        <div class="memories-container" id="memoriesContainer">
-            <div class="loading">Loading memories...</div>
+        <div class="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-gray-700">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Content</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Created At</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Attributions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memoriesContainer" class="divide-y divide-gray-700">
+                        <tr>
+                            <td colspan="4" class="px-6 py-4 text-center text-gray-400">Loading memories...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </body>

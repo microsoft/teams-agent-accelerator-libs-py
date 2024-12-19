@@ -75,6 +75,9 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             if memory_id in self.storage["memories"]
         ]
 
+    async def get_user_memories(self, user_id: str) -> List[Memory]:
+        return [memory.copy() for memory in self.storage["memories"].values() if memory.user_id == user_id]
+
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         messages_dict: Dict[str, List[Message]] = {}
         for memory_id in memory_ids:

@@ -3,27 +3,16 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
-import json
 import os
 from http import HTTPStatus
-from pathlib import Path
 
 from aiohttp import web
 from botbuilder.core.integration import aiohttp_error_middleware
-from memory_module import LLMConfig, MemoryModule, MemoryModuleConfig
 
-from bot import bot_app, memory_llm_config
+from bot import bot_app, memory_module
 from config import Config
 
 routes = web.RouteTableDef()
-
-memory_module = MemoryModule(
-    config=MemoryModuleConfig(
-        llm=LLMConfig(**memory_llm_config),
-        db_path=Path(os.path.join(os.path.dirname(__file__), "data", "memory.db")),
-        timeout_seconds=60,
-    )
-)
 
 
 @routes.post("/api/messages")
@@ -36,27 +25,19 @@ async def on_messages(req: web.Request) -> web.Response:
 
 @routes.get("/api/memories")
 async def get_memories(request: web.Request) -> web.Response:
-    # Get all memories with an empty query
-    memories = await memory_module.retrieve_memories("", None, None)
-    return web.Response(
-        text=json.dumps(
-            [
-                {
-                    "id": memory.id,
-                    "content": memory.content,
-                    "created_at": memory.created_at.isoformat() if memory.created_at else None,
-                }
-                for memory in memories
-            ]
-        ),
-        content_type="application/json",
-    )
+    # TODO: Auth
+    user_id = request.query.get("userId")
+    if not user_id:
+        return web.Response(status=HTTPStatus.BAD_REQUEST, text="Missing userId parameter")
+    print("Get_memories for user", user_id)
+    memories = await memory_module.get_user_memories(user_id)
+    return web.json_response([memory.model_dump() for memory in memories])
 
 
 app = web.Application(middlewares=[aiohttp_error_middleware])
 app.add_routes(routes)
 
-app.router.add_static("/public", os.path.join(os.path.dirname(__file__), "public"))
+app.router.add_static("/memoriesTab", os.path.join(os.path.dirname(__file__), "public/memoriesTab"))
 
 if __name__ == "__main__":
     web.run_app(app, host="localhost", port=Config.PORT)
