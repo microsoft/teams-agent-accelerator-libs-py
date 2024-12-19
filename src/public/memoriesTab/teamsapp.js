@@ -46,6 +46,7 @@ async function loadMemories(userId) {
       displayError("No memories found");
     }
 
+    console.log("Memories loaded:", memories);
     memoriesContainer.innerHTML = memories
       .map(
         (memory) => `
