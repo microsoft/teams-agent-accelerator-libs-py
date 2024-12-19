@@ -182,10 +182,10 @@ class MemoryCore(BaseMemoryCore):
         ) -> ProcessSemanticMemoryDecision:
         """Determine whether to add, replace or drop this memory"""
 
-        old_memories_str = ",".join([f"{memory.content} created at {memory.created_at}" for memory in old_memories])
+        # created at time format: YYYY-MM-DD HH:MM:SS.sssss in UTC.
+        old_memory_content = "\n".join([f"{memory.content} created at {str(memory.created_at)}" for memory in old_memories])
         system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new memory
-is duplicated with existing old memories. If not duplicated, add this new memory to database while keep old memories.
-Otherwise, ignore new memory due to duplication.
+is duplicated with existing old memories.
 
 Considerations:
 - Time-based order: Each old memory has a creation time. Please take creation time into consideration.
@@ -196,7 +196,7 @@ Return value:
 - Ignore: ignore new memory
 
 Here are the old memories:
-{old_memories_str}
+{old_memory_content}
 Here is the new memory:
 {new_memory} created now
 """
