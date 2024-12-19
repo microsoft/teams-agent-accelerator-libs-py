@@ -38,7 +38,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
             (
                 message.id,
                 message.conversation_ref,
-                message.created_at,
+                message.created_at.isoformat(),
             ),
         )
 

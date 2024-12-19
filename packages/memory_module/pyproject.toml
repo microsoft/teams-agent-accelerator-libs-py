@@ -12,6 +12,7 @@ dependencies = [
     "numpy",
     "sqlite-vec>=0.1.6",
     "litellm==1.54.1",
+    "botbuilder>=0.0.1",
 ]
 
 [tool.uv]
