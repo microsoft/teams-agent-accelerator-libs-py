@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -283,9 +283,9 @@ async def test_short_term_memory(memory_module):
             content=f"Test message {i}",
             author_id="user-123",
             conversation_ref=conversation_id,
-            created_at=datetime.now(),
+            created_at=datetime.now() + timedelta(seconds=-i * 25),
         )
-        for i in range(3)
+        for i in range(4)
     ]
 
     # Add messages one by one
@@ -299,6 +299,6 @@ async def test_short_term_memory(memory_module):
     assert len(chat_history_messages) == 3
 
     # Verify messages are in reverse order
-    reversed_messages = messages[::-1]
-    for i, _msg in enumerate(reversed_messages):
-        assert chat_history_messages[i].id == reversed_messages[i].id
+    expected_messages = messages[1:3][::-1]  # 3 messages because we only have 3 messages in the last minute
+    for i, _msg in enumerate(expected_messages):
+        assert chat_history_messages[i].id == expected_messages[i].id
