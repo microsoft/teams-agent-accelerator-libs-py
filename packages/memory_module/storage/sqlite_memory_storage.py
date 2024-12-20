@@ -247,9 +247,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         if message_id is not None:
             query += " WHERE ma.message_id = ?"
             params += [message_id]
-        
+
         query += " ORDER BY m.created_at DESC"
-        
+
         if limit is not None:
             query += " LIMIT ?"
             params += [limit]
@@ -339,7 +339,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         if config.n_messages is not None:
             query += " LIMIT ?"
             params += (str(config.n_messages),)
-        
+
         rows = await self.storage.fetch_all(query, params)
         return [build_message_from_dict(row) for row in rows][::-1]
 

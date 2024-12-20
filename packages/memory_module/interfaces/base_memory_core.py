@@ -31,7 +31,7 @@ class BaseMemoryCore(ABC):
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         """Get memories based on memory ids."""
         pass
-    
+
     @abstractmethod
     async def get_memories_from_message(self, message_id: str) -> List[Memory]:
         """Get memories based on message id."""

@@ -4,10 +4,8 @@ from unittest import mock
 
 import pytest
 
-
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
-from memory_module.interfaces.types import Memory
 from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.core.memory_core import EpisodicMemoryExtraction, MemoryCore
 from memory_module.services.llm_service import LLMService

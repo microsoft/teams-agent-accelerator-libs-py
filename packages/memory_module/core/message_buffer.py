@@ -58,7 +58,7 @@ class MessageBuffer:
     def _is_processing(self, conversation_ref: str) -> bool:
         """Check if a conversation is currently being processed."""
         return conversation_ref in self._processing
-    
+
     async def _handle_timeout(self, id: str, object: any, time: datetime) -> None:
         """Handle a conversation timeout by processing its messages."""
         try:
@@ -73,7 +73,7 @@ class MessageBuffer:
         # Wait for any existing processing to finish
         while self._is_processing(message.conversation_ref):
             await asyncio.sleep(0.1)
-        
+
         # Store the message
         await self.storage.store_buffered_message(message)
 

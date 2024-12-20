@@ -1,6 +1,7 @@
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
+
 import pytest
 from memory_module.interfaces.types import (
     AssistantMessageInput,
@@ -12,6 +13,7 @@ from memory_module.interfaces.types import (
 )
 from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
+
 
 @pytest.fixture(params=["sqlite", "in_memory"])
 def memory_storage(request):
@@ -142,14 +144,14 @@ async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
     )
     assert len(messages) == 1
     assert messages[0].content == sample_message.content
-    
+
     # Retrieve chat history with `before` parameter set to after the message's creation time
     messages = await memory_storage.retrieve_chat_history(
         sample_message.conversation_ref, ShortTermMemoryRetrievalConfig(n_messages=1, before=sample_message.created_at + timedelta(seconds=1))
     )
     assert len(messages) == 1
     assert messages[0].content == sample_message.content
-    
+
     # Retrieve chat history with `before` parameter set to before the message's creation time
     messages = await memory_storage.retrieve_chat_history(
         sample_message.conversation_ref, ShortTermMemoryRetrievalConfig(n_messages=1, before=sample_message.created_at - timedelta(seconds=1))
@@ -184,10 +186,10 @@ async def test_get_all_memories_by_message_id(memory_storage, sample_memory_inpu
     # Store single memory
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
     await memory_storage.store_short_term_memory(sample_message)
-    
+
     # Get memories by message ID
     memories = await memory_storage.get_all_memories(message_id=sample_message.id)
-    
+
     assert len(memories) == 1
     assert memories[0].content == sample_memory_input.content
 
@@ -199,7 +201,7 @@ async def test_get_all_memories_by_message_id_empty(memory_storage, sample_memor
 
     # Get memories by message ID
     memories = await memory_storage.get_all_memories(message_id="incorrect_message_id")
-    
+
     assert len(memories) == 0
 
 @pytest.mark.asyncio

@@ -211,14 +211,14 @@ class MemoryCore(BaseMemoryCore):
             else:
                 # we explicitly ignore internal messages
                 continue
-        
+
         existing_memories_str = ""
         if existing_memories:
             for memory in existing_memories:
                 existing_memories_str += f"-{memory.content}\n"
         else:
             existing_memories_str = "No existing memories."
-        
+
         system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests
 that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
