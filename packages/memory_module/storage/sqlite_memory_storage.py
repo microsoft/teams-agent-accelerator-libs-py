@@ -47,7 +47,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 (
                     memory_id,
                     memory.content,
-                    memory.created_at.astimezone(datetime.timezone.utc).isoformat(),
+                    memory.created_at.astimezone(datetime.timezone.utc),
                     memory.user_id,
                     memory.memory_type.value,
                 ),
@@ -281,10 +281,10 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         if message.created_at:
             created_at = message.created_at
-            created_at = created_at.astimezone(datetime.timezone.utc)
-            created_at = created_at.isoformat()
         else:
-            created_at = datetime.datetime.now().astimezone(datetime.timezone.utc).isoformat()
+            created_at = datetime.datetime.now()
+
+        created_at = created_at.astimezone(datetime.timezone.utc)
 
         if isinstance(message, InternalMessageInput):
             deep_link = None
@@ -328,13 +328,11 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             params += (str(config.n_messages),)
 
         if config.last_minutes is not None:
-            query += (
-                " AND created_at >= strftime('%Y-%m-%dT%H:%M:%S.000Z', datetime('now', ?)) ORDER BY created_at DESC"
-            )
-            params += (f"-{config.last_minutes} minutes",)
+            cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=config.last_minutes)
+            query += " AND created_at >= ? ORDER BY created_at DESC"
+            params += (cutoff_time,)
 
         rows = await self.storage.fetch_all(query, params)
-
         return [build_message_from_dict(row) for row in rows][::-1]
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
