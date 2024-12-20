@@ -26,6 +26,7 @@ class InternalMessageInput(BaseMessageInput):
     model_config = ConfigDict(from_attributes=True)
     type: ClassVar = "internal"
     created_at: Optional[datetime] = None
+    deep_link: ClassVar[None] = None
 
 
 class InternalMessage(InternalMessageInput):
