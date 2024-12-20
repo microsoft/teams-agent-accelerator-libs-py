@@ -186,10 +186,12 @@ class MemoryCore(BaseMemoryCore):
         old_memory_content = "\n".join(
             [f"{memory.content} created at {str(memory.created_at)}" for memory in old_memories]
         )
-        system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new memory is duplicated with existing old memories.
+        system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new
+memory is duplicated with existing old memories.
 Considerations:
 - Time-based order: Each old memory has a creation time. Please take creation time into consideration.
-- Repeated behavior: If the new memory indicates a repeated action or behavior over a period of time, it should be added to reflect the pattern.
+- Repeated behavior: If the new memory indicates a repeated action or behavior over a period of time, it should be
+added to reflect the pattern.
 Return value:
 - Add: add new memory to database while keep old memories
 - Ignore: ignore new memory
