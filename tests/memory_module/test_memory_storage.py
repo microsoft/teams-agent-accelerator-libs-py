@@ -13,7 +13,6 @@ from memory_module.interfaces.types import (
 from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 
-# TODO: FIX this fixture
 @pytest.fixture(params=["sqlite", "in_memory"])
 def memory_storage(request):
     if request.param == "sqlite":

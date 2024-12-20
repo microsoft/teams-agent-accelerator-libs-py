@@ -32,7 +32,7 @@ async def test_extract_memory_from_messages(config):
     lm_config = LLMConfig(model="gpt-4o-mini", api_key=config.openai_api_key)
     lm = LLMService(config=lm_config)
 
-    # TODO: Mocking storage this way doesn't seem right but it works for now.
+
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
@@ -50,7 +50,6 @@ async def test_extract_memory_from_messages_with_existing_memories_included(conf
     lm_config = LLMConfig(model="gpt-4o-mini", api_key=config.openai_api_key)
     lm = LLMService(config=lm_config)
 
-    # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
@@ -70,7 +69,6 @@ async def test_extract_metadata_from_fact(config):
     lm_config = LLMConfig(model="gpt-4o-mini", api_key=config.openai_api_key)
     lm = LLMService(config=lm_config)
 
-    # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
@@ -88,7 +86,6 @@ async def test_extract_episodic_memory_from_messages(config):
     lm_config = LLMConfig(model="gpt-4o-mini", api_key=config.openai_api_key)
     lm = LLMService(config=lm_config)
 
-    # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
@@ -116,7 +113,6 @@ async def test_get_query_embedding_from_messages(config):
     lm_config = LLMConfig(embedding_model="text-embedding-3-small", api_key=config.openai_api_key)
     lm = LLMService(config=lm_config)
 
-    # TODO: Mocking storage this way doesn't seem right but it works for now.
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
