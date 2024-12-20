@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from typing import Awaitable, Callable, List, Optional, Set
 
@@ -40,19 +41,24 @@ class MessageBuffer:
             conversation_ref: The conversation reference to process
         """
         # Skip if already being processed
-        if conversation_ref in self._processing:
+        if self._is_processing(conversation_ref):
             return
 
         try:
             self._processing.add(conversation_ref)
             messages = await self.storage.get_buffered_messages(conversation_ref)
             if messages:  # Only process if there are messages
+                latest = messages[-1]
                 await self._process_callback(messages)
-                await self.storage.clear_buffered_messages(conversation_ref)
+                await self.storage.clear_buffered_messages(conversation_ref, before=latest.created_at)
         finally:
             # Always remove from processing set
             self._processing.remove(conversation_ref)
 
+    def _is_processing(self, conversation_ref: str) -> bool:
+        """Check if a conversation is currently being processed."""
+        return conversation_ref in self._processing
+    
     async def _handle_timeout(self, id: str, object: any, time: datetime) -> None:
         """Handle a conversation timeout by processing its messages."""
         try:
@@ -64,6 +70,10 @@ class MessageBuffer:
 
     async def add_message(self, message: Message) -> None:
         """Add a message to the buffer and process if threshold reached."""
+        # Wait for any existing processing to finish
+        while self._is_processing(message.conversation_ref):
+            await asyncio.sleep(0.1)
+        
         # Store the message
         await self.storage.store_buffered_message(message)
 

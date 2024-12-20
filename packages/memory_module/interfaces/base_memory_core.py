@@ -8,7 +8,7 @@ class BaseMemoryCore(ABC):
     """Base class for the memory core component."""
 
     @abstractmethod
-    async def process_semantic_messages(self, messages: List[Message]) -> None:
+    async def process_semantic_messages(self, messages: List[Message], existing_memories: Optional[List[Memory]]) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         pass
 
@@ -30,6 +30,11 @@ class BaseMemoryCore(ABC):
     @abstractmethod
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         """Get memories based on memory ids."""
+        pass
+    
+    @abstractmethod
+    async def get_memories_from_message(self, message_id: str) -> List[Memory]:
+        """Get memories based on message id."""
         pass
 
     @abstractmethod

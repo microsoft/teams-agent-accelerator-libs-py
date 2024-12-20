@@ -61,7 +61,7 @@ class SemanticMemoryExtraction(BaseModel):
     )
     facts: Optional[List[SemanticFact]] = Field(
         default=None,
-        description="One or more facts about the user. If the action is 'ignore'," "this field should be empty.",
+        description="One or more facts about the user. If the action is 'ignore', this field should be empty.",
     )
 
 
@@ -99,7 +99,7 @@ class MemoryCore(BaseMemoryCore):
             SQLiteMemoryStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
         )
 
-    async def process_semantic_messages(self, messages: List[Message]) -> None:
+    async def process_semantic_messages(self, messages: List[Message], existing_memories: Optional[List[Memory]] = None) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         # make sure there is an author, and only one author
         author_id = next(
@@ -108,6 +108,7 @@ class MemoryCore(BaseMemoryCore):
         if not author_id:
             logger.error("No author found in messages")
             return
+
         # check if there are any other authors
         other_authors = [
             message.author_id for message in messages if message.type == "user" and message.author_id != author_id
@@ -116,7 +117,7 @@ class MemoryCore(BaseMemoryCore):
             logger.error("Multiple authors found in messages")
             return
 
-        extraction = await self._extract_semantic_fact_from_messages(messages)
+        extraction = await self._extract_semantic_fact_from_messages(messages, existing_memories)
 
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
@@ -157,13 +158,13 @@ class MemoryCore(BaseMemoryCore):
         await self.storage.clear_memories(user_id)
 
     async def _extract_metadata_from_fact(self, fact: str) -> MessageDigest:
-        """Extract meaningful information from messages using LLM.
+        """Extract meaningful information from the fact using LLM.
 
         Args:
-            messages: The list of messages to extract meaningful information from.
+            fact: The fact to extract meaningful information from.
 
         Returns:
-            MemoryDigest containing the summary, importance, and key points from the list of messages.
+            MemoryDigest containing the summary, importance, and key points from the fact.
         """
         return await self.lm.completion(
             messages=[
@@ -189,13 +190,13 @@ class MemoryCore(BaseMemoryCore):
         return [data["embedding"] for data in res.data]
 
     async def _extract_semantic_fact_from_messages(
-        self, messages: List[Message], memory_message: str = ""
+        self, messages: List[Message], existing_memories: Optional[List[Memory]] = None
     ) -> SemanticMemoryExtraction:
         """Extract semantic facts from messages using LLM.
 
         Args:
             message: The message to extract facts from
-            memory_message: Optional context from previous memories
+            existing_memories: Optional context from previous memories
 
         Returns:
             SemanticMemoryExtraction containing the action and extracted facts
@@ -210,7 +211,14 @@ class MemoryCore(BaseMemoryCore):
             else:
                 # we explicitly ignore internal messages
                 continue
-
+        
+        existing_memories_str = ""
+        if existing_memories:
+            for memory in existing_memories:
+                existing_memories_str += f"-{memory.content}\n"
+        else:
+            existing_memories_str = "No existing memories."
+        
         system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests
 that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
@@ -221,7 +229,12 @@ not the date or location).
 - Facts or Details about user: Extract facts that describe relevant information about the user, such as details about things they own.
 - Facts about the user that the assistant might find useful.
 
-{memory_message}
+Avoid:
+- Extraction memories that already exist in the system. If a fact is already stored, ignore it.
+
+Existing Memories:
+{existing_memories_str}
+
 Here is the transcript of the conversation:
 <TRANSCRIPT>
 {messages_str}
@@ -287,3 +300,6 @@ Here are the incoming messages:
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         return await self.storage.get_messages(memory_ids)
+
+    async def get_memories_from_message(self, message_id):
+        return await self.storage.get_all_memories(message_id=message_id)

@@ -37,7 +37,7 @@ def config():
     return MemoryModuleConfig(
         db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
         buffer_size=5,
-        timeout_seconds=1,  # Short timeout for testing
+        timeout_seconds=60,
         llm=llm_config,
     )
 

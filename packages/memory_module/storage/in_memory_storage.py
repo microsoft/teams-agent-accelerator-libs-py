@@ -172,8 +172,16 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
     async def get_memory(self, memory_id: str) -> Optional[Memory]:
         return self.storage["memories"].get(memory_id)
 
-    async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
-        return [value for key, value in self.storage["memories"].items()][:limit]
+    async def get_all_memories(self, limit: Optional[int] = None, message_id: Optional[str] = None) -> List[Memory]:
+        memories = [value for key, value in self.storage["memories"].items()]
+        
+        if limit is not None:
+            memories = memories[:limit]
+        
+        if message_id is not None:
+            memories = [memory for memory in memories if message_id in memory.message_attributions]
+        
+        return memories
 
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer."""
@@ -240,5 +248,9 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
 
         # Sort messages in descending order based on created_at
         messages.sort(key=lambda msg: msg.created_at, reverse=True)
+        
+        # Filter messages based on before
+        if config.before is not None:
+            messages = [msg for msg in messages if msg.created_at < config.before]
 
         return messages
