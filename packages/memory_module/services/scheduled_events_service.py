@@ -30,7 +30,7 @@ class ScheduledEventsService(BaseScheduledEventsService):
             storage: Optional storage implementation for event persistence
         """
         self._callback_func: Optional[Callable[[str, Any, datetime], Awaitable[None]]] = None
-        self._tasks: Dict[str, asyncio.Task] = {}
+        self._tasks: Dict[str, tuple[Event, asyncio.Task]] = {}
         self.storage = storage or (
             SQLiteScheduledEventsStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
         )
@@ -55,13 +55,13 @@ class ScheduledEventsService(BaseScheduledEventsService):
     @property
     def pending_events(self) -> List[Event]:
         """Get list of pending events from storage."""
-        return [task for task in self._tasks.values() if not task.done()]
+        return [task[0] for task in self._tasks.values() if not task[1].done()]
 
     async def add_event(self, id: str, object: Any, time: datetime) -> None:
         """Schedule a new event to be executed at the specified time."""
         # Cancel existing task if there is one
-        if id in self._tasks and not self._tasks[id].done():
-            self._tasks[id].cancel()
+        if id in self._tasks and not self._tasks[id][1].done():
+            self._tasks[id][1].cancel()
 
         # Create new event
         event = Event(id=id, object=object, time=time)
@@ -80,7 +80,10 @@ class ScheduledEventsService(BaseScheduledEventsService):
             delay = 0
 
         # Create and store new task
-        self._tasks[event.id] = asyncio.create_task(self._schedule_event(event, delay), name=event.id)
+        self._tasks[event.id] = (
+            event,
+            asyncio.create_task(self._schedule_event(event, delay), name=event.id),
+        )
 
     async def _schedule_event(self, event: Event, delay: float) -> None:
         """Internal method to handle the scheduling and execution of an event."""
@@ -108,8 +111,8 @@ class ScheduledEventsService(BaseScheduledEventsService):
             id: Unique identifier of the event to cancel
         """
         # Cancel and remove the task if it exists
-        if id in self._tasks and not self._tasks[id].done():
-            self._tasks[id].cancel()
+        if id in self._tasks and not self._tasks[id][1].done():
+            self._tasks[id][1].cancel()
             self._tasks.pop(id, None)
 
         # Remove from storage
@@ -117,7 +120,7 @@ class ScheduledEventsService(BaseScheduledEventsService):
 
     async def cleanup(self) -> None:
         """Clean up pending events when shutting down."""
-        pending_tasks = [task for task in self._tasks.values() if not task.done()]
+        pending_tasks = [task[1] for task in self._tasks.values() if not task[1].done()]
         if pending_tasks:
             for task in pending_tasks:
                 task.cancel()
@@ -131,10 +134,11 @@ class ScheduledEventsService(BaseScheduledEventsService):
         """Flush all events from the storage. Process all immediately."""
         # cancel all the tasks and
         for task in self._tasks.values():
-            task.cancel()
+            task[1].cancel()
         self._tasks.clear()
 
         # get all the events from storage and create tasks for them
-        events = await self.storage.get_all_events()
-        for event in events:
-            await self._callback_func(event.id, event.object, event.time)
+        if self._callback_func:
+            events = await self.storage.get_all_events()
+            for event in events:
+                await self._callback_func(event.id, event.object, event.time)

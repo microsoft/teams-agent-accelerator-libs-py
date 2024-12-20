@@ -39,7 +39,7 @@ class InternalMessage(InternalMessageInput):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    created_at: datetime  # type: ignore Ignoring because this will exist in the concrete class
+    created_at: datetime
 
 
 class UserMessageInput(BaseMessageInput):
@@ -80,7 +80,7 @@ class AssistantMessage(AssistantMessageInput):
     """
 
     model_config = ConfigDict(from_attributes=True)
-    created_at: datetime  # type: ignore Ignoring because this will exist in the concrete class
+    created_at: datetime  # type: ignore[reportIncompatibleVariableOverride]
 
 
 type MessageInput = InternalMessageInput | UserMessageInput | AssistantMessageInput
@@ -106,7 +106,7 @@ class BaseMemoryInput(BaseModel):
     created_at: datetime
     memory_type: MemoryType
     user_id: Optional[str] = None
-    message_attributions: Optional[List[str]] = Field(default_factory=list)
+    message_attributions: Optional[List[str]] = Field(default=[])
 
 
 class Memory(BaseMemoryInput):

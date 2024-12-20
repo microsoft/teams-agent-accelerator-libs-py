@@ -228,7 +228,7 @@ Here is the transcript of the conversation:
 </TRANSCRIPT>
 """  # noqa: E501
 
-        messages = [
+        llm_messages = [
             {"role": "system", "content": system_message},
             {
                 "role": "user",
@@ -237,7 +237,7 @@ Here is the transcript of the conversation:
             },
         ]
 
-        res = await self.lm.completion(messages=messages, response_model=SemanticMemoryExtraction)
+        res = await self.lm.completion(messages=llm_messages, response_model=SemanticMemoryExtraction)
         return res
 
     async def _extract_episodic_memory_from_messages(self, messages: List[Message]) -> EpisodicMemoryExtraction:
@@ -266,9 +266,9 @@ Here are the incoming messages:
 """
         # TODO: Fix the above prompt so that the messages are displayed correctly.
         # Ex "User: I love pie!", "Assitant: I love pie!"
-        messages = [{"role": "system", "content": system_message}]
+        llm_messages = [{"role": "system", "content": system_message}]
 
-        return await self.lm.completion(messages=messages, response_model=EpisodicMemoryExtraction)
+        return await self.lm.completion(messages=llm_messages, response_model=EpisodicMemoryExtraction)
 
     async def add_short_term_memory(self, message: MessageInput) -> Message:
         return await self.storage.store_short_term_memory(message)

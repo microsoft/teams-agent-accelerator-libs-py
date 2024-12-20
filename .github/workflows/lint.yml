@@ -1,4 +1,4 @@
-name: Ruff
+name: Lint
 on:
   pull_request:
     branches: [main]
@@ -13,3 +13,4 @@ jobs:
       - uses: astral-sh/ruff-action@v1
         with:
           args: "format"
+      - uses: jpetrucciani/mypy-check@master
