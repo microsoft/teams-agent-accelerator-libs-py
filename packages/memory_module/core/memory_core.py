@@ -66,7 +66,9 @@ class SemanticMemoryExtraction(BaseModel):
 
 class ProcessSemanticMemoryDecision(BaseModel):
     decision: Literal["add", "ignore"] = Field(..., description="Action to take on the new memory")
-    reason_for_decision: Optional[str] = Field(..., description="Reason for the action taken on the new memory or the reason it was ignored.",)
+    reason_for_decision: Optional[str] = Field(
+        ..., description="Reason for the action taken on the new memory or the reason it was ignored.",
+    )
 
 class EpisodicMemoryExtraction(BaseModel):
     action: Literal["add", "update", "ignore"] = Field(..., description="Action to take on the extracted fact")
@@ -188,7 +190,7 @@ class MemoryCore(BaseMemoryCore):
 memory is duplicated with existing old memories.
 Considerations:
 - Time-based order: Each old memory has a creation time. Please take creation time into consideration.
-- Repeated behavior: If the new memory indicates a repeated action or behavior over a period of time, it should be 
+- Repeated behavior: If the new memory indicates a repeated action or behavior over a period of time, it should be
 added to reflect the pattern.
 Return value:
 - Add: add new memory to database while keep old memories
