@@ -32,6 +32,8 @@ jobs:
         run: |
           uv sync
       - name: MyPy
-        run: mypy
+        run: |
+          source .venv/bin/activate
+          mypy
     
     
