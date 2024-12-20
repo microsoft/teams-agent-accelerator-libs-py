@@ -4,7 +4,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import click
 import mlflow
@@ -15,7 +15,8 @@ from tqdm import tqdm
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.config import LLMConfig, MemoryModuleConfig
-from memory_module.core.memory_module import MemoryModule, Message
+from memory_module.core.memory_module import MemoryModule
+from memory_module.interfaces.types import AssistantMessage, UserMessage
 
 from evals.helpers import Dataset, DatasetItem, load_dataset, setup_mlflow
 from evals.metrics import string_check_metric
@@ -26,7 +27,7 @@ setup_mlflow(experiment_name="memory_module")
 class MemoryModuleManager:
     def __init__(self, buffer_size=5):
         self._buffer_size = buffer_size
-        self._memory_module: MemoryModule = None
+        self._memory_module: Optional[MemoryModule] = None
         self._db_path = Path(__file__).parent / "data" / f"memory_{uuid.uuid4().hex}.db"
 
     def __enter__(self):
@@ -49,15 +50,17 @@ class MemoryModuleManager:
 
 async def add_messages(memory_module: MemoryModule, messages: List[dict]):
     def create_message(**kwargs):
-        return Message(
-            id=str(uuid.uuid4()),
-            content=kwargs["content"],
-            type=kwargs["type"],
-            # author_id="user" if kwargs["type"] == "user" else None,
-            author_id="user",
-            created_at=datetime.now(),
-            conversation_ref="conversation_ref",
-        )
+        params = {
+            "id": str(uuid.uuid4()),
+            "content": kwargs["content"],
+            "author_id": "user",
+            "created_at": datetime.now(),
+            "conversation_ref": "conversation_ref",
+        }
+        if kwargs["type"] == "assistant":
+            return AssistantMessage(**params)
+        else:
+            return UserMessage(**params)
 
     for message in messages:
         type = "assistant" if message["role"] == "assistant" else "user"
@@ -74,13 +77,13 @@ def run_benchmark(
         name = "memory module benchmark"
 
     if run_one:
-        dataset.data = dataset["data"][0:1]
+        dataset["data"] = dataset["data"][0:1]
 
     # prepare dataset
     inputs = dataset["data"]
     df = pd.DataFrame({"inputs": inputs})
     dataset_name = f"{dataset['title']} v{dataset['version']}"
-    dataset = mlflow.data.pandas_dataset.from_pandas(df, name=dataset_name)
+    pd_dataset = mlflow.data.pandas_dataset.from_pandas(df, name=dataset_name)
 
     # benchmark function
     async def benchmark_memory_module(input: DatasetItem):
@@ -118,7 +121,7 @@ def run_benchmark(
     mlflow_metric = string_check_metric()
     with mlflow.start_run(run_name=name):
         mlflow.log_params({"dataset": dataset_name})
-        mlflow.evaluate(iterate_benchmark_cases, dataset, extra_metrics=[mlflow_metric])
+        mlflow.evaluate(iterate_benchmark_cases, pd_dataset, extra_metrics=[mlflow_metric])
 
 
 @click.command()
