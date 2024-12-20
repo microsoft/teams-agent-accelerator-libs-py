@@ -39,7 +39,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
             (
                 message.id,
                 message.conversation_ref,
-                message.created_at.astimezone(datetime.timezone.utc).isoformat(),
+                message.created_at.astimezone(datetime.timezone.utc),
             ),
         )
 

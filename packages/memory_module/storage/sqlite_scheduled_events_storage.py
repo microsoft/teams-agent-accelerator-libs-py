@@ -37,7 +37,7 @@ class SQLiteScheduledEventsStorage(BaseScheduledEventsStorage):
             (
                 event.id,
                 json.dumps(event.object),  # Serialize to JSON
-                event.time.astimezone(datetime.timezone.utc).isoformat(),
+                event.time.astimezone(datetime.timezone.utc),
             ),
         )
 
