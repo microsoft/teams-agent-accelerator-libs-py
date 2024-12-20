@@ -335,7 +335,7 @@ async def test_add_memory_processing_decision(memory_module):
     new_messages = [
         [UserMessageInput(
             id=str(uuid4()),
-            content="I have Mac book",
+            content="I have a Mac book",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now(),
