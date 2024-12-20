@@ -53,9 +53,9 @@ class MemoryModule(BaseMemoryModule):
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         return await self.memory_core.get_messages(memory_ids)
 
-    async def update_memory(self, memory_id: str, updated_memory: str) -> None:
-        """Update memory with new fact"""
-        return await self.memory_core.update_memory(memory_id, updated_memory)
+    async def update_memory(self, updated_memory: Memory) -> None:
+        """Update existing memory with new fact"""
+        return await self.memory_core.update_memory(updated_memory)
 
     async def remove_memories(self, user_id: str) -> None:
         """Remove memories based on user id."""

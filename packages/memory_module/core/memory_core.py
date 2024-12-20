@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-import logging
 from typing import Dict, List, Literal, Optional
 
 from litellm.types.utils import EmbeddingResponse
