@@ -62,6 +62,19 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
+    async def get_top_similar_memories_with_embeddings(
+        self, embeddings: List[List[float]], user_id: Optional[str], limit: Optional[int] = None
+    ) -> List[Memory]:
+        """Retrieve most similar memory based on embeddings
+        Args:
+            embeddings: A list of embeddings to find similarity in database
+            user_id: The ID of the user whose memories to retrieve
+        Returns:
+            Memory that most similar to the input embeddings
+        """
+        pass
+
+    @abstractmethod
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given conversation."""
         pass
