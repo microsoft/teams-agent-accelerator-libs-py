@@ -181,12 +181,15 @@ class MemoryCore(BaseMemoryCore):
         """Determine whether to add, replace or drop this memory"""
 
         # created at time format: YYYY-MM-DD HH:MM:SS.sssss in UTC.
-        old_memory_content = "\n".join([f"{memory.content} created at {str(memory.created_at)}" for memory in old_memories])
-        system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new memory
-is duplicated with existing old memories.
+        old_memory_content = "\n".join(
+            [f"{memory.content} created at {str(memory.created_at)}" for memory in old_memories]
+        )
+        system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new
+memory is duplicated with existing old memories.
 Considerations:
 - Time-based order: Each old memory has a creation time. Please take creation time into consideration.
-- Repeated behavior: If the new memory indicates a repeated action or behavior over a period of time, it should be added to reflect the pattern.
+- Repeated behavior: If the new memory indicates a repeated action or behavior over a period of time, it should be 
+added to reflect the pattern.
 Return value:
 - Add: add new memory to database while keep old memories
 - Ignore: ignore new memory
@@ -226,11 +229,17 @@ Here is the new memory:
         res: EmbeddingResponse = await self.lm.embedding(input=[query])
         return res.data[0]["embedding"]
 
-    async def _get_semantic_fact_embeddings(self, fact: str, metadata: Optional[MessageDigest] = None) -> List[List[float]]:
+    async def _get_semantic_fact_embeddings(
+            self,
+            fact: str,
+            metadata: Optional[MessageDigest] = None
+        ) -> List[List[float]]:
         """Create embedding for semantic fact and metadata."""
         embedding_input = [fact]
         if metadata is not None:
-            embedding_input.extend([metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions])
+            embedding_input.extend(
+                [metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
+            )
         res: EmbeddingResponse = await self.lm.embedding(
             input=embedding_input
         )
