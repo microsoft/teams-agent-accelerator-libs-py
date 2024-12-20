@@ -30,7 +30,6 @@ async def test_extract_memory_from_messages(config):
     lm_config = LLMConfig(model="gpt-4o-mini", api_key=config.openai_api_key)
     lm = LLMService(config=lm_config)
 
-
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
@@ -39,6 +38,7 @@ async def test_extract_memory_from_messages(config):
     res = await memory_core._extract_semantic_fact_from_messages(messages=[message])
 
     assert any(includes(fact.text, "software developer") for fact in res.facts)
+
 
 @pytest.mark.asyncio()
 async def test_extract_memory_from_messages_with_existing_memories_included(config):
@@ -54,10 +54,13 @@ async def test_extract_memory_from_messages_with_existing_memories_included(conf
 
     message = create_test_user_message(content="Hey, I'm a software developer.")
     existing_memory = create_test_memory(content="The user is a software developer.")
-    res = await memory_core._extract_semantic_fact_from_messages(messages=[message], existing_memories=[existing_memory])
+    res = await memory_core._extract_semantic_fact_from_messages(
+        messages=[message], existing_memories=[existing_memory]
+    )
 
     assert res.facts is None or len(res.facts) == 0
     assert res.action == "ignore"
+
 
 @pytest.mark.asyncio()
 async def test_extract_metadata_from_fact(config):

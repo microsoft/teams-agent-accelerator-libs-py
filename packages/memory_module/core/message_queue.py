@@ -52,12 +52,16 @@ class MessageQueue(BaseMessageQueue):
         if count < self.config.buffer_size:
             oldest = messages[-1]
             diff = self.config.buffer_size - count
-            stored_messages, memories = await self._get_recent_messages_and_memories(oldest.conversation_ref, before=oldest.created_at, n_messages=diff)
+            stored_messages, memories = await self._get_recent_messages_and_memories(
+                oldest.conversation_ref, before=oldest.created_at, n_messages=diff
+            )
             messages = stored_messages + messages
 
         await self.memory_core.process_semantic_messages(messages=messages, existing_memories=memories)
 
-    async def _get_recent_messages_and_memories(self, conversation_ref: str, before: datetime, n_messages: int) -> Tuple[List[Message], List[Memory]]:
+    async def _get_recent_messages_and_memories(
+        self, conversation_ref: str, before: datetime, n_messages: int
+    ) -> Tuple[List[Message], List[Memory]]:
         """Pull messages from short term memory for a conversation."""
         # The messages in the buffer are a subset of the messages in the chat history
         config = ShortTermMemoryRetrievalConfig(n_messages=n_messages, before=before)

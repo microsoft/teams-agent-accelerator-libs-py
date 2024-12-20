@@ -147,16 +147,19 @@ async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
 
     # Retrieve chat history with `before` parameter set to after the message's creation time
     messages = await memory_storage.retrieve_chat_history(
-        sample_message.conversation_ref, ShortTermMemoryRetrievalConfig(n_messages=1, before=sample_message.created_at + timedelta(seconds=1))
+        sample_message.conversation_ref,
+        ShortTermMemoryRetrievalConfig(n_messages=1, before=sample_message.created_at + timedelta(seconds=1)),
     )
     assert len(messages) == 1
     assert messages[0].content == sample_message.content
 
     # Retrieve chat history with `before` parameter set to before the message's creation time
     messages = await memory_storage.retrieve_chat_history(
-        sample_message.conversation_ref, ShortTermMemoryRetrievalConfig(n_messages=1, before=sample_message.created_at - timedelta(seconds=1))
+        sample_message.conversation_ref,
+        ShortTermMemoryRetrievalConfig(n_messages=1, before=sample_message.created_at - timedelta(seconds=1)),
     )
     assert len(messages) == 0
+
 
 @pytest.mark.asyncio
 async def test_get_all_memories(memory_storage, sample_memory_input, sample_embedding):
@@ -193,6 +196,7 @@ async def test_get_all_memories_by_message_id(memory_storage, sample_memory_inpu
     assert len(memories) == 1
     assert memories[0].content == sample_memory_input.content
 
+
 @pytest.mark.asyncio
 async def test_get_all_memories_by_message_id_empty(memory_storage, sample_memory_input, sample_message):
     # Store single memory
@@ -203,6 +207,7 @@ async def test_get_all_memories_by_message_id_empty(memory_storage, sample_memor
     memories = await memory_storage.get_all_memories(message_id="incorrect_message_id")
 
     assert len(memories) == 0
+
 
 @pytest.mark.asyncio
 async def test_get_memories_by_ids(memory_storage, sample_memory_input, sample_embedding):

@@ -22,6 +22,7 @@ def create_test_user_message(content: str, id: str = "123"):
         type="user",
     )
 
+
 def create_test_assistant_message(content: str):
     return AssistantMessage(
         id="123",
@@ -32,6 +33,7 @@ def create_test_assistant_message(content: str):
         type="assistant",
     )
 
+
 def create_test_memory(content: str):
     return Memory(
         content=content,
@@ -39,6 +41,7 @@ def create_test_memory(content: str):
         memory_type="semantic",
         id="1",
     )
+
 
 class EnvLLMConfig(BaseModel):
     openai_api_key: Optional[str] = None

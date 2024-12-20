@@ -26,7 +26,8 @@ class MemoryModuleConfig(BaseModel):
 
     # If db_path is empty, use in-memory storage
     db_path: Optional[Path] = Field(
-        default_factory=lambda: Path(__file__).parent / "data" / "memory.db", description="Path to SQLite database file",
+        default_factory=lambda: Path(__file__).parent / "data" / "memory.db",
+        description="Path to SQLite database file",
     )
     buffer_size: int = Field(default=5, description="Number of messages to collect before processing")
     timeout_seconds: int = Field(

@@ -8,7 +8,9 @@ class BaseMemoryCore(ABC):
     """Base class for the memory core component."""
 
     @abstractmethod
-    async def process_semantic_messages(self, messages: List[Message], existing_memories: Optional[List[Memory]]) -> None:
+    async def process_semantic_messages(
+        self, messages: List[Message], existing_memories: Optional[List[Memory]]
+    ) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         pass
 

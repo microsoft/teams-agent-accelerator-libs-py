@@ -99,7 +99,9 @@ class MemoryCore(BaseMemoryCore):
             SQLiteMemoryStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
         )
 
-    async def process_semantic_messages(self, messages: List[Message], existing_memories: Optional[List[Memory]] = None) -> None:
+    async def process_semantic_messages(
+        self, messages: List[Message], existing_memories: Optional[List[Memory]] = None
+    ) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         # make sure there is an author, and only one author
         author_id = next(

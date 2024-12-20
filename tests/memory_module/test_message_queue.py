@@ -13,7 +13,7 @@ from tests.memory_module.utils import create_test_assistant_message, create_test
 async def test_process_for_semantic_messages_enough_messages():
     config = MemoryModuleConfig(
         buffer_size=4,
-        db_path=None, # use in memory storage
+        db_path=None,  # use in memory storage
         timeout_seconds=60,
         llm=Mock(spec=LLMConfig),
     )
@@ -35,11 +35,12 @@ async def test_process_for_semantic_messages_enough_messages():
     assert await mq._process_for_semantic_messages(messages) is None
     assert core.process_semantic_messages.call_count == 1
 
+
 @pytest.mark.asyncio()
 async def test_process_for_semantic_messages_less_messages():
     config = MemoryModuleConfig(
         buffer_size=5,
-        db_path=None, # use in-memory storage
+        db_path=None,  # use in-memory storage
         timeout_seconds=60,
         llm=Mock(spec=LLMConfig),
     )
@@ -66,14 +67,14 @@ async def test_process_for_semantic_messages_less_messages():
 
     async def mock_get_memories_from_message(message_id):
         return existing_memories if message_id == "user_msg" else []
+
     core.get_memories_from_message = mock_get_memories_from_message
 
     message_buffer_storage_mock = Mock(spec=BaseMessageBufferStorage)
     mq = MessageQueue(config=config, memory_core=core, message_buffer_storage=message_buffer_storage_mock)
 
-
     assert await mq._process_for_semantic_messages(buffered_messages) is None
-    assert core.retrieve_chat_history.call_count == 1 # just once to get stored messages
+    assert core.retrieve_chat_history.call_count == 1  # just once to get stored messages
     assert core.process_semantic_messages.call_count == 1
     assert core.process_semantic_messages.call_args.kwargs["messages"] == messages + buffered_messages
     assert core.process_semantic_messages.call_args.kwargs["existing_memories"] == existing_memories
