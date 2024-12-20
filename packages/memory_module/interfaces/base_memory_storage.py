@@ -77,6 +77,11 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
+    async def get_user_memories(self, user_id: str) -> List[Memory]:
+        """Get memories based on user id."""
+        pass
+
+    @abstractmethod
     async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
         """Retrieve all memories from storage.
 

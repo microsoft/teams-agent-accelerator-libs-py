@@ -33,6 +33,11 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
+    async def get_user_memories(self, user_id: str) -> List[Memory]:
+        """Get memories based on user id."""
+        pass
+
+    @abstractmethod
     async def remove_memories(self, user_id: str) -> None:
         """Remove memories based on user id."""
         pass

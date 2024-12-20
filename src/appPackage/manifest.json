@@ -37,10 +37,22 @@
     ],
     "composeExtensions": [],
     "configurableTabs": [],
-    "staticTabs": [],
+    "staticTabs": [
+        {
+            "entityId": "index0",
+            "name": "Memories",
+            "contentUrl": "${{BOT_ENDPOINT}}/memoriesTab/index.html",
+            "websiteUrl": "${{BOT_ENDPOINT}}/memoriesTab/index.html",
+            "scopes": [
+                "personal"
+            ]
+        }
+    ],
     "permissions": [
         "identity",
         "messageTeamMembers"
     ],
-    "validDomains": []
+    "validDomains": [
+        "*.ngrok.io"
+    ]
 }

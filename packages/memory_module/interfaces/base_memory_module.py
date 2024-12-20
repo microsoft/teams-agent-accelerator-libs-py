@@ -30,6 +30,11 @@ class BaseMemoryModule(ABC):
         pass
 
     @abstractmethod
+    async def get_user_memories(self, user_id: str) -> List[Memory]:
+        """Get memories based on user id."""
+        pass
+
+    @abstractmethod
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         """Get messages based on memory ids."""
         pass

@@ -370,6 +370,38 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
 
+    async def get_user_memories(self, user_id: str) -> List[Memory]:
+        """Get memories based on user id."""
+        query = """
+            SELECT
+                m.*,
+                ma.message_id
+            FROM memories m
+            LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
+            WHERE m.user_id = ?
+        """
+
+        rows = await self.storage.fetch_all(query, (user_id,))
+
+        # Group rows by memory_id
+        memories_dict = {}
+        for row in rows:
+            memory_id = row["id"]
+            if memory_id not in memories_dict:
+                memories_dict[memory_id] = {
+                    "id": memory_id,
+                    "content": row["content"],
+                    "created_at": row["created_at"],
+                    "user_id": row["user_id"],
+                    "memory_type": row["memory_type"],
+                    "message_attributions": [],
+                }
+
+            if row["message_id"]:
+                memories_dict[memory_id]["message_attributions"].append(row["message_id"])
+
+        return [Memory(**memory_data) for memory_data in memories_dict.values()]
+
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         """Get messages based on memory ids."""
         query = """

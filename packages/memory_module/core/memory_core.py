@@ -282,5 +282,8 @@ Here are the incoming messages:
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return await self.storage.get_memories(memory_ids)
 
+    async def get_user_memories(self, user_id: str) -> List[Memory]:
+        return await self.storage.get_user_memories(user_id)
+
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         return await self.storage.get_messages(memory_ids)
