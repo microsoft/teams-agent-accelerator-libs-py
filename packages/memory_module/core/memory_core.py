@@ -122,6 +122,7 @@ class MemoryCore(BaseMemoryCore):
                 memory = BaseMemoryInput(
                     content=fact.text,
                     created_at= messages[0].created_at or datetime.now(),
+                    updated_at = None,
                     user_id=author_id,
                     message_attributions=message_ids,
                     memory_type=MemoryType.SEMANTIC,
@@ -218,10 +219,14 @@ Here is the new memory:
         res: EmbeddingResponse = await self.lm.embedding(input=[query])
         return res.data[0]["embedding"]
 
-    async def _get_semantic_fact_embeddings(self, fact: str, metadata: MessageDigest) -> List[List[float]]:
+    async def _get_semantic_fact_embeddings(self, fact: str, metadata: Optional[MessageDigest] = None) -> List[List[float]]:
         """Create embedding for semantic fact and metadata."""
+
+        embedding_input = [fact]
+        if metadata is not None:
+            embedding_input.extend([metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions])
         res: EmbeddingResponse = await self.lm.embedding(
-            input=[fact, metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
+            input=embedding_input
         )
         return [data["embedding"] for data in res.data]
 
