@@ -39,7 +39,7 @@ class InternalMessage(InternalMessageInput):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    created_at: datetime
+    created_at: datetime  # type: ignore[reportIncompatibleVariableOverride]
 
 
 class UserMessageInput(BaseMessageInput):
