@@ -1,4 +1,5 @@
 import datetime
+import heapq
 import logging
 import uuid
 from pathlib import Path
@@ -205,6 +206,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 m.id,
                 m.content,
                 m.created_at,
+                m.updated_at,
                 m.user_id,
                 m.memory_type,
                 ma.message_id
@@ -223,6 +225,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             "id": rows[0]["id"],
             "content": rows[0]["content"],
             "created_at": rows[0]["created_at"],
+            "updated_at": rows[0]["updated_at"],
             "user_id": rows[0]["user_id"],
             "memory_type": rows[0]["memory_type"],
             "message_attributions": [row["message_id"] for row in rows if row["message_id"]],

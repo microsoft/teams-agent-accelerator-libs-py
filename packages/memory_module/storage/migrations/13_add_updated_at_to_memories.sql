@@ -1,0 +1,1 @@
+ALTER TABLE memories ADD COLUMN updated_at TIMESTAMP; 

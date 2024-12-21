@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import List
 from uuid import uuid4
 
 import pytest
@@ -302,3 +303,63 @@ async def test_short_term_memory(memory_module):
     expected_messages = messages[1:3][::-1]  # 3 messages because we only have 3 messages in the last minute
     for i, _msg in enumerate(expected_messages):
         assert chat_history_messages[i].id == expected_messages[i].id
+
+
+@pytest.mark.asyncio
+async def test_add_memory_processing_decision(memory_module):
+    """Test whether to process adding memory"""
+    conversation_id = str(uuid4())
+    old_messages = [
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I have a Pokemon limited version Mac book.",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.strptime("2024-09-01", "%Y-%m-%d"),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I bought a pink iphone.",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.strptime("2024-09-03", "%Y-%m-%d"),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I just had another Mac book.",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.strptime("2024-10-12", "%Y-%m-%d"),
+        ),
+    ]
+    new_messages = [
+        [UserMessageInput(
+            id=str(uuid4()),
+            content="I have a Mac book",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        )],
+        [UserMessageInput(
+            id=str(uuid4()),
+            content="I bought one more new Mac book",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        )],
+    ]
+
+    for message in old_messages:
+        await memory_module.add_message(message)
+
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+
+    await _validate_decision(memory_module, new_messages[0], "ignore")
+    await _validate_decision(memory_module, new_messages[1], "add")
+
+async def _validate_decision(memory_module, message: List[UserMessageInput], expected_decision: str):
+    extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(message)
+    assert extraction.action == "add" and extraction.facts
+    for fact in extraction.facts:
+        decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, "user-123")
+        assert decision == expected_decision
