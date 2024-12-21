@@ -67,7 +67,7 @@ class SemanticMemoryExtraction(BaseModel):
 class ProcessSemanticMemoryDecision(BaseModel):
     decision: Literal["add", "ignore"] = Field(..., description="Action to take on the new memory")
     reason_for_decision: Optional[str] = Field(
-        ..., description="Reason for the action taken on the new memory or the reason it was ignored.",
+        ..., description="Reason for the action.",
     )
 
 class EpisodicMemoryExtraction(BaseModel):
@@ -127,6 +127,7 @@ class MemoryCore(BaseMemoryCore):
             for fact in extraction.facts:
                 decision = await self._get_add_memory_processing_decision(fact.text, author_id)
                 if decision == "ignore":
+                    logger.info(f"Decision to ignore fact {fact.text}")
                     continue
                 metadata = await self._extract_metadata_from_fact(fact.text)
                 message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
@@ -167,8 +168,7 @@ class MemoryCore(BaseMemoryCore):
     async def _get_add_memory_processing_decision(
             self, new_memory_fact: str, user_id: Optional[str]
         )-> str:
-        new_memory_embeddings = await self._get_semantic_fact_embeddings(new_memory_fact)
-        similar_memories = await self.storage.get_top_similar_memories_with_embeddings(new_memory_embeddings, user_id)
+        similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
         decision = await self._extract_memory_processing_decision(
             new_memory_fact,
             similar_memories,
@@ -184,14 +184,12 @@ class MemoryCore(BaseMemoryCore):
 
         # created at time format: YYYY-MM-DD HH:MM:SS.sssss in UTC.
         old_memory_content = "\n".join(
-            [f"{memory.content} created at {str(memory.created_at)}" for memory in old_memories]
+            [f"<MEMORY created_at={str(memory.created_at)}>{memory.content}</MEMORY>" for memory in old_memories]
         )
-        system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new
-memory is duplicated with existing old memories.
+        system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new memory is duplicated with existing old memories.
 Considerations:
 - Time-based order: Each old memory has a creation time. Please take creation time into consideration.
-- Repeated behavior: If the new memory indicates a repeated action or behavior over a period of time, it should be
-added to reflect the pattern.
+- Repeated behavior: If the new memory indicates a repeated action or behavior over a period of time, it should be added to reflect the pattern.
 Return value:
 - Add: add new memory to database while keep old memories
 - Ignore: ignore new memory

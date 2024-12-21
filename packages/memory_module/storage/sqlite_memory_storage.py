@@ -164,20 +164,6 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return [Memory(**memory_data) for memory_data in memories_dict.values()]
 
-    async def get_top_similar_memories_with_embeddings(
-        self, embeddings: List[List[float]], user_id: Optional[str], limit: Optional[int] = None
-    ) -> List[Memory]:
-        limit = limit or self.default_limit
-        candidates = []
-        for embedding in embeddings:
-
-            embedText = EmbedText(embedding_vector=embedding, text="")
-            similar_memories = await self.retrieve_memories(embedText, user_id, limit)
-            for memory in similar_memories:
-                if not any(memory.id == candidate.id for candidate in candidates):
-                    candidates.append(memory)
-        return heapq.nlargest(limit, candidates)
-
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given user."""
         query = """
