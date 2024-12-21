@@ -7,13 +7,13 @@ from dotenv import load_dotenv
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
-from memory_module.interfaces.types import Message
+from memory_module.interfaces.types import UserMessage
 from memory_module.services.llm_service import LLMConfig
 from pydantic import BaseModel
 
 
 def create_test_message(content: str):
-    return Message(
+    return UserMessage(
         id="123",
         author_id="123",
         conversation_ref="123",

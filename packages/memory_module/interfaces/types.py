@@ -100,10 +100,14 @@ class MemoryType(str, Enum):
 class BaseMemoryInput(BaseModel):
     """Represents a processed memory."""
 
+    def __lt__(self, nxt):
+        return self.distance > nxt.distance
+
     model_config = ConfigDict(from_attributes=True)
 
     content: str
     created_at: datetime
+    updated_at: Optional[datetime] = None
     memory_type: MemoryType
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default=[])
