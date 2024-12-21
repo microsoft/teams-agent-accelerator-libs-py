@@ -1,5 +1,4 @@
 import datetime
-import heapq
 import logging
 import uuid
 from pathlib import Path
@@ -247,7 +246,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
             ORDER BY m.created_at DESC
         """
-
+        params: tuple
         if limit is not None:
             query += " LIMIT ?"
             params = (limit,)
@@ -324,7 +323,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
-        params = (conversation_ref,)
+        params: tuple = (conversation_ref,)
 
         if config.n_messages is not None:
             query += " ORDER BY created_at DESC LIMIT ?"
@@ -416,7 +415,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         rows = await self.storage.fetch_all(query, tuple(memory_ids))
 
-        messages_dict = {}
+        messages_dict: Dict[str, List[Message]] = {}
         for row in rows:
             memory_id = row["memory_id"]
             if memory_id not in messages_dict:

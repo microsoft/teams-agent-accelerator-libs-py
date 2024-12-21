@@ -64,11 +64,14 @@ class SemanticMemoryExtraction(BaseModel):
         description="One or more facts about the user. If the action is 'ignore'," "this field should be empty.",
     )
 
+
 class ProcessSemanticMemoryDecision(BaseModel):
     decision: Literal["add", "ignore"] = Field(..., description="Action to take on the new memory")
     reason_for_decision: Optional[str] = Field(
-        ..., description="Reason for the action.",
+        ...,
+        description="Reason for the action.",
     )
+
 
 class EpisodicMemoryExtraction(BaseModel):
     action: Literal["add", "update", "ignore"] = Field(..., description="Action to take on the extracted fact")
@@ -165,21 +168,14 @@ class MemoryCore(BaseMemoryCore):
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
 
-    async def _get_add_memory_processing_decision(
-            self, new_memory_fact: str, user_id: Optional[str]
-        )-> str:
+    async def _get_add_memory_processing_decision(self, new_memory_fact: str, user_id: Optional[str]) -> str:
         similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
-        decision = await self._extract_memory_processing_decision(
-            new_memory_fact,
-            similar_memories,
-            user_id
-        )
+        decision = await self._extract_memory_processing_decision(new_memory_fact, similar_memories, user_id)
         return decision.decision
 
-
     async def _extract_memory_processing_decision(
-            self, new_memory: str, old_memories: List[Memory], user_id: Optional[str]
-        ) -> ProcessSemanticMemoryDecision:
+        self, new_memory: str, old_memories: List[Memory], user_id: Optional[str]
+    ) -> ProcessSemanticMemoryDecision:
         """Determine whether to add, replace or drop this memory"""
 
         # created at time format: YYYY-MM-DD HH:MM:SS.sssss in UTC.
@@ -197,13 +193,11 @@ Here are the old memories:
 {old_memory_content}
 Here is the new memory:
 {new_memory} created at {str(datetime.datetime.now())}
-"""
- # noqa: E501 
+"""  # noqa: E501
         messages = [{"role": "system", "content": system_message}]
 
         decision = await self.lm.completion(messages=messages, response_model=ProcessSemanticMemoryDecision)
         return decision
-
 
     async def _extract_metadata_from_fact(self, fact: str) -> MessageDigest:
         """Extract meaningful information from messages using LLM.
@@ -231,19 +225,15 @@ Here is the new memory:
         return res.data[0]["embedding"]
 
     async def _get_semantic_fact_embeddings(
-            self,
-            fact: str,
-            metadata: Optional[MessageDigest] = None
-        ) -> List[List[float]]:
+        self, fact: str, metadata: Optional[MessageDigest] = None
+    ) -> List[List[float]]:
         """Create embedding for semantic fact and metadata."""
         embedding_input = [fact]
         if metadata is not None:
             embedding_input.extend(
                 [metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
             )
-        res: EmbeddingResponse = await self.lm.embedding(
-            input=embedding_input
-        )
+        res: EmbeddingResponse = await self.lm.embedding(input=embedding_input)
         return [data["embedding"] for data in res.data]
 
     async def _extract_semantic_fact_from_messages(
@@ -286,7 +276,7 @@ Here is the transcript of the conversation:
 </TRANSCRIPT>
 """  # noqa: E501
 
-        messages = [
+        llm_messages = [
             {"role": "system", "content": system_message},
             {
                 "role": "user",
@@ -295,7 +285,7 @@ Here is the transcript of the conversation:
             },
         ]
 
-        res = await self.lm.completion(messages=messages, response_model=SemanticMemoryExtraction)
+        res = await self.lm.completion(messages=llm_messages, response_model=SemanticMemoryExtraction)
         return res
 
     async def _extract_episodic_memory_from_messages(self, messages: List[Message]) -> EpisodicMemoryExtraction:
@@ -324,9 +314,9 @@ Here are the incoming messages:
 """
         # TODO: Fix the above prompt so that the messages are displayed correctly.
         # Ex "User: I love pie!", "Assitant: I love pie!"
-        messages = [{"role": "system", "content": system_message}]
+        llm_messages = [{"role": "system", "content": system_message}]
 
-        return await self.lm.completion(messages=messages, response_model=EpisodicMemoryExtraction)
+        return await self.lm.completion(messages=llm_messages, response_model=EpisodicMemoryExtraction)
 
     async def add_short_term_memory(self, message: MessageInput) -> Message:
         return await self.storage.store_short_term_memory(message)

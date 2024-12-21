@@ -52,7 +52,11 @@ class LLMService:
         }
 
     async def completion(
-        self, messages: List, response_model: Optional[BaseModel] = None, override_model: Optional[str] = None, **kwargs
+        self,
+        messages: List,
+        response_model: Optional[type[BaseModel]] = None,
+        override_model: Optional[str] = None,
+        **kwargs,
     ):
         """Generate completion from the model."""
         model = override_model or self.model

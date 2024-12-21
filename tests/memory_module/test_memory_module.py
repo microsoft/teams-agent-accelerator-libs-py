@@ -14,6 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import (
     EpisodicMemoryExtraction,
+    MemoryCore,
     MessageDigest,
     SemanticFact,
     SemanticMemoryExtraction,
@@ -107,6 +108,7 @@ def memory_module(config, monkeypatch):
                 },
             )
 
+        assert isinstance(memory_module.memory_core, MemoryCore)
         monkeypatch.setattr(memory_module.memory_core.lm, "embedding", _mock_embedding)
 
     return memory_module
@@ -333,20 +335,24 @@ async def test_add_memory_processing_decision(memory_module):
         ),
     ]
     new_messages = [
-        [UserMessageInput(
-            id=str(uuid4()),
-            content="I have a Mac book",
-            author_id="user-123",
-            conversation_ref=conversation_id,
-            created_at=datetime.now(),
-        )],
-        [UserMessageInput(
-            id=str(uuid4()),
-            content="I bought one more new Mac book",
-            author_id="user-123",
-            conversation_ref=conversation_id,
-            created_at=datetime.now(),
-        )],
+        [
+            UserMessageInput(
+                id=str(uuid4()),
+                content="I have a Mac book",
+                author_id="user-123",
+                conversation_ref=conversation_id,
+                created_at=datetime.now(),
+            )
+        ],
+        [
+            UserMessageInput(
+                id=str(uuid4()),
+                content="I bought one more new Mac book",
+                author_id="user-123",
+                conversation_ref=conversation_id,
+                created_at=datetime.now(),
+            )
+        ],
     ]
 
     for message in old_messages:
@@ -356,6 +362,7 @@ async def test_add_memory_processing_decision(memory_module):
 
     await _validate_decision(memory_module, new_messages[0], "ignore")
     await _validate_decision(memory_module, new_messages[1], "add")
+
 
 async def _validate_decision(memory_module, message: List[UserMessageInput], expected_decision: str):
     extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(message)
