@@ -359,8 +359,7 @@ async def test_add_memory_processing_decision(memory_module):
 
 async def _validate_decision(memory_module, message: List[UserMessageInput], expected_decision: str):
     extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(message)
-
-    if extraction.action == "add" and extraction.facts:
-        for fact in extraction.facts:
-            decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, "user-123")
-            assert decision == expected_decision
+    assert extraction.action == "add" and extraction.facts
+    for fact in extraction.facts:
+        decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, "user-123")
+        assert decision == expected_decision

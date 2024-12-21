@@ -198,6 +198,7 @@ Here are the old memories:
 Here is the new memory:
 {new_memory} created at {str(datetime.datetime.now())}
 """
+ # noqa: E501 
         messages = [{"role": "system", "content": system_message}]
 
         decision = await self.lm.completion(messages=messages, response_model=ProcessSemanticMemoryDecision)
