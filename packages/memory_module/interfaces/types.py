@@ -100,9 +100,6 @@ class MemoryType(str, Enum):
 class BaseMemoryInput(BaseModel):
     """Represents a processed memory."""
 
-    def __lt__(self, nxt):
-        return self.distance > nxt.distance
-
     model_config = ConfigDict(from_attributes=True)
 
     content: str
