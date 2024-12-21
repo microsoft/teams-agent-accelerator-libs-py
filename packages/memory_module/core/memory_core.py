@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, Set
 
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field
@@ -47,8 +47,8 @@ class SemanticFact(BaseModel):
         ...,
         description="The text of the fact. Do not use real names (you can say 'The user' instead) and avoid pronouns.",
     )
-    message_indices: List[int] = Field(
-        default_factory=list,
+    message_indices: Set[int] = Field(
+        default_factory=set,
         description="The indices of the messages that the fact was extracted from.",
     )
 
