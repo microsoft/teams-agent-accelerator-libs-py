@@ -72,7 +72,7 @@ class ProcessSemanticMemoryDecision(BaseModel):
         description="Reason for the action.",
     )
     ids: Optional[list[str]] = Field(
-        default_factory=list,
+        default_factory=list[str],
         description="When decision is 'ignore', list of old memory ids that duplicate with new memory.",
     )
 
