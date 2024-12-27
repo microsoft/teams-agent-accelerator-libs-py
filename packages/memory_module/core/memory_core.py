@@ -203,7 +203,7 @@ Return value:
 Here are the old memories:
 {old_memory_content}
 Here is the new memory:
-<MEMORY created_at={str(datetime.datetime.now())}>{new_memory}</Memory>
+<MEMORY created_at={str(datetime.datetime.now())}>{new_memory}</MEMORY>
 """  # noqa: E501
         messages = [{"role": "system", "content": system_message}]
 
