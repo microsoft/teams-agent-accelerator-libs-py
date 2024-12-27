@@ -169,7 +169,9 @@ class MemoryCore(BaseMemoryCore):
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
 
-    async def _should_process_new_memory(self, new_memory_fact: str, message_ids:list[str], user_id: Optional[str]) -> bool:
+    async def _should_process_new_memory(
+        self, new_memory_fact: str, message_ids:list[str], user_id: Optional[str]
+    ) -> bool:
         similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
         decision = await self._extract_memory_processing_decision(new_memory_fact, similar_memories, user_id)
         if decision.decision == "ignore":
@@ -186,7 +188,7 @@ class MemoryCore(BaseMemoryCore):
 
         # created at time format: YYYY-MM-DD HH:MM:SS.sssss in UTC.
         old_memory_content = "\n".join(
-            [f"<MEMORY created_at={str(memory.created_at)} id={str(memory.id)}>{memory.content}</MEMORY>" for memory in old_memories]
+            [f"<MEMORY created_at={str(memory.created_at)} id={str(memory.id)}>{memory.content}</MEMORY>" for memory in old_memories] # noqa: E501
         )
         system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new memory is duplicated with existing old memories.
 Considerations:
