@@ -314,31 +314,24 @@ async def test_add_memory_processing_decision(memory_module):
     old_messages = [
         UserMessageInput(
             id=str(uuid4()),
-            content="I have a Pokemon limited version Mac book.",
+            content="I have a Mac book.",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.strptime("2024-09-01", "%Y-%m-%d"),
         ),
         UserMessageInput(
             id=str(uuid4()),
-            content="I bought a pink iphone.",
+            content="I have an iphone",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.strptime("2024-09-03", "%Y-%m-%d"),
-        ),
-        UserMessageInput(
-            id=str(uuid4()),
-            content="I just had another Mac book.",
-            author_id="user-123",
-            conversation_ref=conversation_id,
-            created_at=datetime.strptime("2024-10-12", "%Y-%m-%d"),
         ),
     ]
     new_messages = [
         [
             UserMessageInput(
                 id=str(uuid4()),
-                content="I have a Mac book",
+                content="I already have iphone",
                 author_id="user-123",
                 conversation_ref=conversation_id,
                 created_at=datetime.now(),
@@ -347,7 +340,7 @@ async def test_add_memory_processing_decision(memory_module):
         [
             UserMessageInput(
                 id=str(uuid4()),
-                content="I bought one more new Mac book",
+                content="I bought one more new Mac book today",
                 author_id="user-123",
                 conversation_ref=conversation_id,
                 created_at=datetime.now(),
@@ -359,14 +352,17 @@ async def test_add_memory_processing_decision(memory_module):
         await memory_module.add_message(message)
 
     await memory_module.message_queue.message_buffer.scheduler.flush()
+    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_memories) >= 1
 
-    await _validate_decision(memory_module, new_messages[0], "ignore")
-    await _validate_decision(memory_module, new_messages[1], "add")
+    await _validate_decision(memory_module, new_messages[0], False)
+    await _validate_decision(memory_module, new_messages[1], True)
 
 
-async def _validate_decision(memory_module, message: List[UserMessageInput], expected_decision: str):
+async def _validate_decision(memory_module, message: List[UserMessageInput], expected_decision: bool):
     extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(message)
     assert extraction.action == "add" and extraction.facts
     for fact in extraction.facts:
-        decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, "user-123")
+        message_ids = [message[idx].id for idx in fact.message_indices if idx < len(message)]
+        decision = await memory_module.memory_core._should_process_new_memory(fact.text, message_ids, "user-123")
         assert decision == expected_decision

@@ -77,6 +77,16 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
         return memory_id
 
+    async def add_memory_attributions(self, memory_ids:list[str], message_ids:list[str]) -> None:
+        async with self.storage.transaction() as cursor:
+            query_list = []
+            for memory_id in memory_ids:
+                query_list += [(memory_id, msg_id) for msg_id in message_ids]
+            await cursor.executemany(
+                "INSERT INTO memory_attributions (memory_id, message_id) VALUES (?, ?)",
+                query_list,
+            )
+
     async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         serialized_embeddings = [

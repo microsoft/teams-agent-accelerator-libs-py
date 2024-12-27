@@ -71,6 +71,9 @@ class ProcessSemanticMemoryDecision(BaseModel):
         ...,
         description="Reason for the action.",
     )
+    ids:Optional[List[str]] = Field(
+        default_factory=list, 
+        description="List of old memory ids that duplicate with new memory if the decision is 'ignore',")
 
 
 class EpisodicMemoryExtraction(BaseModel):
@@ -128,12 +131,10 @@ class MemoryCore(BaseMemoryCore):
 
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
-                decision = await self._get_add_memory_processing_decision(fact.text, author_id)
-                if decision == "ignore":
-                    logger.info(f"Decision to ignore fact {fact.text}")
+                message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
+                if await self._should_process_new_memory(fact.text, message_ids, author_id) is False:
                     continue
                 metadata = await self._extract_metadata_from_fact(fact.text)
-                message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
                 memory = BaseMemoryInput(
                     content=fact.text,
                     created_at=messages[0].created_at or datetime.datetime.now(),
@@ -168,10 +169,15 @@ class MemoryCore(BaseMemoryCore):
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
 
-    async def _get_add_memory_processing_decision(self, new_memory_fact: str, user_id: Optional[str]) -> str:
+    async def _should_process_new_memory(self, new_memory_fact: str, message_ids:list[str], user_id: Optional[str]) -> bool:
         similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
         decision = await self._extract_memory_processing_decision(new_memory_fact, similar_memories, user_id)
-        return decision.decision
+        if decision.decision == "ignore":
+            logger.info(f"Decision to ignore fact {new_memory_fact}")
+            if decision.ids is not None:
+                await self.storage.add_memory_attributions(decision.ids, message_ids)
+            return False
+        return True
 
     async def _extract_memory_processing_decision(
         self, new_memory: str, old_memories: List[Memory], user_id: Optional[str]
@@ -180,7 +186,7 @@ class MemoryCore(BaseMemoryCore):
 
         # created at time format: YYYY-MM-DD HH:MM:SS.sssss in UTC.
         old_memory_content = "\n".join(
-            [f"<MEMORY created_at={str(memory.created_at)}>{memory.content}</MEMORY>" for memory in old_memories]
+            [f"<MEMORY created_at={str(memory.created_at)} id={str(memory.id)}>{memory.content}</MEMORY>" for memory in old_memories]
         )
         system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new memory is duplicated with existing old memories.
 Considerations:
@@ -192,7 +198,7 @@ Return value:
 Here are the old memories:
 {old_memory_content}
 Here is the new memory:
-{new_memory} created at {str(datetime.datetime.now())}
+<MEMORY created_at={str(datetime.datetime.now())}>{new_memory}</Memory>
 """  # noqa: E501
         messages = [{"role": "system", "content": system_message}]
 

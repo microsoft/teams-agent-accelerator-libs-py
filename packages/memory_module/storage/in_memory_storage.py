@@ -58,6 +58,12 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self.storage["memories"][memory_id] = memory_obj
         self.storage["embeddings"][memory_id] = embedding_vectors
         return memory_id
+    
+    async def add_memory_attributions(self, memory_ids:list[str], message_ids:list[str]) -> None:
+        for memory_id in memory_ids:
+            if self.storage["memories"][memory_id].message_attributions is None:
+                self.storage["memories"][memory_id].message_attributions = []
+            self.storage["memories"][memory_id].message_attributions += message_ids # type: ignore
 
     async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
         if memory_id in self.storage["memories"]:

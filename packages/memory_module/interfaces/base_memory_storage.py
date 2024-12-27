@@ -32,6 +32,10 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
+    async def add_memory_attributions(self, memory_ids:list[str], message_ids:list[str]) -> None:
+        pass
+
+    @abstractmethod
     async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         pass
