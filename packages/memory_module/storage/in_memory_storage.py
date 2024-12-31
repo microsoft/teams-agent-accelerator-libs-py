@@ -31,6 +31,7 @@ class InMemoryInternalStore(TypedDict):
     embeddings: Dict[str, List[List[float]]]
     buffered_messages: Dict[str, List[Message]]
     scheduled_events: Dict[str, Event]
+    messages: Dict[str, List[Message]]
 
 
 class _MemorySimilarity(NamedTuple):
@@ -45,6 +46,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             "buffered_messages": defaultdict(list),
             "scheduled_events": {},
             "memories": {},
+            "messages": defaultdict(list),
         }
 
     async def store_memory(
@@ -105,6 +107,8 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                 author_id=message.author_id,
             )
 
+        self.storage["messages"][message.conversation_ref].append(message_obj)
+        
         return message_obj
 
     async def retrieve_memories(
@@ -149,7 +153,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                     messages = []
                     for msg_id in memory.message_attributions:
                         # Search through buffered messages to find matching message
-                        for conv_messages in self.storage["buffered_messages"].values():
+                        for conv_messages in self.storage["messages"].values():
                             for msg in conv_messages:
                                 if msg.id == msg_id:
                                     messages.append(msg)
@@ -238,7 +242,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         messages = []
 
         # Get messages for the conversation
-        conversation_messages = self.storage["buffered_messages"].get(conversation_ref, [])
+        conversation_messages = self.storage["messages"].get(conversation_ref, [])
 
         if config.n_messages is not None:
             messages = conversation_messages[-config.n_messages :]
