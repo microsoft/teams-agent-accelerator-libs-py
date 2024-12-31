@@ -245,16 +245,16 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
         """
-        params = []
+        params: tuple = tuple()
         if message_id is not None:
             query += " WHERE ma.message_id = ?"
-            params += [message_id]
+            params += (message_id,)
 
         query += " ORDER BY m.created_at DESC"
 
         if limit is not None:
             query += " LIMIT ?"
-            params += [limit]
+            params += (limit,)
 
         rows = await self.storage.fetch_all(query, tuple(params))
 
@@ -326,7 +326,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
-        params = (conversation_ref,)
+        params: tuple = (conversation_ref,)
 
         if config.last_minutes is not None:
             cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=config.last_minutes)

@@ -63,11 +63,11 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
             DELETE FROM buffered_messages
             WHERE conversation_ref = ?
         """
-        params = [conversation_ref]
+        params: tuple = (conversation_ref,)
         if before:
             query += " AND created_at <= ?"
-            params.append(before.astimezone(datetime.timezone.utc))
-        await self.storage.execute(query, tuple(params))
+            params += (before.astimezone(datetime.timezone.utc),)
+        await self.storage.execute(query, params)
 
     async def count_buffered_messages(self, conversation_ref: str) -> int:
         """Count the number of buffered messages for a conversation."""
