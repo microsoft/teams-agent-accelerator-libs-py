@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Awaitable, Callable, Dict, List, Optional
+from typing import Awaitable, Callable, Dict, List, Optional, Set
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_message_buffer_storage import BaseMessageBufferStorage
@@ -32,7 +32,7 @@ class MessageBuffer:
         self.scheduler.callback = self._handle_timeout
 
         # Track conversations being processed
-        self._processing: Dict[str, asyncio.Event] = dict()
+        self._processing: Set[str] = set()
 
     async def _process_conversation_messages(self, conversation_ref: str) -> None:
         """Process all messages for a conversation and clear its buffer.
@@ -45,7 +45,7 @@ class MessageBuffer:
             return
 
         try:
-            self._processing[conversation_ref] = asyncio.Event()
+            self._processing.add(conversation_ref)
             messages = await self.storage.get_buffered_messages(conversation_ref)
             if messages:  # Only process if there are messages
                 latest = messages[-1]
@@ -53,18 +53,11 @@ class MessageBuffer:
                 await self.storage.clear_buffered_messages(conversation_ref, before=latest.created_at)
         finally:
             # Always remove from processing set
-            self._processing[conversation_ref].set()
-            del self._processing[conversation_ref]
+            self._processing.remove(conversation_ref)
 
     def _is_processing(self, conversation_ref: str) -> bool:
         """Check if a conversation is currently being processed."""
         return conversation_ref in self._processing
-
-    async def _wait_for_processing_to_complete(self, conversation_ref: str):
-        """Wait for a conversation to finish processing."""
-        if self._is_processing(conversation_ref):
-            async_event = self._processing[conversation_ref]
-            await async_event.wait()
 
     async def _handle_timeout(self, id: str, object: any, time: datetime) -> None:
         """Handle a conversation timeout by processing its messages."""
@@ -77,12 +70,12 @@ class MessageBuffer:
 
     async def add_message(self, message: Message) -> None:
         """Add a message to the buffer and process if threshold reached."""
-        # Wait for any existing processing to finish
-        await self._wait_for_processing_to_complete(message.conversation_ref)
-
         # Store the message
         await self.storage.store_buffered_message(message)
 
+        # TODO: Possible race condition here where the count includes messages currently being processed
+        # but not yet removed from the buffer. This could cause the timer to not be triggered, but seems like 
+        # a rare edge case.
         # Check if this is the first message in the conversation
         count = await self.storage.count_buffered_messages(message.conversation_ref)
         if count == 1:
