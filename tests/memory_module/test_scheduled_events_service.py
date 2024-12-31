@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -38,10 +39,10 @@ async def cleanup_scheduled_events(service):
 async def test_add_event(service):
     """Test that events are properly added to pending_events."""
     now = datetime.now()
-    await service.add_event("test1", {"data": "test"}, now)
+    await service.add_event("test1", {"id": "test1", "data": "test"}, now)
 
     assert len(service.pending_events) == 1
-    assert any(task.get_name() == "test1" for task in service.pending_events)
+    assert any(task.id == "test1" for task in service.pending_events)
 
     await asyncio.sleep(0.1)
     assert len(service.pending_events) == 0
@@ -55,7 +56,7 @@ async def test_callback_execution(config):
         callback_called = False
         callback_data = None
 
-        async def test_callback(id: str, obj: any, time: datetime):
+        async def test_callback(id: str, obj: Any, time: datetime):
             nonlocal callback_called, callback_data
             callback_called = True
             callback_data = obj
@@ -75,9 +76,7 @@ async def test_callback_execution(config):
         assert len(service.pending_events) == 0  # Event should be removed after execution
     finally:
         # Clean up any remaining tasks
-        for task in service.pending_events:
-            task.cancel()
-        service.pending_events.clear()
+        await service.flush()
 
 
 @pytest.mark.asyncio
@@ -93,7 +92,7 @@ async def test_cancel_existing_event(service):
     # Add event with same ID
     await service.add_event("test1", {"data": "updated"}, future)
     assert len(service.pending_events) == 1
-    assert any(task.get_name() == "test1" for task in service.pending_events)
+    assert any(task.id == "test1" for task in service.pending_events)
 
 
 @pytest.mark.asyncio
@@ -101,7 +100,7 @@ async def test_immediate_execution_for_past_time(service):
     """Test that events with past times execute immediately."""
     callback_called = False
 
-    async def test_callback(id: str, obj: any, time: datetime):
+    async def test_callback(id: str, obj: Any, time: datetime):
         nonlocal callback_called
         callback_called = True
 
@@ -109,7 +108,7 @@ async def test_immediate_execution_for_past_time(service):
 
     # Schedule event for a time in the past
     past_time = datetime.now() - timedelta(minutes=1)
-    await service.add_event("test1", {"data": "test"}, past_time)
+    await service.add_event("test1", {"id": "test1", "data": "test"}, past_time)
 
     # Small delay to allow immediate execution
     await asyncio.sleep(0.1)
@@ -125,10 +124,10 @@ async def test_multiple_events(service):
     future = now + timedelta(seconds=0.5)
 
     # Add multiple events
-    await service.add_event("test1", {"data": "1"}, future)
-    await service.add_event("test2", {"data": "2"}, future)
+    await service.add_event("test1", {"id": "test1", "data": "1"}, future)
+    await service.add_event("test2", {"id": "test2", "data": "2"}, future)
 
     assert len(service.pending_events) == 2
-    event_names = [task.get_name() for task in service.pending_events]
+    event_names = [task.id for task in service.pending_events]
     assert "test1" in event_names
     assert "test2" in event_names

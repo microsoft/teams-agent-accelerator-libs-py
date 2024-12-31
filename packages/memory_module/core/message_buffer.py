@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Awaitable, Callable, List, Optional, Set
+from typing import Any, Awaitable, Callable, List, Optional, Set
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_message_buffer_storage import BaseMessageBufferStorage
@@ -58,14 +58,9 @@ class MessageBuffer:
         """Check if a conversation is currently being processed."""
         return conversation_ref in self._processing
 
-    async def _handle_timeout(self, id: str, object: any, time: datetime) -> None:
+    async def _handle_timeout(self, id: str, object: Any, time: datetime) -> None:
         """Handle a conversation timeout by processing its messages."""
-        try:
-            await self._process_conversation_messages(id)
-        finally:
-            # Clean up the task from scheduler
-            if hasattr(self.scheduler, "_tasks"):
-                self.scheduler._tasks.pop(id, None)
+        await self._process_conversation_messages(id)
 
     async def add_message(self, message: Message) -> None:
         """Add a message to the buffer and process if threshold reached."""
@@ -93,4 +88,5 @@ class MessageBuffer:
 
     async def flush(self) -> None:
         """Flush all messages from the buffer."""
-        await self.scheduler.flush()
+        if isinstance(self.scheduler, ScheduledEventsService):
+            await self.scheduler.flush()

@@ -91,7 +91,7 @@ class MemoryMiddleware(Middleware):
             await gather(*tasks)
         return True
 
-    async def on_turn(self, context: TurnContext, logic: Callable[[], Awaitable]):  # type: ignore Bug in botbuilder-python https://github.com/microsoft/botbuilder-python/issues/2198
+    async def on_turn(self, context: TurnContext, logic: Callable[[], Awaitable]):
         # Handle incoming message
         await self.add_user_message(context)
 

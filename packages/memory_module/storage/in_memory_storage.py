@@ -1,7 +1,7 @@
 import datetime
 import uuid
 from collections import defaultdict
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, List, NamedTuple, Optional, TypedDict
 
 import numpy as np
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
@@ -31,6 +31,11 @@ class InMemoryInternalStore(TypedDict):
     embeddings: Dict[str, List[List[float]]]
     buffered_messages: Dict[str, List[Message]]
     scheduled_events: Dict[str, Event]
+
+
+class _MemorySimilarity(NamedTuple):
+    memory: Memory
+    similarity: float
 
 
 class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage):
@@ -72,6 +77,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         else:
             deep_link = message.deep_link
 
+        message_obj: Message
         if isinstance(message, UserMessageInput):
             message_obj = UserMessage(
                 id=id,
@@ -105,7 +111,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
     ) -> List[Memory]:
         limit = limit or self.default_limit
-        sorted_memories = []
+        sorted_memories: list[_MemorySimilarity] = []
 
         for memory_id, embeddings in self.storage["embeddings"].items():
             memory = self.storage["memories"][memory_id]
@@ -118,16 +124,10 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                 similarity = self._cosine_similarity(embedText.embedding_vector, embedding)
                 best_similarity = max(best_similarity, similarity)
 
-            sorted_memories.append(
-                {
-                    "id": memory_id,
-                    "memory": memory,
-                    "distance": best_similarity,
-                }
-            )
+            sorted_memories.append(_MemorySimilarity(memory, best_similarity))
 
-        sorted_memories.sort(key=lambda x: x["distance"], reverse=True)
-        return [Memory(**item["memory"].__dict__) for item in sorted_memories[:limit]]
+        sorted_memories.sort(key=lambda x: x.similarity, reverse=True)
+        return [Memory(**item.memory.__dict__) for item in sorted_memories[:limit]]
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return [
