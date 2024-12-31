@@ -182,7 +182,11 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             memories = memories[:limit]
 
         if message_id is not None:
-            memories = [memory for memory in memories if message_id in memory.message_attributions]
+            memories = [
+                memory
+                for memory in memories
+                if memory.message_attributions is not None and message_id in memory.message_attributions
+            ]
 
         return memories
 

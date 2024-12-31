@@ -60,7 +60,7 @@ class MessageQueue(BaseMessageQueue):
         await self.memory_core.process_semantic_messages(messages=messages, existing_memories=memories)
 
     async def _get_recent_messages_and_memories(
-        self, conversation_ref: str, before: datetime, n_messages: int
+        self, conversation_ref: str, before: datetime.datetime, n_messages: int
     ) -> Tuple[List[Message], List[Memory]]:
         """Pull messages from short term memory for a conversation."""
         # The messages in the buffer are a subset of the messages in the chat history

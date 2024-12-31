@@ -37,6 +37,7 @@ async def test_extract_memory_from_messages(config):
     message = create_test_user_message(content="Hey, I'm a software developer.")
     res = await memory_core._extract_semantic_fact_from_messages(messages=[message])
 
+    assert res.facts is not None
     assert any(includes(fact.text, "software developer") for fact in res.facts)
 
 

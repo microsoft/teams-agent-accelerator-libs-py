@@ -38,9 +38,9 @@ class MigrationManager:
     # Changed to double underscore for true private methods
     @contextmanager
     def __get_connection(self):
+        conn = sqlite3.connect(self.db_path)
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                yield conn
+            yield conn
         finally:
             conn.close()
 

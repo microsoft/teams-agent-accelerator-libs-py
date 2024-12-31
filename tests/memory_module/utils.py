@@ -19,7 +19,6 @@ def create_test_user_message(content: str, id: str = "123"):
         conversation_ref="123",
         created_at=datetime.now(),
         content=content,
-        type="user",
     )
 
 
@@ -30,7 +29,6 @@ def create_test_assistant_message(content: str):
         conversation_ref="123",
         created_at=datetime.now(),
         content=content,
-        type="assistant",
     )
 
 
