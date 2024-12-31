@@ -136,12 +136,12 @@ class MemoryCore(BaseMemoryCore):
                     logger.info(f"Decision to ignore fact {fact.text}")
                     continue
                 metadata = await self._extract_metadata_from_fact(fact.text)
-                message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
+                message_ids = set(messages[idx].id for idx in fact.message_indices if idx < len(messages))
                 memory = BaseMemoryInput(
                     content=fact.text,
                     created_at=messages[0].created_at or datetime.datetime.now(),
                     user_id=author_id,
-                    message_attributions=message_ids,
+                    message_attributions=list(message_ids),
                     memory_type=MemoryType.SEMANTIC,
                 )
                 embed_vectors = await self._get_semantic_fact_embeddings(fact.text, metadata)
