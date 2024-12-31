@@ -195,9 +195,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         only messages created on or before that time will be removed."""
         messages = self.storage["buffered_messages"][conversation_ref]
         if before:
-            self.storage["buffered_messages"][conversation_ref] = [
-                msg for msg in messages if msg.created_at > before
-            ]
+            self.storage["buffered_messages"][conversation_ref] = [msg for msg in messages if msg.created_at > before]
         else:
             self.storage["buffered_messages"][conversation_ref] = []
 

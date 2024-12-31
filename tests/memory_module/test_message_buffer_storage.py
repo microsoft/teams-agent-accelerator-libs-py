@@ -38,6 +38,7 @@ async def test_store_and_get_buffered_message(storage):
     assert len(messages) == 1
     assert messages[0].id == message.id
 
+
 @pytest.mark.asyncio
 async def test_clear_buffered_messages(storage):
     message = create_test_user_message("Hi")
@@ -53,6 +54,7 @@ async def test_clear_buffered_messages(storage):
     messages = await buffer.get_buffered_messages(conversation_ref=message.conversation_ref)
 
     assert len(messages) == 0
+
 
 @pytest.mark.asyncio
 async def test_clear_buffered_messages_before_time(storage):
@@ -75,6 +77,7 @@ async def test_clear_buffered_messages_before_time(storage):
     await buffer.clear_buffered_messages(conversation_ref=message.conversation_ref, before=before)
     messages = await buffer.get_buffered_messages(conversation_ref=message.conversation_ref)
     assert len(messages) == 0
+
 
 @pytest.mark.asyncio
 async def test_count_buffered_messages(storage):
