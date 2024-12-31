@@ -99,7 +99,6 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                 author_id=message.author_id,
             )
 
-        await self.store_buffered_message(message_obj)
         return message_obj
 
     async def retrieve_memories(
@@ -191,9 +190,16 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         """Retrieve all buffered messages for a conversation."""
         return self.storage["buffered_messages"][conversation_ref]
 
-    async def clear_buffered_messages(self, conversation_ref: str) -> None:
-        """Remove all buffered messages for a conversation."""
-        self.storage["buffered_messages"][conversation_ref] = []
+    async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
+        """Remove all buffered messages for a conversation. If the before parameter is provided, 
+        only messages created on or before that time will be removed."""
+        messages = self.storage["buffered_messages"][conversation_ref]
+        if before:
+            self.storage["buffered_messages"][conversation_ref] = [
+                msg for msg in messages if msg.created_at > before
+            ]
+        else:
+            self.storage["buffered_messages"][conversation_ref] = []
 
     async def count_buffered_messages(self, conversation_ref: str) -> int:
         """Count the number of buffered messages for a conversation."""
