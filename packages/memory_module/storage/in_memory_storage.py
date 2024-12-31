@@ -108,7 +108,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             )
 
         self.storage["messages"][message.conversation_ref].append(message_obj)
-        
+
         return message_obj
 
     async def retrieve_memories(
