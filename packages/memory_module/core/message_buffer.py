@@ -1,6 +1,5 @@
-import asyncio
 from datetime import datetime, timedelta
-from typing import Awaitable, Callable, Dict, List, Optional, Set
+from typing import Awaitable, Callable, List, Optional, Set
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_message_buffer_storage import BaseMessageBufferStorage
@@ -74,7 +73,7 @@ class MessageBuffer:
         await self.storage.store_buffered_message(message)
 
         # TODO: Possible race condition here where the count includes messages currently being processed
-        # but not yet removed from the buffer. This could cause the timer to not be triggered, but seems like 
+        # but not yet removed from the buffer. This could cause the timer to not be triggered, but seems like
         # a rare edge case.
         # Check if this is the first message in the conversation
         count = await self.storage.count_buffered_messages(message.conversation_ref)

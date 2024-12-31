@@ -57,7 +57,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         return [build_message_from_dict(row) for row in results]
 
     async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
-        """Remove all buffered messages for a conversation. If the before parameter is provided, 
+        """Remove all buffered messages for a conversation. If the before parameter is provided,
         only messages created on or before that time will be removed."""
         query = """
             DELETE FROM buffered_messages

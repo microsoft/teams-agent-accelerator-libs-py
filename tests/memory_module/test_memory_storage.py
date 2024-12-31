@@ -18,11 +18,11 @@ from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 @pytest.fixture(params=["sqlite", "in_memory"])
 def memory_storage(request):
     if request.param == "sqlite":
-        name = f'memory_{uuid4().hex}.db'
+        name = f"memory_{uuid4().hex}.db"
         storage = SQLiteMemoryStorage(name)
         yield storage
         os.remove(storage.db_path)
-        
+
     else:
         yield InMemoryStorage()
 

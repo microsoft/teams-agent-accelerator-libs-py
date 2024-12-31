@@ -191,7 +191,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         return self.storage["buffered_messages"][conversation_ref]
 
     async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
-        """Remove all buffered messages for a conversation. If the before parameter is provided, 
+        """Remove all buffered messages for a conversation. If the before parameter is provided,
         only messages created on or before that time will be removed."""
         messages = self.storage["buffered_messages"][conversation_ref]
         if before:
