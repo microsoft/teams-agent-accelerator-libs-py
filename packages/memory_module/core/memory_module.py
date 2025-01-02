@@ -9,7 +9,7 @@ from memory_module.interfaces.base_memory_module import BaseMemoryModule
 from memory_module.interfaces.base_message_queue import BaseMessageQueue
 from memory_module.interfaces.types import Memory, Message, MessageInput, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
-from memory_module.utils.logging import set_verbose_logging
+from memory_module.utils.logging import configure_logging
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class MemoryModule(BaseMemoryModule):
         )
 
         if config.enable_logging:
-            set_verbose_logging()
+            configure_logging()
 
     async def add_message(self, message: MessageInput) -> Message:
         """Add a message to be processed into memory."""

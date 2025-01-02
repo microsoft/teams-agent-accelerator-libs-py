@@ -1,7 +1,7 @@
 import logging
 
 
-def set_verbose_logging():
+def configure_logging():
     module_name = __name__.split(".")[0]  # == "memory_module"
     logger = logging.getLogger(module_name)
     logger.setLevel(logging.DEBUG)
