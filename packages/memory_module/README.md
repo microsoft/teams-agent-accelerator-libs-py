@@ -12,7 +12,7 @@ config.enable_logging=True,
 ### How does it work?
 
 The `memory_module` library uses
-Python's [logging](https://docs.python.org/3.12/library/logging.html) library to faciliate logging. The `memory_module` logger is configured to log debug messages (and higher serverity) to the console. 
+Python's [logging](https://docs.python.org/3.12/library/logging.html) library to facilitate logging. The `memory_module` logger is configured to log debug messages (and higher serverity) to the console.
 
 To set up the logger in your Python file, use the following code:
 
@@ -36,4 +36,4 @@ import logging
 logger = logging.getLogger("memory_module")
 ```
 
-You can apply customizations to it. All loggers used in the library will be a descendant of it and so logs will be propagrated to it.
+You can apply customizations to it. All loggers used in the library will be a descendant of it and so logs will be propagated to it.
