@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, List, Optional
 
 from memory_module.config import MemoryModuleConfig
@@ -8,6 +9,9 @@ from memory_module.interfaces.base_memory_module import BaseMemoryModule
 from memory_module.interfaces.base_message_queue import BaseMessageQueue
 from memory_module.interfaces.types import Memory, Message, MessageInput, ShortTermMemoryRetrievalConfig
 from memory_module.services.llm_service import LLMService
+from memory_module.utils.logging import set_verbose_logging
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryModule(BaseMemoryModule):
@@ -36,16 +40,22 @@ class MemoryModule(BaseMemoryModule):
             config=config, memory_core=self.memory_core
         )
 
+        if config.enable_logging:
+            set_verbose_logging()
+
     async def add_message(self, message: MessageInput) -> Message:
         """Add a message to be processed into memory."""
+        logger.debug(f"add message to memory module. {message.type}: `{message.content}`")
         message_res = await self.memory_core.add_short_term_memory(message)
         await self.message_queue.enqueue(message_res)
-
         return message_res
 
     async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
-        return await self.memory_core.retrieve_memories(query, user_id, limit)
+        logger.debug(f"retrieve memories from (query: {query}, user_id: {user_id}, limit: {limit})")
+        memories = await self.memory_core.retrieve_memories(query, user_id, limit)
+        logger.debug(f"retrieved memories: {memories}")
+        return memories
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return await self.memory_core.get_memories(memory_ids)
@@ -62,6 +72,7 @@ class MemoryModule(BaseMemoryModule):
 
     async def remove_memories(self, user_id: str) -> None:
         """Remove memories based on user id."""
+        logger.debug(f"removing all memories associated with user ({user_id})")
         return await self.memory_core.remove_memories(user_id)
 
     async def retrieve_chat_history(

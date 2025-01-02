@@ -42,6 +42,7 @@ memory_module = MemoryModule(
         llm=LLMConfig(**memory_llm_config),
         db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
         timeout_seconds=60,
+        enable_logging=True,
     )
 )
 
