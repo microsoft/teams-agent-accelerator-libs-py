@@ -26,3 +26,5 @@ class Agent(ABC):
         res = await context.send_activity(activity)
         if res:
             return res.id
+
+        return None

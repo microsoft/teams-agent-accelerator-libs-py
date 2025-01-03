@@ -35,3 +35,4 @@ class MemoryModuleConfig(BaseModel):
         description="Seconds to wait before processing a conversation",
     )
     llm: LLMConfig = Field(description="LLM service configuration")
+    enable_logging: bool = Field(default=False, description="Enable verbose logging for memory module")
