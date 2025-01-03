@@ -107,7 +107,7 @@ class MemoryCore(BaseMemoryCore):
             SQLiteMemoryStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
         )
 
-    async def process_semantic_messages(self, messages: List[Message]) -> None:
+    async def process_semantic_messages(self, messages: List[Message], decisionOn: bool = True) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         # make sure there is an author, and only one author
         author_id = next(
@@ -128,10 +128,11 @@ class MemoryCore(BaseMemoryCore):
 
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
-                decision = await self._get_add_memory_processing_decision(fact.text, author_id)
-                if decision == "ignore":
-                    logger.info(f"Decision to ignore fact {fact.text}")
-                    continue
+                if decisionOn:
+                    decision = await self._get_add_memory_processing_decision(fact.text, author_id)
+                    if decision == "ignore":
+                        logger.info(f"Decision to ignore fact {fact.text}")
+                        continue
                 metadata = await self._extract_metadata_from_fact(fact.text)
                 message_ids = [messages[idx].id for idx in fact.message_indices if idx < len(messages)]
                 memory = BaseMemoryInput(
@@ -167,6 +168,22 @@ class MemoryCore(BaseMemoryCore):
 
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
+
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        # Get list of memories that need to be updated/removed with removed messages
+        remove_messages_dict = await self.storage.get_memories_and_messages(message_ids)
+
+        associated_messages_dict = await self.get_messages(list(remove_messages_dict.keys()))
+        for key, value in associated_messages_dict.items():
+            associated_messages_dict[key] = [item for item in value if item.id not in remove_messages_dict[key]]
+
+        # Remove selected messages and related old memories
+        await self.storage.remove_memories_and_messages(list(remove_messages_dict.keys()), message_ids)
+
+        # Re-generate new memories with remaining messages
+        for value in associated_messages_dict.values():
+            if value:
+                await self.process_semantic_messages(value, False)
 
     async def _get_add_memory_processing_decision(self, new_memory_fact: str, user_id: Optional[str]) -> str:
         similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)

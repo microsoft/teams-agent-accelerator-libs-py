@@ -178,25 +178,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         embed_id_list = [row["embed_id"] for row in id_rows]
 
         # Remove memory
-        async with self.storage.transaction() as cursor:
-            await cursor.execute(
-                f"DELETE FROM vec_items WHERE memory_embedding_id in ({",".join(["?"]*len(embed_id_list))})",
-                tuple(embed_id_list),
-            )
-
-            await cursor.execute(
-                f"DELETE FROM embeddings WHERE memory_id in ({",".join(["?"]*len(memory_id_list))})",
-                tuple(memory_id_list),
-            )
-
-            await cursor.execute(
-                f"DELETE FROM memory_attributions WHERE memory_id in ({",".join(["?"]*len(memory_id_list))})",
-                tuple(memory_id_list),
-            )
-
-            await cursor.execute(
-                f"DELETE FROM memories WHERE id in ({",".join(["?"]*len(memory_id_list))})", tuple(memory_id_list)
-            )
+        await self.__remove_memories_and_embeddings(memory_id_list, embed_id_list)
 
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
         """Retrieve a memory with its message attributions."""
@@ -424,3 +406,63 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             messages_dict[memory_id].append(build_message_from_dict(row))
 
         return messages_dict
+
+    async def get_memories_and_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+        """Get list of memories with associated messages"""
+        query = """
+            SELECT memory_id, message_id
+            FROM memory_attributions
+            WHERE message_id IN ({})
+        """.format(",".join(["?"] * len(message_ids)))
+
+        rows = await self.storage.fetch_all(query, tuple(message_ids))
+
+        memories_messages_dict: Dict[str, List[str]] = {}
+        for row in rows:
+            memory_id = row["memory_id"]
+            if memory_id not in memories_messages_dict:
+                memories_messages_dict[memory_id] = []
+            memories_messages_dict[memory_id].append(row["message_id"])
+
+        return memories_messages_dict
+
+    async def remove_memories_and_messages(self, memory_ids: List[str], message_ids: List[str]) -> None:
+        query = """
+            SELECT
+                id
+            FROM embeddings
+            WHERE memory_id in ({})
+        """.format(",".join(["?"] * len(memory_ids)))
+        rows = await self.storage.fetch_all(query, tuple(memory_ids))
+        embed_ids = [row["id"] for row in rows]
+        await self.__remove_memories_and_embeddings(memory_ids, embed_ids)
+
+        await self.__remove_messages(message_ids)
+
+    async def __remove_memories_and_embeddings(self, memory_ids: List[str], embed_ids: List[str]) -> None:
+        async with self.storage.transaction() as cursor:
+            await cursor.execute(
+                f"DELETE FROM vec_items WHERE memory_embedding_id in ({",".join(["?"]*len(embed_ids))})",
+                tuple(embed_ids),
+            )
+
+            await cursor.execute(
+                f"DELETE FROM embeddings WHERE memory_id in ({",".join(["?"]*len(memory_ids))})",
+                tuple(memory_ids),
+            )
+
+            await cursor.execute(
+                f"DELETE FROM memory_attributions WHERE memory_id in ({",".join(["?"]*len(memory_ids))})",
+                tuple(memory_ids),
+            )
+
+            await cursor.execute(
+                f"DELETE FROM memories WHERE id in ({",".join(["?"]*len(memory_ids))})", tuple(memory_ids)
+            )
+
+    async def __remove_messages(self, message_ids: List[str]) -> None:
+        async with self.storage.transaction() as cursor:
+            await cursor.execute(
+                f"DELETE FROM messages WHERE id in ({",".join(["?"]*len(message_ids))})",
+                tuple(message_ids),
+            )

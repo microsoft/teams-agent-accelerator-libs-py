@@ -77,6 +77,15 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
+    async def get_memories_and_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+        """Get list of memories with associated messages"""
+        pass
+
+    @abstractmethod
+    async def remove_memories_and_messages(self, memory_ids: List[str], message_ids: List[str]) -> None:
+        pass
+
+    @abstractmethod
     async def get_user_memories(self, user_id: str) -> List[Memory]:
         """Get memories based on user id."""
         pass
