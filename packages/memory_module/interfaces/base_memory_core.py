@@ -45,6 +45,11 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        """Remove messages and related memories."""
+        pass
+
+    @abstractmethod
     async def remove_memories(self, user_id: str) -> None:
         """Remove memories based on user id."""
         pass

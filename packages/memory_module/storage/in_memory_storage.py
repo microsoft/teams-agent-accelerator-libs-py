@@ -160,6 +160,20 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                     messages_dict[memory_id] = messages
         return messages_dict
 
+    async def get_memories_and_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+        memories_messages_dict = {}
+        for key, value in self.storage["memories"].items():
+            common_message_ids = np.intersect1d(np.array(message_ids), np.array(value.message_attributions)).tolist()
+            if common_message_ids:
+                memories_messages_dict[key] = common_message_ids
+
+        return memories_messages_dict
+
+    async def remove_memories_and_messages(self, memory_ids: List[str], message_ids: List[str]) -> None:
+        for memory_id in memory_ids:
+            self.storage["embeddings"].pop(memory_id, None)
+            self.storage["memories"].pop(memory_id, None)
+
     def _cosine_similarity(self, memory_vector: List[float], query_vector: List[float]) -> float:
         return np.dot(np.array(query_vector), np.array(memory_vector))
 
