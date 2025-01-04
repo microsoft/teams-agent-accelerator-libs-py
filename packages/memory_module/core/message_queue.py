@@ -44,6 +44,10 @@ class MessageQueue(BaseMessageQueue):
         # Buffer message for episodic memory processing
         await self.message_buffer.add_message(message)
 
+    async def dequeue(self, message_ids: List[str]) -> None:
+        """Remove list of messages from queue"""
+        await self.message_buffer.remove_messages(message_ids)
+
     async def _process_for_semantic_messages(self, messages: List[Message]) -> None:
         """Process a list of messages using the memory core.
 

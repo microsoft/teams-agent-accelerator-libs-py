@@ -61,6 +61,15 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         query = "DELETE FROM buffered_messages WHERE conversation_ref = ?"
         await self.storage.execute(query, (conversation_ref,))
 
+    async def remove_buffered_messages_by_id(self, message_ids: List[str]) -> None:
+        """Remove list of messages in buffered storage"""
+        query = """
+            DELETE
+            FROM buffered_messages
+            WHERE message_id IN ({})
+        """.format(",".join(["?"] * len(message_ids)))
+        await self.storage.execute(query, tuple(message_ids))
+
     async def count_buffered_messages(self, conversation_ref: str) -> int:
         """Count the number of buffered messages for a conversation."""
         query = """

@@ -38,6 +38,14 @@ class BaseMessageBufferStorage(ABC):
         pass
 
     @abstractmethod
+    async def remove_buffered_messages_by_id(self, message_ids: List[str]) -> None:
+        """Remove list of messages in buffered storage
+
+        Args:
+            message_ids: List of messages to be removed
+        """
+
+    @abstractmethod
     async def count_buffered_messages(self, conversation_ref: str) -> int:
         """Count the number of buffered messages for a conversation.
 
