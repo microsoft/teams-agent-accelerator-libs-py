@@ -86,6 +86,10 @@ class MessageBuffer:
             await self._process_conversation_messages(message.conversation_ref)
             await self.scheduler.cancel_event(message.conversation_ref)
 
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        """Remove list of messages"""
+        await self.storage.remove_buffered_messages_by_id(message_ids)
+
     async def flush(self) -> None:
         """Flush all messages from the buffer."""
         if isinstance(self.scheduler, ScheduledEventsService):

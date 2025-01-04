@@ -38,3 +38,8 @@ class BaseMemoryModule(ABC):
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         """Get messages based on memory ids."""
         pass
+
+    @abstractmethod
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        """Remove messages and related memories"""
+        pass

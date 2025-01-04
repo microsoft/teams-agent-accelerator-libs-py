@@ -221,6 +221,11 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         else:
             self.storage["buffered_messages"][conversation_ref] = []
 
+    async def remove_buffered_messages_by_id(self, message_ids: List[str]) -> None:
+        """Remove list of messages in buffered storage"""
+        for key, value in self.storage["buffered_messages"].items():
+            self.storage["buffered_messages"][key] = [item for item in value if item.id not in message_ids]
+
     async def count_buffered_messages(self, conversation_ref: str) -> int:
         """Count the number of buffered messages for a conversation."""
         return len(self.storage["buffered_messages"][conversation_ref])
