@@ -442,22 +442,22 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     async def __remove_memories_and_embeddings(self, memory_ids: List[str], embed_ids: List[str]) -> None:
         async with self.storage.transaction() as cursor:
             await cursor.execute(
-                f"DELETE FROM vec_items WHERE memory_embedding_id in ({",".join(["?"]*len(embed_ids))})",
+                "DELETE FROM vec_items WHERE memory_embedding_id in ({})".format(",".join(["?"] * len(embed_ids))),
                 tuple(embed_ids),
             )
 
             await cursor.execute(
-                f"DELETE FROM embeddings WHERE memory_id in ({",".join(["?"]*len(memory_ids))})",
+                "DELETE FROM embeddings WHERE memory_id in ({})".format(",".join(["?"] * len(memory_ids))),
                 tuple(memory_ids),
             )
 
             await cursor.execute(
-                f"DELETE FROM memory_attributions WHERE memory_id in ({",".join(["?"]*len(memory_ids))})",
+                "DELETE FROM memory_attributions WHERE memory_id in ({})".format(",".join(["?"] * len(memory_ids))),
                 tuple(memory_ids),
             )
 
             await cursor.execute(
-                f"DELETE FROM memories WHERE id in ({",".join(["?"]*len(memory_ids))})", tuple(memory_ids)
+                "DELETE FROM memories WHERE id in ({})".format(",".join(["?"] * len(memory_ids))), tuple(memory_ids)
             )
 
     async def __remove_messages(self, message_ids: List[str]) -> None:
