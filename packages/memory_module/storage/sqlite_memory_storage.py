@@ -415,7 +415,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return messages_dict
 
-    async def get_memories_and_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+    async def get_memories_by_message_id(self, message_ids: List[str]) -> Dict[str, List[str]]:
         """Get list of memories with associated messages"""
         query = """
             SELECT memory_id, message_id

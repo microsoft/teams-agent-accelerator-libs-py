@@ -160,7 +160,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                     messages_dict[memory_id] = messages
         return messages_dict
 
-    async def get_memories_and_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+    async def get_memories_by_message_id(self, message_ids: List[str]) -> Dict[str, List[str]]:
         memories_messages_dict = {}
         for key, value in self.storage["memories"].items():
             common_message_ids = np.intersect1d(np.array(message_ids), np.array(value.message_attributions)).tolist()

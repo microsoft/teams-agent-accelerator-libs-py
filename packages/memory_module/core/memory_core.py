@@ -109,7 +109,7 @@ class MemoryCore(BaseMemoryCore):
 
     async def process_semantic_messages(
         self, messages: List[Message], existing_memories: Optional[List[Memory]] = None
-    , decisionOn: bool = True) -> None:
+    , enable_duplication_filter: bool = True) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         # make sure there is an author, and only one author
         author_id = next(
@@ -131,7 +131,7 @@ class MemoryCore(BaseMemoryCore):
 
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
-                if decisionOn:
+                if enable_duplication_filter:
                     decision = await self._get_add_memory_processing_decision(fact.text, author_id)
                     if decision == "ignore":
                         logger.info(f"Decision to ignore fact {fact.text}")
@@ -174,7 +174,7 @@ class MemoryCore(BaseMemoryCore):
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         # Get list of memories that need to be updated/removed with removed messages
-        remove_messages_dict = await self.storage.get_memories_and_messages(message_ids)
+        remove_messages_dict = await self.storage.get_memories_by_message_id(message_ids)
 
         associated_messages_dict = await self.get_messages(list(remove_messages_dict.keys()))
         for key, value in associated_messages_dict.items():
