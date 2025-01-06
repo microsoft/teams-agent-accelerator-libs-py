@@ -63,7 +63,6 @@ class LLMService:
         if not model:
             raise ValueError("No LM model provided.")
 
-        # TODO: This is hacky. Fix it later.
         client = instructor.patch(
             litellm.Router(
                 model_list=[

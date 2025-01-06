@@ -1,5 +1,6 @@
+import datetime
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 
 from memory_module.interfaces.types import Message
 
@@ -29,11 +30,13 @@ class BaseMessageBufferStorage(ABC):
         pass
 
     @abstractmethod
-    async def clear_buffered_messages(self, conversation_ref: str) -> None:
-        """Remove all buffered messages for a conversation.
+    async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
+        """Remove all buffered messages for a conversation. If the `before` parameter is provided,
+        only messages created on or before that time will be removed.
 
         Args:
             conversation_ref: The conversation reference to clear messages for
+            before: Optional cutoff time to clear messages before
         """
         pass
 

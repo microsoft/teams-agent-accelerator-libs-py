@@ -31,6 +31,7 @@ class InMemoryInternalStore(TypedDict):
     embeddings: Dict[str, List[List[float]]]
     buffered_messages: Dict[str, List[Message]]
     scheduled_events: Dict[str, Event]
+    messages: Dict[str, List[Message]]
 
 
 class _MemorySimilarity(NamedTuple):
@@ -45,6 +46,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             "buffered_messages": defaultdict(list),
             "scheduled_events": {},
             "memories": {},
+            "messages": defaultdict(list),
         }
 
     async def store_memory(
@@ -105,7 +107,8 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                 author_id=message.author_id,
             )
 
-        await self.store_buffered_message(message_obj)
+        self.storage["messages"][message.conversation_ref].append(message_obj)
+
         return message_obj
 
     async def retrieve_memories(
@@ -150,7 +153,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                     messages = []
                     for msg_id in memory.message_attributions:
                         # Search through buffered messages to find matching message
-                        for conv_messages in self.storage["buffered_messages"].values():
+                        for conv_messages in self.storage["messages"].values():
                             for msg in conv_messages:
                                 if msg.id == msg_id:
                                     messages.append(msg)
@@ -172,8 +175,20 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
     async def get_memory(self, memory_id: str) -> Optional[Memory]:
         return self.storage["memories"].get(memory_id)
 
-    async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
-        return [value for key, value in self.storage["memories"].items()][:limit]
+    async def get_all_memories(self, limit: Optional[int] = None, message_id: Optional[str] = None) -> List[Memory]:
+        memories = [value for key, value in self.storage["memories"].items()]
+
+        if limit is not None:
+            memories = memories[:limit]
+
+        if message_id is not None:
+            memories = [
+                memory
+                for memory in memories
+                if memory.message_attributions is not None and message_id in memory.message_attributions
+            ]
+
+        return memories
 
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer."""
@@ -183,9 +198,14 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         """Retrieve all buffered messages for a conversation."""
         return self.storage["buffered_messages"][conversation_ref]
 
-    async def clear_buffered_messages(self, conversation_ref: str) -> None:
-        """Remove all buffered messages for a conversation."""
-        self.storage["buffered_messages"][conversation_ref] = []
+    async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
+        """Remove all buffered messages for a conversation. If the before parameter is provided,
+        only messages created on or before that time will be removed."""
+        messages = self.storage["buffered_messages"][conversation_ref]
+        if before:
+            self.storage["buffered_messages"][conversation_ref] = [msg for msg in messages if msg.created_at > before]
+        else:
+            self.storage["buffered_messages"][conversation_ref] = []
 
     async def count_buffered_messages(self, conversation_ref: str) -> int:
         """Count the number of buffered messages for a conversation."""
@@ -226,7 +246,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         messages = []
 
         # Get messages for the conversation
-        conversation_messages = self.storage["buffered_messages"].get(conversation_ref, [])
+        conversation_messages = self.storage["messages"].get(conversation_ref, [])
 
         if config.n_messages is not None:
             messages = conversation_messages[-config.n_messages :]
@@ -240,5 +260,9 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
 
         # Sort messages in descending order based on created_at
         messages.sort(key=lambda msg: msg.created_at, reverse=True)
+
+        # Filter messages based on before
+        if config.before is not None:
+            messages = [msg for msg in messages if msg.created_at < config.before]
 
         return messages

@@ -39,7 +39,7 @@ def config():
     return MemoryModuleConfig(
         db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
         buffer_size=5,
-        timeout_seconds=1,  # Short timeout for testing
+        timeout_seconds=60,
         llm=llm_config,
     )
 
@@ -63,7 +63,6 @@ def memory_module(config, monkeypatch):
                 facts=[
                     SemanticFact(
                         text="Mocked LLM response about pie",
-                        tags=[],
                         message_indices=[0, 1],
                     )
                 ],
@@ -161,32 +160,6 @@ async def test_simple_conversation(memory_module):
 async def test_no_memories_found():
     # TODO: Implement test for no memories found
     pass
-
-
-# TODO: Add test for episodic memory extraction once `MemoryCore.process_episodic_messages` is implemented.
-# @pytest.mark.asyncio
-# async def test_episodic_memory_creation(memory_module):
-#     """Test that episodic memory creation raises NotImplementedError."""
-#     conversation_id = str(uuid4())
-
-#     messages = [
-#         Message(
-#             id=str(uuid4()),
-#             content=f"Message {i} about pie",
-#             author_id="user-123",
-#             conversation_ref=conversation_id,
-#             created_at=datetime.now(),
-#             role="user",
-#         )
-#         for i in range(5)
-#     ]
-
-#     for i, message in enumerate(messages):
-#         if i < 4:
-#             await memory_module.add_message(message)
-#         else:
-#             with pytest.raises(NotImplementedError, match="Episodic memory extraction not yet implemented"):
-#                 await memory_module.add_message(message)
 
 
 @pytest.mark.asyncio

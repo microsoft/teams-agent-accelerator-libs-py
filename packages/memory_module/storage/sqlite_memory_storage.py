@@ -232,7 +232,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return Memory(**memory_data)
 
-    async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
+    async def get_all_memories(self, limit: Optional[int] = None, message_id: Optional[str] = None) -> List[Memory]:
         """Retrieve all memories with their message attributions."""
         query = """
             SELECT
@@ -244,16 +244,19 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 ma.message_id
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-            ORDER BY m.created_at DESC
         """
-        params: tuple
+        params: tuple = tuple()
+        if message_id is not None:
+            query += " WHERE ma.message_id = ?"
+            params += (message_id,)
+
+        query += " ORDER BY m.created_at DESC"
+
         if limit is not None:
             query += " LIMIT ?"
-            params = (limit,)
-        else:
-            params = ()
+            params += (limit,)
 
-        rows = await self.storage.fetch_all(query, params)
+        rows = await self.storage.fetch_all(query, tuple(params))
 
         # Group rows by memory_id
         memories_dict = {}
@@ -325,14 +328,19 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
         params: tuple = (conversation_ref,)
 
-        if config.n_messages is not None:
-            query += " ORDER BY created_at DESC LIMIT ?"
-            params += (str(config.n_messages),)
-
         if config.last_minutes is not None:
             cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=config.last_minutes)
-            query += " AND created_at >= ? ORDER BY created_at DESC"
+            query += " AND created_at >= ?"
             params += (cutoff_time,)
+
+        if config.before is not None:
+            query += " AND created_at < ?"
+            params += (config.before.astimezone(datetime.timezone.utc),)
+
+        query += " ORDER BY created_at DESC"
+        if config.n_messages is not None:
+            query += " LIMIT ?"
+            params += (str(config.n_messages),)
 
         rows = await self.storage.fetch_all(query, params)
         return [build_message_from_dict(row) for row in rows][::-1]
