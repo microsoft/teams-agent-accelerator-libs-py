@@ -50,6 +50,7 @@ class MessageQueue(BaseMessageQueue):
         count = len(messages)
         memories: List[Memory] = []
         if count < self.config.buffer_size:
+            # If there are not enough messages in the buffer, pull the difference from the chat history
             oldest = messages[-1]
             diff = self.config.buffer_size - count
             stored_messages, memories = await self._get_recent_messages_and_memories(
