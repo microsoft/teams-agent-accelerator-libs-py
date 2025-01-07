@@ -77,12 +77,11 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_memories_by_message_id(self, message_ids: List[str]) -> Dict[str, List[str]]:
-        """Get list of memories associated with input message ids"""
+    async def remove_messages_by_message_ids(self, message_ids: List[str]) -> None:
         pass
 
     @abstractmethod
-    async def remove_memories_and_messages(self, memory_ids: List[str], message_ids: List[str]) -> None:
+    async def remove_memories_by_memory_ids(self, memory_ids: List[str]) -> None:
         pass
 
     @abstractmethod
@@ -91,12 +90,14 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_all_memories(self, limit: Optional[int] = None, message_id: Optional[str] = None) -> List[Memory]:
+    async def get_all_memories(
+        self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
+    ) -> List[Memory]:
         """Retrieve all memories from storage.
 
         Args:
             limit: Optional maximum number of memories to return
-            message_id: Optional message_id to filter memories
+            message_ids: Optional list of message_id to filter memories
 
         Returns:
             List of Memory objects ordered by creation date (newest first)

@@ -193,10 +193,55 @@ async def test_get_all_memories_by_message_id(memory_storage, sample_memory_inpu
     await memory_storage.store_short_term_memory(sample_message)
 
     # Get memories by message ID
-    memories = await memory_storage.get_all_memories(message_id=sample_message.id)
+    memories = await memory_storage.get_all_memories(message_ids=[sample_message.id])
 
     assert len(memories) == 1
     assert memories[0].content == sample_memory_input.content
+
+
+@pytest.mark.asyncio
+async def test_get_all_memories_by_message_ids(memory_storage, sample_memory_input, sample_message):
+    # Store three memories
+    await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
+    await memory_storage.store_short_term_memory(sample_message)
+    second_memory = BaseMemoryInput(
+        content="Second memory",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=["msg2"],
+    )
+    second_message = UserMessageInput(
+        id="msg2",
+        content="Test message",
+        author_id="user2",
+        conversation_ref="conv2",
+        created_at=datetime.now(),
+    )
+    await memory_storage.store_memory(second_memory, embedding_vectors=[])
+    await memory_storage.store_short_term_memory(second_message)
+    third_memory = BaseMemoryInput(
+        content="Third memory",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=["msg3"],
+    )
+    third_message = UserMessageInput(
+        id="msg3",
+        content="Test message",
+        author_id="user3",
+        conversation_ref="conv3",
+        created_at=datetime.now(),
+    )
+    await memory_storage.store_memory(third_memory, embedding_vectors=[])
+    await memory_storage.store_short_term_memory(third_message)
+
+    # Get memories by message ID
+    memories = await memory_storage.get_all_memories(message_ids=[sample_message.id, second_message.id])
+
+    assert len(memories) == 2
+    assert any(second_memory.content in memory.content for memory in memories)
 
 
 @pytest.mark.asyncio

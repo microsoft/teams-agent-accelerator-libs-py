@@ -177,14 +177,17 @@ class MemoryCore(BaseMemoryCore):
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         # Get list of memories that need to be updated/removed with removed messages
-        remove_messages_dict = await self.storage.get_memories_by_message_id(message_ids)
+        remove_memories_list = await self.storage.get_all_memories(message_ids=message_ids)
+        memory_ids = [memory.id for memory in remove_memories_list]
 
-        associated_messages_dict = await self.get_messages(list(remove_messages_dict.keys()))
+        # Get list of messages associated with memories, and remove the to-be-deleted messages
+        associated_messages_dict = await self.get_messages(memory_ids)
         for key, value in associated_messages_dict.items():
-            associated_messages_dict[key] = [item for item in value if item.id not in remove_messages_dict[key]]
+            associated_messages_dict[key] = [item for item in value if item.id not in message_ids]
 
         # Remove selected messages and related old memories
-        await self.storage.remove_memories_and_messages(list(remove_messages_dict.keys()), message_ids)
+        await self.storage.remove_memories_by_memory_ids(memory_ids)
+        await self.storage.remove_messages_by_message_ids(message_ids)
 
         # Re-generate new memories with remaining messages
         for value in associated_messages_dict.values():
@@ -372,4 +375,4 @@ Here are the incoming messages:
         return await self.storage.get_messages(memory_ids)
 
     async def get_memories_from_message(self, message_id):
-        return await self.storage.get_all_memories(message_id=message_id)
+        return await self.storage.get_all_memories(message_ids=[message_id])

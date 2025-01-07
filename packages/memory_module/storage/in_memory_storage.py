@@ -160,16 +160,11 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                     messages_dict[memory_id] = messages
         return messages_dict
 
-    async def get_memories_by_message_id(self, message_ids: List[str]) -> Dict[str, List[str]]:
-        memories_messages_dict = {}
-        for key, value in self.storage["memories"].items():
-            common_message_ids = np.intersect1d(np.array(message_ids), np.array(value.message_attributions)).tolist()
-            if common_message_ids:
-                memories_messages_dict[key] = common_message_ids
+    async def remove_messages_by_message_ids(self, message_ids: List[str]) -> None:
+        for message_id in message_ids:
+            self.storage["messages"].pop(message_id, None)
 
-        return memories_messages_dict
-
-    async def remove_memories_and_messages(self, memory_ids: List[str], message_ids: List[str]) -> None:
+    async def remove_memories_by_memory_ids(self, memory_ids: List[str]) -> None:
         for memory_id in memory_ids:
             self.storage["embeddings"].pop(memory_id, None)
             self.storage["memories"].pop(memory_id, None)
@@ -189,17 +184,20 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
     async def get_memory(self, memory_id: str) -> Optional[Memory]:
         return self.storage["memories"].get(memory_id)
 
-    async def get_all_memories(self, limit: Optional[int] = None, message_id: Optional[str] = None) -> List[Memory]:
+    async def get_all_memories(
+        self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
+    ) -> List[Memory]:
         memories = [value for key, value in self.storage["memories"].items()]
 
         if limit is not None:
             memories = memories[:limit]
 
-        if message_id is not None:
+        if message_ids is not None:
             memories = [
                 memory
                 for memory in memories
-                if memory.message_attributions is not None and message_id in memory.message_attributions
+                if memory.message_attributions is not None
+                and len(np.intersect1d(np.array(message_ids), np.array(memory.message_attributions)).tolist()) > 0
             ]
 
         return memories

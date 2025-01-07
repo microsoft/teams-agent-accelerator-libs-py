@@ -178,7 +178,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         embed_id_list = [row["embed_id"] for row in id_rows]
 
         # Remove memory
-        await self.__remove_memories_and_embeddings(memory_id_list, embed_id_list)
+        await self._remove_memories_and_embeddings(memory_id_list, embed_id_list)
 
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
         """Retrieve a memory with its message attributions."""
@@ -214,7 +214,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return Memory(**memory_data)
 
-    async def get_all_memories(self, limit: Optional[int] = None, message_id: Optional[str] = None) -> List[Memory]:
+    async def get_all_memories(
+        self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
+    ) -> List[Memory]:
         """Retrieve all memories with their message attributions."""
         query = """
             SELECT
@@ -228,9 +230,11 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
         """
         params: tuple = tuple()
-        if message_id is not None:
-            query += " WHERE ma.message_id = ?"
-            params += (message_id,)
+        if message_ids is not None:
+            query += " WHERE ma.message_id IN ({})".format(",".join(["?"] * len(message_ids)))
+            params += tuple(
+                message_ids,
+            )
 
         query += " ORDER BY m.created_at DESC"
 
@@ -415,26 +419,14 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return messages_dict
 
-    async def get_memories_by_message_id(self, message_ids: List[str]) -> Dict[str, List[str]]:
-        """Get list of memories with associated messages"""
-        query = """
-            SELECT memory_id, message_id
-            FROM memory_attributions
-            WHERE message_id IN ({})
-        """.format(",".join(["?"] * len(message_ids)))
+    async def remove_messages_by_message_ids(self, message_ids: List[str]) -> None:
+        async with self.storage.transaction() as cursor:
+            await cursor.execute(
+                f"DELETE FROM messages WHERE id in ({",".join(["?"]*len(message_ids))})",
+                tuple(message_ids),
+            )
 
-        rows = await self.storage.fetch_all(query, tuple(message_ids))
-
-        memories_messages_dict: Dict[str, List[str]] = {}
-        for row in rows:
-            memory_id = row["memory_id"]
-            if memory_id not in memories_messages_dict:
-                memories_messages_dict[memory_id] = []
-            memories_messages_dict[memory_id].append(row["message_id"])
-
-        return memories_messages_dict
-
-    async def remove_memories_and_messages(self, memory_ids: List[str], message_ids: List[str]) -> None:
+    async def remove_memories_by_memory_ids(self, memory_ids: List[str]) -> None:
         query = """
             SELECT
                 id
@@ -443,11 +435,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         """.format(",".join(["?"] * len(memory_ids)))
         rows = await self.storage.fetch_all(query, tuple(memory_ids))
         embed_ids = [row["id"] for row in rows]
-        await self.__remove_memories_and_embeddings(memory_ids, embed_ids)
+        await self._remove_memories_and_embeddings(memory_ids, embed_ids)
 
-        await self.__remove_messages(message_ids)
-
-    async def __remove_memories_and_embeddings(self, memory_ids: List[str], embed_ids: List[str]) -> None:
+    async def _remove_memories_and_embeddings(self, memory_ids: List[str], embed_ids: List[str]) -> None:
         async with self.storage.transaction() as cursor:
             await cursor.execute(
                 "DELETE FROM vec_items WHERE memory_embedding_id in ({})".format(",".join(["?"] * len(embed_ids))),
@@ -466,11 +456,4 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
             await cursor.execute(
                 "DELETE FROM memories WHERE id in ({})".format(",".join(["?"] * len(memory_ids))), tuple(memory_ids)
-            )
-
-    async def __remove_messages(self, message_ids: List[str]) -> None:
-        async with self.storage.transaction() as cursor:
-            await cursor.execute(
-                f"DELETE FROM messages WHERE id in ({",".join(["?"]*len(message_ids))})",
-                tuple(message_ids),
             )
