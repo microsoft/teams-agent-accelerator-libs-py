@@ -108,8 +108,11 @@ class MemoryCore(BaseMemoryCore):
         )
 
     async def process_semantic_messages(
-        self, messages: List[Message], existing_memories: Optional[List[Memory]] = None
-    , enable_duplication_filter: bool = True) -> None:
+        self,
+        messages: List[Message],
+        existing_memories: Optional[List[Memory]] = None,
+        enable_duplication_filter: bool = True,
+    ) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         # make sure there is an author, and only one author
         author_id = next(
@@ -186,7 +189,7 @@ class MemoryCore(BaseMemoryCore):
         # Re-generate new memories with remaining messages
         for value in associated_messages_dict.values():
             if value:
-                await self.process_semantic_messages(value, False)
+                await self.process_semantic_messages(value, None, False)
 
     async def _get_add_memory_processing_decision(self, new_memory_fact: str, user_id: Optional[str]) -> str:
         similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
