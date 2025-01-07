@@ -5,7 +5,7 @@ const Loader = (props: { fullScreen?: boolean }) => {
 
     return (
       <div className={surroundingBoxStyle}>
-        <div className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"></div>
+        <div className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-teams border-t-transparent"></div>
       </div>
     );
   };

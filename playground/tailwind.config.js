@@ -1,14 +1,13 @@
-const withMT = require("@material-tailwind/react/utils/withMT");
 const defaultTheme = require('tailwindcss/defaultTheme');
 const colors = require('tailwindcss/colors');
 
 /** @type {import('tailwindcss').Config} */
-module.exports = withMT({
+module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   darkMode: 'class',
   theme: {
     fontFamily: {
-      satoshi: ['Satoshi', 'sans-serif'],
+      segoe: ['Segoe UI', 'sans-serif'],
     },
     screens: {
       '2xsm': '375px',
@@ -23,7 +22,7 @@ module.exports = withMT({
         white: '#FFFFFF',
         black: {
           ...colors.black,
-          DEFAULT: '#1C2434',
+          DEFAULT: '#242424',
           2: '#010101',
         },
         red: {
@@ -34,19 +33,21 @@ module.exports = withMT({
         bodydark: '#AEB7C0',
         bodydark1: '#DEE4EE',
         bodydark2: '#8A99AF',
+        teams: '#5B5FC7',
+        teamsHeader: '#444791',
         primary: '#3C50E0',
         secondary: '#80CAEE',
         stroke: '#E2E8F0',
         gray: {
           ...colors.gray,
-          DEFAULT: '#EFF4FB',
-          2: '#F7F9FC',
-          3: '#FAFAFA',
+          DEFAULT: '#424242',
+          2: '#D1D1D1',
+          3: '#F5F5F5',
         },
-        graydark: '#333A48',
+        graydark: '#616161',
         whiten: '#F1F5F9',
         whiter: '#F5F7FD',
-        boxdark: '#24303F',
+        boxdark: '#242424',
         'boxdark-2': '#1A222C',
         strokedark: '#2E3A47',
         'form-strokedark': '#3d4d60',
@@ -266,4 +267,4 @@ module.exports = withMT({
     },
   },
   plugins: [],
-});
+};

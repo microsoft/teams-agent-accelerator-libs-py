@@ -16,7 +16,7 @@ const Breadcrumb = ({ pageName }: BreadcrumbProps) => {
               Playground /
             </Link>
           </li>
-          <li className="font-medium text-primary">{pageName}</li>
+          <li className="font-medium text-teams">{pageName}</li>
         </ol>
       </nav>
     </div>

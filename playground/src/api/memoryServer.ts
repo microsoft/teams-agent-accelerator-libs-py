@@ -47,6 +47,7 @@ export const searchMemories = async (query: string, userId: string, limit: numbe
       headers: {
         'Content-Type': 'application/json',
       },
+      
       body: JSON.stringify({ query, user_id: userId, limit: limit }),
     });
 
