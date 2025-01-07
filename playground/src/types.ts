@@ -1,17 +1,9 @@
-export type Message = {
-  role: 'user' | 'assistant';
-  content: string;
-};
-
-export type Memory = {
-  content: string;
-  timestamp: string;
-};
-
-export type Conversation = {
+export interface Memory {
   id: string;
-  title: string;
-  preview: string;
-  timestamp: string;
-  messages: Message[];
-};
+  content: string;
+  created_at: string;
+  updated_at: string;
+  memory_type: 'semantic' | 'episodic';
+  user_id: string;
+  message_attributions: string[];
+}

@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import Logo from '../images/logo/logo.svg';
 import { BrainIcon } from 'lucide-react';
 
 interface SidebarProps {
@@ -51,8 +50,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       {/* <!-- SIDEBAR HEADER --> */}
       <div className="flex items-center justify-between gap-2 px-6 py-5.5 lg:py-6.5">
         <NavLink to="/" className="flex items-center gap-2">
-          <BrainIcon size={36} />
-          <h3>Memory Module Playground</h3>
+          <h3 className="text-center text-2xl/9 font-bold tracking-tight text-bodydark1">Memory Module Playground</h3>
         </NavLink>
 
         <button
@@ -84,10 +82,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
         <nav className="mt-5 py-4 px-4 lg:mt-9 lg:px-6">
           {/* <!-- Menu Group --> */}
           <div>
-            <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">
-              MENU
-            </h3>
-
             <ul className="mb-6 flex flex-col gap-1.5">
               {/* <!-- Menu Item Tables --> */}
               <li>
@@ -99,18 +93,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 >
                   <BrainIcon size={18} />
                   Memories
-                </NavLink>
-              </li>
-                            {/* <!-- Menu Item Tables --> */}
-                            <li>
-                <NavLink
-                  to="/conversation_history"
-                  className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                    pathname.includes('conversation_history') && 'bg-graydark dark:bg-meta-4'
-                  }`}
-                >
-                  <BrainIcon size={18} />
-                  Conversation History
                 </NavLink>
               </li>
               {/* <!-- Menu Item Tables --> */}

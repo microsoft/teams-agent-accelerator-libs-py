@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "a framework for creating intelligent agents within Microsoft Teams"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["agent-runtime", "memory-module", "litellm", "evals"]
+dependencies = ["agent-runtime", "memory-module", "litellm", "evals", "memory-server"]
 
 [dependency-groups]
 dev = [
@@ -24,6 +24,7 @@ agent-runtime = { workspace = true }
 memory-module = { workspace = true }
 customer-service-agent-sample = { workspace = true }
 evals = { workspace = true }
+memory-server = { workspace = true }
 
 [tool.uv.workspace]
 members = ["packages/*", "src"]

@@ -19,7 +19,7 @@ function App() {
   }, []);
 
   return loading ? (
-    <Loader />
+    <Loader fullScreen={true} />
   ) : (
     <DefaultLayout>
       <Routes>

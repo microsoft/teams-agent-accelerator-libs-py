@@ -1,0 +1,19 @@
+[project]
+name = "memory-server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "memory-module",
+    "fastapi==0.115.6",
+    "pydantic",
+    "python-dotenv",
+    "uvicorn"
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+memory-module = { workspace = true }
