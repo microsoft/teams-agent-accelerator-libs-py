@@ -182,17 +182,19 @@ class MemoryCore(BaseMemoryCore):
 
         # Get list of messages associated with memories, and remove the to-be-deleted messages
         associated_messages_dict = await self.get_messages(memory_ids)
+        removed_memory_ids = []
         for key, value in associated_messages_dict.items():
+            removed_message_ids = [item.id for item in value if item.id in message_ids]
+            logger.info("messages {} will be removed from memory {}".format(",".join(removed_message_ids), key))
             associated_messages_dict[key] = [item for item in value if item.id not in message_ids]
+            # If all messages associated with a memory are removed, remove that memory too
+            if len(associated_messages_dict[key]) == 0:
+                removed_memory_ids.append(key)
+                logger.info("memory {} will be removed since all associated messages are removed".format(key))
 
         # Remove selected messages and related old memories
-        await self.storage.remove_memories_by_memory_ids(memory_ids)
-        await self.storage.remove_messages_by_message_ids(message_ids)
-
-        # Re-generate new memories with remaining messages
-        for value in associated_messages_dict.values():
-            if value:
-                await self.process_semantic_messages(value, None, False)
+        await self.storage.remove_memories(removed_memory_ids)
+        await self.storage.remove_messages(message_ids)
 
     async def _get_add_memory_processing_decision(self, new_memory_fact: str, user_id: Optional[str]) -> str:
         similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)

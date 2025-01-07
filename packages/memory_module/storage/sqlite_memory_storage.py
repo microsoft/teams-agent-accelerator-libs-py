@@ -419,14 +419,14 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return messages_dict
 
-    async def remove_messages_by_message_ids(self, message_ids: List[str]) -> None:
+    async def remove_messages(self, message_ids: List[str]) -> None:
         async with self.storage.transaction() as cursor:
             await cursor.execute(
                 f"DELETE FROM messages WHERE id in ({",".join(["?"]*len(message_ids))})",
                 tuple(message_ids),
             )
 
-    async def remove_memories_by_memory_ids(self, memory_ids: List[str]) -> None:
+    async def remove_memories(self, memory_ids: List[str]) -> None:
         query = """
             SELECT
                 id

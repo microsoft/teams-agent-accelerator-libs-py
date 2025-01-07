@@ -1,7 +1,7 @@
 import datetime
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from memory_module.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
@@ -56,6 +56,26 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         results = await self.storage.fetch_all(query, (conversation_ref,))
         return [build_message_from_dict(row) for row in results]
 
+    async def get_conversations_from_buffered_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+        """Get conversation - buffered messages map based on message ids"""
+        query = """
+            SELECT
+                message_id, conversation_ref
+            FROM buffered_messages
+            WHERE message_id IN ({})
+        """.format(",".join(["?"] * len(message_ids)))
+        results = await self.storage.fetch_all(query, tuple(message_ids))
+
+        ref_dict: Dict[str, List[str]] = {}
+        for result in results:
+            ref = result["conversation_ref"]
+            if ref not in ref_dict:
+                ref_dict[ref] = []
+
+            ref_dict[ref].append(result["message_id"])
+
+        return ref_dict
+
     async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
         """Remove all buffered messages for a conversation. If the before parameter is provided,
         only messages created on or before that time will be removed."""
@@ -78,12 +98,18 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         """.format(",".join(["?"] * len(message_ids)))
         await self.storage.execute(query, tuple(message_ids))
 
-    async def count_buffered_messages(self, conversation_ref: str) -> int:
+    async def count_buffered_messages(self, conversation_refs: List[str]) -> Dict[str, int]:
         """Count the number of buffered messages for a conversation."""
         query = """
-            SELECT COUNT(*) as count
+            SELECT conversation_ref, COUNT(*) as count
             FROM buffered_messages
-            WHERE conversation_ref = ?
-        """
-        result = await self.storage.fetch_one(query, (conversation_ref,))
-        return result["count"] if result else 0
+            WHERE conversation_ref IN ({})
+            GROUP BY conversation_ref
+        """.format(",".join(["?"] * len(conversation_refs)))
+        results = await self.storage.fetch_all(query, tuple(conversation_refs))
+
+        count_dict: Dict[str, int] = {}
+        for result in results:
+            count_dict[result["conversation_ref"]] = result["count"]
+
+        return count_dict

@@ -9,7 +9,10 @@ class BaseMemoryCore(ABC):
 
     @abstractmethod
     async def process_semantic_messages(
-        self, messages: List[Message], existing_memories: Optional[List[Memory]]
+        self,
+        messages: List[Message],
+        existing_memories: Optional[List[Memory]] = None,
+        enable_duplication_filter: bool = True,
     ) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         pass

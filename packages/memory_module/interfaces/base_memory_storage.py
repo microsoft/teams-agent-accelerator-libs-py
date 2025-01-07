@@ -77,11 +77,11 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def remove_messages_by_message_ids(self, message_ids: List[str]) -> None:
+    async def remove_messages(self, message_ids: List[str]) -> None:
         pass
 
     @abstractmethod
-    async def remove_memories_by_memory_ids(self, memory_ids: List[str]) -> None:
+    async def remove_memories(self, memory_ids: List[str]) -> None:
         pass
 
     @abstractmethod

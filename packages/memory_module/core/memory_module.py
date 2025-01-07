@@ -67,8 +67,9 @@ class MemoryModule(BaseMemoryModule):
         return await self.memory_core.get_messages(memory_ids)
 
     async def remove_messages(self, message_ids: List[str]) -> None:
-        await self.message_queue.dequeue(message_ids)
-        await self.memory_core.remove_messages(message_ids)
+        remain_message_ids = await self.message_queue.dequeue(message_ids)
+        if remain_message_ids:
+            await self.memory_core.remove_messages(remain_message_ids)
 
     async def update_memory(self, memory_id: str, updated_memory: str) -> None:
         """Update memory with new fact"""
