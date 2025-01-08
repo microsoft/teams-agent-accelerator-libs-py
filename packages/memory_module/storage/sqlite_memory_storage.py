@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import sqlite_vec
+
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import (
     BaseMemoryInput,

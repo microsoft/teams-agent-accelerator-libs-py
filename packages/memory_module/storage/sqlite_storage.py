@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 import aiosqlite
 import sqlite_vec
+
 from memory_module.storage.migrations_manager import MigrationManager
 
 logger = logging.getLogger(__name__)

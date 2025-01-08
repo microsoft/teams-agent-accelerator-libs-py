@@ -3,10 +3,10 @@ from typing import List, Literal
 
 from botbuilder.core import TurnContext
 from botbuilder.schema import Activity
-from memory_module import BaseMemoryModule, Memory
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
 
+from memory_module import BaseMemoryModule, Memory
 from src.tech_assistant_agent.supported_tech_tasks import tasks_by_config
 
 

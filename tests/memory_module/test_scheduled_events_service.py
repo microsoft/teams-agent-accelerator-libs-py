@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
+
 from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.services.scheduled_events_service import ScheduledEventsService
 

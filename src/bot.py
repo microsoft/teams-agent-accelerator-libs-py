@@ -5,16 +5,16 @@ import traceback
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
 from botbuilder.core import MemoryStorage, TurnContext
+from teams import Application, ApplicationOptions, TeamsAdapter
+from teams.state import TurnState
+
+from config import Config
 from memory_module import (
     LLMConfig,
     MemoryMiddleware,
     MemoryModule,
     MemoryModuleConfig,
 )
-from teams import Application, ApplicationOptions, TeamsAdapter
-from teams.state import TurnState
-
-from config import Config
 from src.tech_assistant_agent.agent import LLMConfig as AgentLLMConfig
 from src.tech_assistant_agent.primary_agent import TechAssistantAgent
 

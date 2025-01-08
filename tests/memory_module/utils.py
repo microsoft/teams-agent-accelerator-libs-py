@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
+from pydantic import BaseModel
+
 from memory_module.interfaces.types import UserMessage
 from memory_module.services.llm_service import LLMConfig
-from pydantic import BaseModel
 
 
 def create_test_message(content: str):

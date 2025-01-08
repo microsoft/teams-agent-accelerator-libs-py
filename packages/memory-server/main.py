@@ -1,6 +1,6 @@
+import routes
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import routes
 
 app = FastAPI(title="Chat API")
 
@@ -15,4 +15,3 @@ app.add_middleware(
 
 # Include routers
 app.include_router(routes.router, tags=["memory"])
-

@@ -12,7 +12,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.config import LLMConfig
 from memory_module.services.llm_service import LLMService
-
 from tests.memory_module.utils import EnvLLMConfig, get_env_llm_config
 
 load_dotenv()
