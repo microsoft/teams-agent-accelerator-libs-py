@@ -21,6 +21,7 @@ As the maintainer of this project, please make a few updates:
 ### Prerequisites
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
+
 Install [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 
 ### Installing
