@@ -156,7 +156,12 @@ const Memories = () => {
   return (
     <div className="p-10">
       <Breadcrumb pageName="Memories" />
+      
       <div className="mb-10"></div>
+      
+      <div className="mb-6 text-black dark:text-white">
+      Search for memories by entering a user ID (required), query, and limit. If no query is provided, all memories for the user will be returned.
+      </div>
       
       <div className="flex flex-col gap-6">  
         <SearchBar onSubmit={onSubmit} />

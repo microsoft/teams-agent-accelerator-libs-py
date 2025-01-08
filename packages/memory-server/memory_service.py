@@ -4,15 +4,16 @@ import sys
 from typing import Optional
 import uuid
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../"))
 
 from memory_module import MemoryModule, MemoryModuleConfig, LLMConfig
 from memory_module.interfaces.types import MessageInput, AssistantMessageInput, UserMessageInput
 
 class MemoryService:
     def __init__(self, openai_api_key: str):
+        # Initialize memory module
         config = MemoryModuleConfig(
-            db_path=os.path.join(os.path.dirname(__file__), "../../memory_module/data/memory.db"),
+            db_path=os.path.join(os.path.dirname(__file__), "../memory_module/data/memory.db"),
             llm=LLMConfig(
             model="gpt-4o",
             embedding_model="text-embedding-3-small",

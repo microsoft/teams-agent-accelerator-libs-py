@@ -1,13 +1,13 @@
 import os
 import sys
 from fastapi import APIRouter
-from services.memory_service import MemoryService
+from memory_service import MemoryService
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
 load_dotenv()
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.interfaces.types import Memory
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import LogoIcon from '../../images/logo/logo-icon.svg';
+import LogoIcon from '../images/logo/logo-icon.svg';
 import DarkModeSwitcher from './DarkModeSwitcher';
 
 const Header = (props: {

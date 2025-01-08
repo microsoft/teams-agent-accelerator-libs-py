@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
 import Loader from './components/Loader';
 import PageTitle from './components/PageTitle';
@@ -23,6 +23,7 @@ function App() {
   ) : (
     <DefaultLayout>
       <Routes>
+        <Route path="/" element={<Navigate to="/memories" />} />
         <Route
           path="/memories"
           element={
