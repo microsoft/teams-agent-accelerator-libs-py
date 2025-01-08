@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import DarkModeSwitcher from './DarkModeSwitcher';
 
 const Header = (props: {
