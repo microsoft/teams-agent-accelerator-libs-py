@@ -184,16 +184,15 @@ class MemoryCore(BaseMemoryCore):
                 removed_memory_ids.append(memory.id)
                 logger.info("memory {} will be removed since no associated messages".format(memory.id))
                 continue
-            removed_message_ids = [item for item in memory.message_attributions if item in message_ids]
-            logger.info("messages {} will be removed from memory {}".format(",".join(removed_message_ids), memory.id))
             # If all messages associated with a memory are removed, remove that memory too
-            if len(removed_message_ids) == len(memory.message_attributions):
+            if all(item in message_ids for item in memory.message_attributions):
                 removed_memory_ids.append(memory.id)
                 logger.info("memory {} will be removed since all associated messages are removed".format(memory.id))
 
         # Remove selected messages and related old memories
         await self.storage.remove_memories(removed_memory_ids)
         await self.storage.remove_messages(message_ids)
+        logger.info("messages {} are removed".format(",".join(message_ids)))
 
     async def _get_add_memory_processing_decision(self, new_memory_fact: str, user_id: Optional[str]) -> str:
         similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
