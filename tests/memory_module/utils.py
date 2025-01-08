@@ -8,19 +8,36 @@ from dotenv import load_dotenv
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 
 from pydantic import BaseModel
-
-from memory_module.interfaces.types import UserMessage
+from memory_module.interfaces.types import AssistantMessage, Memory, UserMessage
 from memory_module.services.llm_service import LLMConfig
 
 
-def create_test_message(content: str):
+def create_test_user_message(content: str, id: str = "123"):
     return UserMessage(
+        id=id,
+        author_id="123",
+        conversation_ref="123",
+        created_at=datetime.now(),
+        content=content,
+    )
+
+
+def create_test_assistant_message(content: str):
+    return AssistantMessage(
         id="123",
         author_id="123",
         conversation_ref="123",
         created_at=datetime.now(),
         content=content,
-        type="user",
+    )
+
+
+def create_test_memory(content: str):
+    return Memory(
+        content=content,
+        created_at=datetime.now(),
+        memory_type="semantic",
+        id="1",
     )
 
 

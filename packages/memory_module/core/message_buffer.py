@@ -40,18 +40,23 @@ class MessageBuffer:
             conversation_ref: The conversation reference to process
         """
         # Skip if already being processed
-        if conversation_ref in self._processing:
+        if self._is_processing(conversation_ref):
             return
 
         try:
             self._processing.add(conversation_ref)
             messages = await self.storage.get_buffered_messages(conversation_ref)
             if messages:  # Only process if there are messages
+                latest = messages[-1]
                 await self._process_callback(messages)
-                await self.storage.clear_buffered_messages(conversation_ref)
+                await self.storage.clear_buffered_messages(conversation_ref, before=latest.created_at)
         finally:
             # Always remove from processing set
             self._processing.remove(conversation_ref)
+
+    def _is_processing(self, conversation_ref: str) -> bool:
+        """Check if a conversation is currently being processed."""
+        return conversation_ref in self._processing
 
     async def _handle_timeout(self, id: str, object: Any, time: datetime) -> None:
         """Handle a conversation timeout by processing its messages."""
@@ -62,6 +67,9 @@ class MessageBuffer:
         # Store the message
         await self.storage.store_buffered_message(message)
 
+        # TODO: Possible race condition here where the count includes messages currently being processed
+        # but not yet removed from the buffer. This could cause the timer to not be triggered, but seems like
+        # a rare edge case.
         # Check if this is the first message in the conversation
         count = await self.storage.count_buffered_messages(message.conversation_ref)
         if count == 1:

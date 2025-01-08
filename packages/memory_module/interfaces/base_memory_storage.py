@@ -82,11 +82,12 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_all_memories(self, limit: Optional[int] = None) -> List[Memory]:
+    async def get_all_memories(self, limit: Optional[int] = None, message_id: Optional[str] = None) -> List[Memory]:
         """Retrieve all memories from storage.
 
         Args:
             limit: Optional maximum number of memories to return
+            message_id: Optional message_id to filter memories
 
         Returns:
             List of Memory objects ordered by creation date (newest first)

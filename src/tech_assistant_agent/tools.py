@@ -47,10 +47,10 @@ async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
 
 
 async def get_memorized_fields(memory_module: BaseMemoryModule, fields_to_retrieve: GetMemorizedFields) -> str:
-    empty_obj = {}
+    empty_obj: dict = {}
     for query in fields_to_retrieve.queries_for_fields:
         result = await memory_module.retrieve_memories(query, None, None)
-        print("Getting memorized queries", query)
+        print("Getting memorized queries: ", query)
         print(result)
         print("---")
 

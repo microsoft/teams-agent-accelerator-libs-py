@@ -56,10 +56,18 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         results = await self.storage.fetch_all(query, (conversation_ref,))
         return [build_message_from_dict(row) for row in results]
 
-    async def clear_buffered_messages(self, conversation_ref: str) -> None:
-        """Remove all buffered messages for a conversation."""
-        query = "DELETE FROM buffered_messages WHERE conversation_ref = ?"
-        await self.storage.execute(query, (conversation_ref,))
+    async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
+        """Remove all buffered messages for a conversation. If the before parameter is provided,
+        only messages created on or before that time will be removed."""
+        query = """
+            DELETE FROM buffered_messages
+            WHERE conversation_ref = ?
+        """
+        params: tuple = (conversation_ref,)
+        if before:
+            query += " AND created_at <= ?"
+            params += (before.astimezone(datetime.timezone.utc),)
+        await self.storage.execute(query, params)
 
     async def count_buffered_messages(self, conversation_ref: str) -> int:
         """Count the number of buffered messages for a conversation."""

@@ -124,6 +124,7 @@ class EmbedText(BaseModel):
 class ShortTermMemoryRetrievalConfig(BaseModel):
     n_messages: Optional[int] = None  # Number of messages to retrieve
     last_minutes: Optional[float] = None  # Time frame in minutes
+    before: Optional[datetime] = None  # Retrieve messages up until a specific timestamp
 
     @model_validator(mode="after")
     def check_parameters(self) -> "ShortTermMemoryRetrievalConfig":

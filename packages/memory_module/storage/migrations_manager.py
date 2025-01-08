@@ -38,8 +38,13 @@ class MigrationManager:
     # Changed to double underscore for true private methods
     @contextmanager
     def __get_connection(self):
-        with sqlite3.connect(self.db_path) as conn:
-            yield conn
+        conn = None
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                yield conn
+        finally:
+            if conn is not None:
+                conn.close()
 
     def __create_vector_search_table(self, conn):
         logger.info("Creating vector search table", self.db_path)
