@@ -1,7 +1,12 @@
 name: Lint
+
 on:
   pull_request:
-    branches: [main]
+    branches: ["**"]
+
+# Declare default permissions as read only.
+permissions: read-all
+
 jobs:
   ruff:
     runs-on: ubuntu-latest
@@ -15,14 +20,16 @@ jobs:
           args: "format"
   mypy:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install uv
         run: |
@@ -35,5 +42,3 @@ jobs:
         run: |
           source .venv/bin/activate
           mypy
-    
-    
