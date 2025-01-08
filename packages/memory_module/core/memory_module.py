@@ -67,9 +67,16 @@ class MemoryModule(BaseMemoryModule):
         return await self.memory_core.get_messages(memory_ids)
 
     async def remove_messages(self, message_ids: List[str]) -> None:
-        remain_message_ids = await self.message_queue.dequeue(message_ids)
-        if remain_message_ids:
-            await self.memory_core.remove_messages(remain_message_ids)
+        """
+        Message will be in three statuses:
+        1. Queued but not processed. Handle by message_queue.dequeue
+        2. In processing. Possibly handle by message_core.remove_messages is process is done.
+        Otherwise we can be notified with warning log.
+        3. Processed and memory is created. Handle by message_core.remove_messages
+        """
+        await self.message_queue.dequeue(message_ids)
+        if message_ids:
+            await self.memory_core.remove_messages(message_ids)
 
     async def update_memory(self, memory_id: str, updated_memory: str) -> None:
         """Update memory with new fact"""

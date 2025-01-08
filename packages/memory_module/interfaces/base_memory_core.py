@@ -12,7 +12,6 @@ class BaseMemoryCore(ABC):
         self,
         messages: List[Message],
         existing_memories: Optional[List[Memory]] = None,
-        enable_duplication_filter: bool = True,
     ) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         pass

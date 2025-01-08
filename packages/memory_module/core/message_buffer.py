@@ -89,7 +89,7 @@ class MessageBuffer:
             await self._process_conversation_messages(message.conversation_ref)
             await self.scheduler.cancel_event(message.conversation_ref)
 
-    async def remove_messages(self, message_ids: List[str]) -> List[str]:
+    async def remove_messages(self, message_ids: List[str]) -> None:
         """Remove list of messages from buffer if not in processing
 
         Return:
@@ -99,7 +99,7 @@ class MessageBuffer:
         ref_dict = await self.storage.get_conversations_from_buffered_messages(message_ids)
         if not ref_dict:
             logger.info("no messages in buffer that need to be removed")
-            return message_ids
+            return
 
         count_list = await self.storage.count_buffered_messages(list(ref_dict.keys()))
         for key, value in ref_dict.items():
@@ -118,13 +118,12 @@ class MessageBuffer:
                     logger.info(
                         "remove conversation {} from buffer since all related messages will be removed".format(key)
                     )
-                    removed_message_ids += value
-                else:
-                    removed_message_ids += value
+                removed_message_ids += value
 
         await self.storage.remove_buffered_messages_by_id(removed_message_ids)
         logger.info("messages {} are removed from buffer".format(",".join(removed_message_ids)))
-        return [item for item in message_ids if item not in removed_message_ids]
+        for item in removed_message_ids:
+            message_ids.remove(item)
 
     async def flush(self) -> None:
         """Flush all messages from the buffer."""

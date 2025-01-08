@@ -13,9 +13,6 @@ class BaseMessageQueue(ABC):
         pass
 
     @abstractmethod
-    async def dequeue(self, message_ids: List[str]) -> List[str]:
-        """Remove a list of messages from the queue of buffer
-
-        Return: list of messages that is not removed in buffer, or does not exist in buffer
-        """
+    async def dequeue(self, message_ids: List[str]) -> None:
+        """Remove a list of messages from the queue of buffer"""
         pass

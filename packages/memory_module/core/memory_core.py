@@ -111,7 +111,6 @@ class MemoryCore(BaseMemoryCore):
         self,
         messages: List[Message],
         existing_memories: Optional[List[Memory]] = None,
-        enable_duplication_filter: bool = True,
     ) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         # make sure there is an author, and only one author
@@ -134,11 +133,10 @@ class MemoryCore(BaseMemoryCore):
 
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
-                if enable_duplication_filter:
-                    decision = await self._get_add_memory_processing_decision(fact.text, author_id)
-                    if decision == "ignore":
-                        logger.info(f"Decision to ignore fact {fact.text}")
-                        continue
+                decision = await self._get_add_memory_processing_decision(fact.text, author_id)
+                if decision == "ignore":
+                    logger.info(f"Decision to ignore fact {fact.text}")
+                    continue
                 metadata = await self._extract_metadata_from_fact(fact.text)
                 message_ids = set(messages[idx].id for idx in fact.message_indices if idx < len(messages))
                 memory = BaseMemoryInput(
@@ -178,19 +176,20 @@ class MemoryCore(BaseMemoryCore):
     async def remove_messages(self, message_ids: List[str]) -> None:
         # Get list of memories that need to be updated/removed with removed messages
         remove_memories_list = await self.storage.get_all_memories(message_ids=message_ids)
-        memory_ids = [memory.id for memory in remove_memories_list]
 
-        # Get list of messages associated with memories, and remove the to-be-deleted messages
-        associated_messages_dict = await self.get_messages(memory_ids)
+        # Loop each memory and determine whether to remove the memory
         removed_memory_ids = []
-        for key, value in associated_messages_dict.items():
-            removed_message_ids = [item.id for item in value if item.id in message_ids]
-            logger.info("messages {} will be removed from memory {}".format(",".join(removed_message_ids), key))
-            associated_messages_dict[key] = [item for item in value if item.id not in message_ids]
+        for memory in remove_memories_list:
+            if not memory.message_attributions:
+                removed_memory_ids.append(memory.id)
+                logger.info("memory {} will be removed since no associated messages".format(memory.id))
+                continue
+            removed_message_ids = [item for item in memory.message_attributions if item in message_ids]
+            logger.info("messages {} will be removed from memory {}".format(",".join(removed_message_ids), memory.id))
             # If all messages associated with a memory are removed, remove that memory too
-            if len(associated_messages_dict[key]) == 0:
-                removed_memory_ids.append(key)
-                logger.info("memory {} will be removed since all associated messages are removed".format(key))
+            if len(removed_message_ids) == len(memory.message_attributions):
+                removed_memory_ids.append(memory.id)
+                logger.info("memory {} will be removed since all associated messages are removed".format(memory.id))
 
         # Remove selected messages and related old memories
         await self.storage.remove_memories(removed_memory_ids)
