@@ -251,7 +251,7 @@ async def test_get_all_memories_by_message_id_empty(memory_storage, sample_memor
     await memory_storage.store_short_term_memory(sample_message)
 
     # Get memories by message ID
-    memories = await memory_storage.get_all_memories(message_id="incorrect_message_id")
+    memories = await memory_storage.get_all_memories(message_ids=["incorrect_message_id"])
 
     assert len(memories) == 0
 
