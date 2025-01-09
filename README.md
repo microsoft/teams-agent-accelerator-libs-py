@@ -22,13 +22,11 @@ As the maintainer of this project, please make a few updates:
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-Install [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
-
 ### Installing
 
-1. Ensure your machine has `uv` and `cargo` installed.
-2. `uv sync` - it installs the virtual env and dependencies
-3. Activate virtual env
+1. `uv sync` - it installs the virtual env and dependencies
+    - If you are using Windows, you may need to manually install [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
+2. Activate virtual env
 
 - Mac: `source .venv/bin/activate`
 - Windows: `.venv\Scripts\Activate`
