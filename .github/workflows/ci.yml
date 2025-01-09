@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
 name: "Build, Lint & Test"
 
 on:
@@ -46,10 +48,11 @@ jobs:
 
       - name: Install uv
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh -o install.sh
+          curl -LsSf https://astral.sh/uv/0.5.16/install.sh -o install.sh
           echo "9be24dbaafca4cec3b2e103f89bfb69db7aadd0cfa6195cf8e62eebefb00d3c3 install.sh" | sha256sum --check
           chmod +x install.sh
-          ./install.sh --version 0.1.24
+          ./install.sh
+          uv --version
 
       - name: Install dependencies
         run: |
