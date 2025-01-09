@@ -83,6 +83,7 @@ class MemoryMiddleware(Middleware):
                             author_id=conversation_ref_dict.bot.id,
                             conversation_ref=conversation_ref_dict.conversation.id,
                             deep_link=build_deep_link(context, response.id),
+                            created_at=activity.timestamp if activity.timestamp else datetime.datetime.now(),
                         )
                     )
                 )
