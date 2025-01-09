@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Any, Awaitable, Callable, List, Optional, Set
 
@@ -8,6 +9,8 @@ from memory_module.interfaces.types import Message
 from memory_module.services.scheduled_events_service import ScheduledEventsService
 from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_message_buffer_storage import SQLiteMessageBufferStorage
+
+logger = logging.getLogger(__name__)
 
 
 class MessageBuffer:
@@ -71,7 +74,7 @@ class MessageBuffer:
         # but not yet removed from the buffer. This could cause the timer to not be triggered, but seems like
         # a rare edge case.
         # Check if this is the first message in the conversation
-        count = await self.storage.count_buffered_messages(message.conversation_ref)
+        count = (await self.storage.count_buffered_messages([message.conversation_ref]))[message.conversation_ref]
         if count == 1:
             # Start timeout for this conversation
             timeout_time = datetime.now() + timedelta(seconds=self.timeout_seconds)
@@ -85,6 +88,42 @@ class MessageBuffer:
         if count >= self.buffer_size:
             await self._process_conversation_messages(message.conversation_ref)
             await self.scheduler.cancel_event(message.conversation_ref)
+
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        """Remove list of messages from buffer if not in processing
+
+        Return:
+            remaining message ids that is in progress or already processed
+        """
+        removed_message_ids = []
+        ref_dict = await self.storage.get_conversations_from_buffered_messages(message_ids)
+        if not ref_dict:
+            logger.info("no messages in buffer that need to be removed")
+            return
+
+        count_list = await self.storage.count_buffered_messages(list(ref_dict.keys()))
+        for key, value in ref_dict.items():
+            # if the conversation is in processing, leave it to be removed later
+            if self._is_processing(key):
+                logger.warning(
+                    "messages {} cannot be removed since the conversation {} is in processing".format(
+                        ",".join(ref_dict[key]), key
+                    )
+                )
+            # if the conversation is not started
+            else:
+                # clean up scheduler if all messages are removed for the conversation
+                if count_list[key] == len(value):
+                    await self.scheduler.cancel_event(key)
+                    logger.info(
+                        "remove conversation {} from buffer since all related messages will be removed".format(key)
+                    )
+                removed_message_ids += value
+
+        await self.storage.remove_buffered_messages_by_id(removed_message_ids)
+        logger.info("messages {} are removed from buffer".format(",".join(removed_message_ids)))
+        for item in removed_message_ids:
+            message_ids.remove(item)
 
     async def flush(self) -> None:
         """Flush all messages from the buffer."""
