@@ -1,7 +1,7 @@
 from abc import ABC
 from datetime import datetime
 from enum import Enum
-from typing import ClassVar, List, Optional
+from typing import ClassVar, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -79,8 +79,8 @@ class AssistantMessage(AssistantMessageInput):
     model_config = ConfigDict(from_attributes=True)
 
 
-type MessageInput = InternalMessageInput | UserMessageInput | AssistantMessageInput
-type Message = InternalMessage | UserMessage | AssistantMessage
+MessageInput = Union[InternalMessageInput, UserMessageInput, AssistantMessageInput]
+Message = Union[InternalMessage, UserMessage, AssistantMessage]
 
 
 class MemoryAttribution(BaseModel):
