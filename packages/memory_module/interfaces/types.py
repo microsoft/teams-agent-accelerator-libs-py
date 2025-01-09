@@ -16,6 +16,7 @@ class BaseMessageInput(ABC, BaseModel):
     content: str
     author_id: str
     conversation_ref: str
+    created_at: datetime
 
 
 class InternalMessageInput(BaseMessageInput):
@@ -25,7 +26,6 @@ class InternalMessageInput(BaseMessageInput):
 
     model_config = ConfigDict(from_attributes=True)
     type: ClassVar = "internal"
-    created_at: Optional[datetime] = None
     deep_link: ClassVar[None] = None
 
 
@@ -39,7 +39,6 @@ class InternalMessage(InternalMessageInput):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    created_at: datetime  # type: ignore[reportIncompatibleVariableOverride]
 
 
 class UserMessageInput(BaseMessageInput):
@@ -51,7 +50,6 @@ class UserMessageInput(BaseMessageInput):
     id: str
     type: ClassVar = "user"
     deep_link: Optional[str] = None
-    created_at: datetime
 
 
 class UserMessage(UserMessageInput):
@@ -71,7 +69,6 @@ class AssistantMessageInput(BaseMessageInput):
     id: str
     type: ClassVar = "assistant"
     deep_link: Optional[str] = None
-    created_at: Optional[datetime] = None
 
 
 class AssistantMessage(AssistantMessageInput):
@@ -80,7 +77,6 @@ class AssistantMessage(AssistantMessageInput):
     """
 
     model_config = ConfigDict(from_attributes=True)
-    created_at: datetime  # type: ignore[reportIncompatibleVariableOverride]
 
 
 type MessageInput = InternalMessageInput | UserMessageInput | AssistantMessageInput

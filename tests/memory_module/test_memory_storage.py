@@ -285,6 +285,7 @@ async def test_get_messages(memory_storage):
             author_id="user1",
             conversation_ref="conv1",
             deep_link="link2",
+            created_at=datetime.now(),
         ),
     ]
 
