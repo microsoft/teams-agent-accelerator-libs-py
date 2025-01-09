@@ -108,7 +108,9 @@ class MemoryCore(BaseMemoryCore):
         )
 
     async def process_semantic_messages(
-        self, messages: List[Message], existing_memories: Optional[List[Memory]] = None
+        self,
+        messages: List[Message],
+        existing_memories: Optional[List[Memory]] = None,
     ) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         # make sure there is an author, and only one author
@@ -170,6 +172,27 @@ class MemoryCore(BaseMemoryCore):
 
     async def remove_memories(self, user_id: str) -> None:
         await self.storage.clear_memories(user_id)
+
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        # Get list of memories that need to be updated/removed with removed messages
+        remove_memories_list = await self.storage.get_all_memories(message_ids=message_ids)
+
+        # Loop each memory and determine whether to remove the memory
+        removed_memory_ids = []
+        for memory in remove_memories_list:
+            if not memory.message_attributions:
+                removed_memory_ids.append(memory.id)
+                logger.info("memory {} will be removed since no associated messages".format(memory.id))
+                continue
+            # If all messages associated with a memory are removed, remove that memory too
+            if all(item in message_ids for item in memory.message_attributions):
+                removed_memory_ids.append(memory.id)
+                logger.info("memory {} will be removed since all associated messages are removed".format(memory.id))
+
+        # Remove selected messages and related old memories
+        await self.storage.remove_memories(removed_memory_ids)
+        await self.storage.remove_messages(message_ids)
+        logger.info("messages {} are removed".format(",".join(message_ids)))
 
     async def _get_add_memory_processing_decision(self, new_memory_fact: str, user_id: Optional[str]) -> str:
         similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
@@ -352,4 +375,4 @@ Here are the incoming messages:
         return await self.storage.get_messages(memory_ids)
 
     async def get_memories_from_message(self, message_id):
-        return await self.storage.get_all_memories(message_id=message_id)
+        return await self.storage.get_all_memories(message_ids=[message_id])

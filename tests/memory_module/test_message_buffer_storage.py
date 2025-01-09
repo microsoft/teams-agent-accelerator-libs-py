@@ -19,8 +19,8 @@ def storage(request):
         yield buffer, memory_storage
         os.remove(db_path)
     else:
-        buffer = InMemoryStorage()
-        memory_storage = buffer
+        buffer = InMemoryStorage()  # type: ignore
+        memory_storage = buffer  # type: ignore
         yield buffer, memory_storage
 
 
@@ -89,5 +89,20 @@ async def test_count_buffered_messages(storage):
     await memory_storage.store_short_term_memory(message=message)
     await buffer.store_buffered_message(message=message)
 
-    count = await buffer.count_buffered_messages(conversation_ref=message.conversation_ref)
-    assert count == 1
+    count_ref = await buffer.count_buffered_messages(conversation_refs=[message.conversation_ref])
+    assert count_ref[message.conversation_ref] == 1
+
+
+@pytest.mark.asyncio
+async def test_get_conversations_from_buffered_messages(storage):
+    message1 = create_test_user_message("Hi")
+    message1.id = "msg1"
+    message1.conversation_ref = "conv1"
+
+    buffer, memory_storage = storage
+    await memory_storage.store_short_term_memory(message=message1)
+    await buffer.store_buffered_message(message=message1)
+
+    conversation_refs = await buffer.get_conversations_from_buffered_messages(["msg1"])
+    assert "conv1" in conversation_refs
+    assert "msg1" in conversation_refs["conv1"]

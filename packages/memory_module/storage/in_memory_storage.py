@@ -160,6 +160,15 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                     messages_dict[memory_id] = messages
         return messages_dict
 
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        for message_id in message_ids:
+            self.storage["messages"].pop(message_id, None)
+
+    async def remove_memories(self, memory_ids: List[str]) -> None:
+        for memory_id in memory_ids:
+            self.storage["embeddings"].pop(memory_id, None)
+            self.storage["memories"].pop(memory_id, None)
+
     def _cosine_similarity(self, memory_vector: List[float], query_vector: List[float]) -> float:
         return np.dot(np.array(query_vector), np.array(memory_vector))
 
@@ -175,17 +184,20 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
     async def get_memory(self, memory_id: str) -> Optional[Memory]:
         return self.storage["memories"].get(memory_id)
 
-    async def get_all_memories(self, limit: Optional[int] = None, message_id: Optional[str] = None) -> List[Memory]:
+    async def get_all_memories(
+        self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
+    ) -> List[Memory]:
         memories = [value for key, value in self.storage["memories"].items()]
 
         if limit is not None:
             memories = memories[:limit]
 
-        if message_id is not None:
+        if message_ids is not None:
             memories = [
                 memory
                 for memory in memories
-                if memory.message_attributions is not None and message_id in memory.message_attributions
+                if memory.message_attributions is not None
+                and len(np.intersect1d(np.array(message_ids), np.array(memory.message_attributions)).tolist()) > 0
             ]
 
         return memories
@@ -198,6 +210,16 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         """Retrieve all buffered messages for a conversation."""
         return self.storage["buffered_messages"][conversation_ref]
 
+    async def get_conversations_from_buffered_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+        ref_dict: Dict[str, List[str]] = {}
+        for key, value in self.storage["buffered_messages"].items():
+            stored_message_ids = [item.id for item in value]
+            common_message_ids: List[str] = np.intersect1d(np.array(message_ids), np.array(stored_message_ids)).tolist()  # type: ignore
+            if len(common_message_ids) > 0:
+                ref_dict[key] = common_message_ids
+
+        return ref_dict
+
     async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
         """Remove all buffered messages for a conversation. If the before parameter is provided,
         only messages created on or before that time will be removed."""
@@ -207,9 +229,17 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         else:
             self.storage["buffered_messages"][conversation_ref] = []
 
-    async def count_buffered_messages(self, conversation_ref: str) -> int:
+    async def remove_buffered_messages_by_id(self, message_ids: List[str]) -> None:
+        """Remove list of messages in buffered storage"""
+        for key, value in self.storage["buffered_messages"].items():
+            self.storage["buffered_messages"][key] = [item for item in value if item.id not in message_ids]
+
+    async def count_buffered_messages(self, conversation_refs: List[str]) -> Dict[str, int]:
         """Count the number of buffered messages for a conversation."""
-        return len(self.storage["buffered_messages"][conversation_ref])
+        count_dict: Dict[str, int] = {}
+        for ref in conversation_refs:
+            count_dict[ref] = len(self.storage["buffered_messages"][ref])
+        return count_dict
 
     async def store_event(self, event: Event) -> None:
         """Store a scheduled event."""

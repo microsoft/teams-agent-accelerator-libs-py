@@ -9,7 +9,9 @@ class BaseMemoryCore(ABC):
 
     @abstractmethod
     async def process_semantic_messages(
-        self, messages: List[Message], existing_memories: Optional[List[Memory]]
+        self,
+        messages: List[Message],
+        existing_memories: Optional[List[Memory]] = None,
     ) -> None:
         """Process multiple messages into semantic memories (general facts, preferences)."""
         pass
@@ -42,6 +44,11 @@ class BaseMemoryCore(ABC):
     @abstractmethod
     async def get_user_memories(self, user_id: str) -> List[Memory]:
         """Get memories based on user id."""
+        pass
+
+    @abstractmethod
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        """Remove messages and related memories."""
         pass
 
     @abstractmethod

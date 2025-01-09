@@ -343,3 +343,76 @@ async def _validate_decision(memory_module, message: List[UserMessageInput], exp
     for fact in extraction.facts:
         decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, "user-123")
         assert decision == expected_decision
+
+
+@pytest.mark.asyncio
+async def test_remove_messages(memory_module):
+    conversation1_id = str(uuid4())
+    conversation2_id = str(uuid4())
+    conversation3_id = str(uuid4())
+    message1_id = str(uuid4())
+    message2_id = str(uuid4())
+    message3_id = str(uuid4())
+    message4_id = str(uuid4())
+    messages = [
+        UserMessageInput(
+            id=message1_id,
+            content="I like strawberry flavor ice cream a lot.",
+            author_id="user-123",
+            conversation_ref=conversation1_id,
+            created_at=datetime.now(),
+        ),
+        UserMessageInput(
+            id=message2_id,
+            content="I like eating noodle.",
+            author_id="user-123",
+            conversation_ref=conversation1_id,
+            created_at=datetime.now(),
+        ),
+    ]
+    for message in messages:
+        await memory_module.add_message(message)
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+
+    messages2 = [
+        UserMessageInput(
+            id=message3_id,
+            content="I like to go TT for grocery shopping.",
+            author_id="user-123",
+            conversation_ref=conversation2_id,
+            created_at=datetime.now(),
+        ),
+        UserMessageInput(
+            id=message4_id,
+            content="I like pancake from TT.",
+            author_id="user-123",
+            conversation_ref=conversation3_id,
+            created_at=datetime.now(),
+        ),
+    ]
+
+    for message in messages2:
+        await memory_module.add_message(message)
+
+    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_memories) == 2
+    stored_buffer = await memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(
+        [message3_id, message4_id]
+    )
+    assert len(list(stored_buffer.keys())) == 2
+
+    remove_messages = [message1_id, message3_id]
+
+    await memory_module.remove_messages(remove_messages)
+
+    updated_memories = await memory_module.memory_core.storage.get_all_memories()
+    assert len(updated_memories) == 1
+    assert any("noodle" in memory.content for memory in updated_memories)
+    assert not any("strawberry" in memory.content for memory in updated_memories)
+
+    updated_buffer = await memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(
+        [message3_id, message4_id]
+    )
+    conversation_refs = list(updated_buffer.keys())
+    assert len(conversation_refs) == 1
+    assert conversation_refs[0] == conversation3_id
