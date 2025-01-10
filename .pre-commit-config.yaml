@@ -14,4 +14,4 @@ repos:
     hooks:
       - id: mypy
         pass_filenames: false
-        args: [--ignore-missing-imports, --show-traceback, --verbose]
+        args: [--ignore-missing-imports, --show-traceback]
