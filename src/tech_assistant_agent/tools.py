@@ -3,7 +3,7 @@ from typing import List, Literal
 
 from botbuilder.core import TurnContext
 from botbuilder.schema import Activity
-from memory_module import BaseMemoryModule, Memory
+from memory_module import BaseMemoryModule, Memory, RetrievalConfig
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
 
@@ -49,7 +49,7 @@ async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
 async def get_memorized_fields(memory_module: BaseMemoryModule, fields_to_retrieve: GetMemorizedFields) -> str:
     empty_obj: dict = {}
     for query in fields_to_retrieve.queries_for_fields:
-        result = await memory_module.retrieve_memories(query, None, None)
+        result = await memory_module.retrieve_memories(None, RetrievalConfig(query=query, limit=None))
         print("Getting memorized queries: ", query)
         print(result)
         print("---")

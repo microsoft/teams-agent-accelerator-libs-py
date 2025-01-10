@@ -104,6 +104,12 @@ class BaseMemoryInput(BaseModel):
     memory_type: MemoryType
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default=[])
+    topics: Optional[List[str]] = None
+
+
+class Topic(BaseModel):
+    name: str = Field(description="A unique name of the topic that the memory module should listen to")
+    description: str = Field(description="Description of the topic")
 
 
 class Memory(BaseMemoryInput):
@@ -112,12 +118,24 @@ class Memory(BaseMemoryInput):
     id: str
 
 
-class EmbedText(BaseModel):
+class TextEmbedding(BaseModel):
     text: str
     embedding_vector: List[float]
 
 
-class ShortTermMemoryRetrievalConfig(BaseModel):
+class RetrievalConfig(BaseModel):
+    query: Optional[str] = None
+    topic: Optional[Topic] = None
+    limit: Optional[int] = None
+
+    @model_validator(mode="after")
+    def check_parameters(self) -> "RetrievalConfig":
+        if self.query is None and self.topic is None:
+            raise ValueError("Either query or topic must be provided")
+        return self
+
+
+class ShortTermMemoryRetrievalConfig(RetrievalConfig):
     n_messages: Optional[int] = None  # Number of messages to retrieve
     last_minutes: Optional[float] = None  # Time frame in minutes
     before: Optional[datetime] = None  # Retrieve messages up until a specific timestamp

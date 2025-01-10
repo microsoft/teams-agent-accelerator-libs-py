@@ -8,12 +8,13 @@ import sqlite_vec
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import (
     BaseMemoryInput,
-    EmbedText,
     InternalMessageInput,
     Memory,
     Message,
     MessageInput,
     ShortTermMemoryRetrievalConfig,
+    TextEmbedding,
+    Topic,
 )
 from memory_module.storage.sqlite_storage import SQLiteStorage
 from memory_module.storage.utils import build_message_from_dict
@@ -40,16 +41,20 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         async with self.storage.transaction() as cursor:
             # Store the memory
+            # Convert topics list to comma-separated string if it's a list
+            topics_str = ",".join(memory.topics) if isinstance(memory.topics, list) else memory.topics
+
             await cursor.execute(
                 """INSERT INTO memories
-                    (id, content, created_at, user_id, memory_type)
-                    VALUES (?, ?, ?, ?, ?)""",
+                    (id, content, created_at, user_id, memory_type, topics)
+                    VALUES (?, ?, ?, ?, ?, ?)""",
                 (
                     memory_id,
                     memory.content,
                     memory.created_at.astimezone(datetime.timezone.utc),
                     memory.user_id,
                     memory.memory_type.value,
+                    topics_str,
                 ),
             )
 
@@ -107,112 +112,112 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
 
     async def retrieve_memories(
-        self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
+        self,
+        *,
+        user_id: Optional[str],
+        text_embedding: Optional[TextEmbedding] = None,
+        topics: Optional[List[Topic]] = None,
+        limit: Optional[int] = None,
     ) -> List[Memory]:
-        """Retrieve memories based on a query."""
-        query = """
-            WITH ranked_memories AS (
-                SELECT
-                    e.memory_id,
-                    distance
-                FROM vec_items
-                JOIN embeddings e ON vec_items.memory_embedding_id = e.id
-                WHERE vec_items.embedding MATCH ? AND K = ? AND distance < ?
-                ORDER BY distance ASC
-            )
+        base_query = """
             SELECT
-                m.id,
-                m.content,
-                m.created_at,
-                m.user_id,
-                m.memory_type,
-                ma.message_id,
-                rm.distance
-            FROM ranked_memories rm
-            JOIN memories m ON m.id = rm.memory_id
+                m.*,
+                GROUP_CONCAT(ma.message_id) as message_attributions
+                {distance_select}
+            FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-            ORDER BY rm.distance ASC
+            {embedding_join}
+            WHERE 1=1
+            {topic_filter}
+            {user_filter}
+            GROUP BY m.id
+            {order_by}
+            {limit_clause}
         """
 
-        rows = await self.storage.fetch_all(
-            query,
-            (
-                sqlite_vec.serialize_float32(embedText.embedding_vector),
-                limit or self.default_limit,
-                1.0,
-            ),
+        params = []
+
+        # Handle embedding search first since its params come first in the query
+        embedding_join = ""
+        distance_select = ""
+        order_by = "ORDER BY m.created_at DESC"
+
+        if text_embedding:
+            embedding_join = """
+                JOIN (
+                    SELECT
+                        e.memory_id,
+                        distance
+                    FROM vec_items
+                    JOIN embeddings e ON vec_items.memory_embedding_id = e.id
+                    WHERE vec_items.embedding MATCH ? AND K = ? AND distance < ?
+                ) rm ON m.id = rm.memory_id
+            """
+            distance_select = ", rm.distance as _distance"
+            order_by = "ORDER BY rm.distance ASC"
+            params.extend(
+                [sqlite_vec.serialize_float32(text_embedding.embedding_vector), limit or self.default_limit, 1.0]
+            )
+
+        # Handle topic and user filters after embedding params
+        topic_filter = ""
+        if topics:
+            # Create a single AND condition with multiple LIKE clauses
+            topic_filter = " AND (" + " OR ".join(["m.topics LIKE ?"] * len(topics)) + ")"
+            params.extend(f"%{t.name}%" for t in topics)
+
+        user_filter = ""
+        if user_id:
+            user_filter = "AND m.user_id = ?"
+            params.append(user_id)
+
+        # Handle limit last
+        limit_clause = ""
+        if limit and not text_embedding:  # Only add LIMIT if not using vector search
+            limit_clause = "LIMIT ?"
+            params.append(limit or self.default_limit)
+
+        query = base_query.format(
+            distance_select=distance_select,
+            embedding_join=embedding_join,
+            topic_filter=topic_filter,
+            user_filter=user_filter,
+            order_by=order_by,
+            limit_clause=limit_clause,
         )
 
-        # Group rows by memory_id to handle message attributions
-        memories_dict = {}
-        for row in rows:
-            memory_id = row["id"]
-            if memory_id not in memories_dict:
-                memories_dict[memory_id] = {
-                    "id": memory_id,
-                    "content": row["content"],
-                    "created_at": row["created_at"],
-                    "user_id": row["user_id"],
-                    "memory_type": row["memory_type"],
-                    "message_attributions": [],
-                    "distance": row["distance"],
-                }
-
-            if row["message_id"]:
-                memories_dict[memory_id]["message_attributions"].append(row["message_id"])
-
-        return [Memory(**memory_data) for memory_data in memories_dict.values()]
+        rows = await self.storage.fetch_all(query, tuple(params))
+        return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
 
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given user."""
         query = """
             SELECT
-                m.id,
-                e.id AS embed_id
+                m.id
             FROM memories m
-            LEFT JOIN embeddings e
-            WHERE m.user_id = ? AND m.id = e.memory_id
+            WHERE m.user_id = ?
         """
-        id_rows = await self.storage.fetch_all(query, (user_id,))
-        memory_id_list = [row["id"] for row in id_rows]
-        embed_id_list = [row["embed_id"] for row in id_rows]
-
+        rows = await self.storage.fetch_all(query, (user_id,))
+        memory_ids = [row["id"] for row in rows]
         # Remove memory
-        await self._remove_memories_and_embeddings(memory_id_list, ",".join(["?"] * len(embed_id_list)), embed_id_list)
+        await self.remove_memories(memory_ids)
 
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
-        """Retrieve a memory with its message attributions."""
         query = """
             SELECT
-                m.id,
-                m.content,
-                m.created_at,
-                m.updated_at,
-                m.user_id,
-                m.memory_type,
-                ma.message_id
+                m.*,
+                GROUP_CONCAT(ma.message_id) as message_attributions
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
             WHERE m.id = ?
+            GROUP BY m.id
         """
 
-        rows = await self.storage.fetch_all(query, (memory_id,))
-
-        if not rows:
+        row = await self.storage.fetch_one(query, (memory_id,))
+        if not row:
             return None
 
-        # First row contains the memory data
-        memory_data = {
-            "id": rows[0]["id"],
-            "content": rows[0]["content"],
-            "created_at": rows[0]["created_at"],
-            "updated_at": rows[0]["updated_at"],
-            "user_id": rows[0]["user_id"],
-            "memory_type": rows[0]["memory_type"],
-            "message_attributions": [row["message_id"] for row in rows if row["message_id"]],
-        }
-
-        return Memory(**memory_data)
+        return self._build_memory(row, (row["message_attributions"] or "").split(","))
 
     async def get_all_memories(
         self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
@@ -220,12 +225,8 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         """Retrieve all memories with their message attributions."""
         query = """
             SELECT
-                m.id,
-                m.content,
-                m.created_at,
-                m.user_id,
-                m.memory_type,
-                ma.message_id
+                m.*,
+                GROUP_CONCAT(ma.message_id) as message_attributions
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
         """
@@ -236,32 +237,17 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 message_ids,
             )
 
-        query += " ORDER BY m.created_at DESC"
+        query += """
+        GROUP BY m.id
+        ORDER BY m.created_at DESC
+        """
 
         if limit is not None:
             query += " LIMIT ?"
             params += (limit,)
 
-        rows = await self.storage.fetch_all(query, tuple(params))
-
-        # Group rows by memory_id
-        memories_dict = {}
-        for row in rows:
-            memory_id = row["id"]
-            if memory_id not in memories_dict:
-                memories_dict[memory_id] = {
-                    "id": memory_id,
-                    "content": row["content"],
-                    "created_at": row["created_at"],
-                    "user_id": row["user_id"],
-                    "memory_type": row["memory_type"],
-                    "message_attributions": [],
-                }
-
-            if row["message_id"]:
-                memories_dict[memory_id]["message_attributions"].append(row["message_id"])
-
-        return [Memory(**memory_data) for memory_data in memories_dict.values()]
+        rows = await self.storage.fetch_all(query, params)
+        return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
 
     async def store_short_term_memory(self, message: MessageInput) -> Message:
         """Store a short-term memory entry."""
@@ -332,92 +318,65 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         return [build_message_from_dict(row) for row in rows][::-1]
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        query = """
+        query = f"""
             SELECT
-                m.id,
-                m.content,
-                m.created_at,
-                m.user_id,
-                m.memory_type,
-                ma.message_id
+                m.*,
+                GROUP_CONCAT(ma.message_id) as message_attributions
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-            WHERE m.id IN ({})
-        """.format(",".join(["?"] * len(memory_ids)))
+            WHERE m.id IN ({','.join(['?'] * len(memory_ids))})
+        """
 
         rows = await self.storage.fetch_all(query, tuple(memory_ids))
 
-        # Group rows by memory_id
-        memories_dict = {}
-        for row in rows:
-            memory_id = row["id"]
-            if memory_id not in memories_dict:
-                memories_dict[memory_id] = {
-                    "id": memory_id,
-                    "content": row["content"],
-                    "created_at": row["created_at"],
-                    "user_id": row["user_id"],
-                    "memory_type": row["memory_type"],
-                    "message_attributions": [],
-                }
-
-            if row["message_id"]:
-                memories_dict[memory_id]["message_attributions"].append(row["message_id"])
-
-        return [Memory(**memory_data) for memory_data in memories_dict.values()]
+        return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
 
     async def get_user_memories(self, user_id: str) -> List[Memory]:
-        """Get memories based on user id."""
         query = """
             SELECT
                 m.*,
-                ma.message_id
+                GROUP_CONCAT(ma.message_id) as message_attributions
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
             WHERE m.user_id = ?
+            GROUP BY m.id
         """
 
         rows = await self.storage.fetch_all(query, (user_id,))
-
-        # Group rows by memory_id
-        memories_dict = {}
-        for row in rows:
-            memory_id = row["id"]
-            if memory_id not in memories_dict:
-                memories_dict[memory_id] = {
-                    "id": memory_id,
-                    "content": row["content"],
-                    "created_at": row["created_at"],
-                    "user_id": row["user_id"],
-                    "memory_type": row["memory_type"],
-                    "message_attributions": [],
-                }
-
-            if row["message_id"]:
-                memories_dict[memory_id]["message_attributions"].append(row["message_id"])
-
-        return [Memory(**memory_data) for memory_data in memories_dict.values()]
+        return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        """Get messages based on memory ids."""
-        query = """
-            SELECT ma.memory_id, m.*
+        query = f"""
+            SELECT
+                ma.memory_id as _memory_id,
+                m.*
             FROM memory_attributions ma
             JOIN messages m ON ma.message_id = m.id
-            WHERE ma.memory_id IN ({})
-        """.format(",".join(["?"] * len(memory_ids)))
+            WHERE ma.memory_id IN ({','.join(['?'] * len(memory_ids))})
+        """
 
         rows = await self.storage.fetch_all(query, tuple(memory_ids))
 
         messages_dict: Dict[str, List[Message]] = {}
         for row in rows:
-            memory_id = row["memory_id"]
+            memory_id = row["_memory_id"]
             if memory_id not in messages_dict:
                 messages_dict[memory_id] = []
-
-            messages_dict[memory_id].append(build_message_from_dict(row))
+            messages_dict[memory_id].append(
+                build_message_from_dict({k: v for k, v in row.items() if not k.startswith("_")})
+            )
 
         return messages_dict
+
+    def _build_memory(self, memory_values: dict, message_attributions: List[str]) -> Memory:
+        memory_keys = ["id", "content", "created_at", "user_id", "memory_type", "topics"]
+        # Convert topics string back to list if it exists
+        if memory_values.get("topics"):
+            memory_values["topics"] = memory_values["topics"].split(",")
+        return Memory(
+            **{k: v for k, v in memory_values.items() if k in memory_keys},
+            message_attributions=message_attributions,
+        )
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         async with self.storage.transaction() as cursor:
@@ -427,21 +386,12 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
 
     async def remove_memories(self, memory_ids: List[str]) -> None:
-        query = """
-            SELECT
-                id
-            FROM embeddings
-            WHERE memory_id in ({})
-        """.format(",".join(["?"] * len(memory_ids)))
-        await self._remove_memories_and_embeddings(memory_ids, query)
-
-    async def _remove_memories_and_embeddings(
-        self, memory_ids: List[str], embed_query: str, embed_ids: Optional[List[str]] = None
-    ) -> None:
         async with self.storage.transaction() as cursor:
             await cursor.execute(
-                "DELETE FROM vec_items WHERE memory_embedding_id in ({})".format(embed_query),
-                tuple(embed_ids or memory_ids),
+                """DELETE FROM vec_items WHERE memory_embedding_id in (
+                    SELECT id FROM embeddings WHERE memory_id in ({})
+                )""".format(",".join(["?"] * len(memory_ids))),
+                tuple(memory_ids),
             )
 
             await cursor.execute(

@@ -10,12 +10,14 @@ from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import (
     BaseMemoryInput,
-    EmbedText,
     Memory,
     MemoryType,
     Message,
     MessageInput,
+    RetrievalConfig,
     ShortTermMemoryRetrievalConfig,
+    TextEmbedding,
+    Topic,
 )
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.in_memory_storage import InMemoryStorage
@@ -50,6 +52,11 @@ class SemanticFact(BaseModel):
     message_indices: Set[int] = Field(
         default_factory=set,
         description="The indices of the messages that the fact was extracted from.",
+    )
+    # TODO: Add a validator to ensure that topics are valid
+    topics: Optional[List[str]] = Field(
+        default=None,
+        description="The name of the topic that the fact is most relevant to.",  # noqa: E501
     )
 
 
@@ -106,6 +113,7 @@ class MemoryCore(BaseMemoryCore):
         self.storage: BaseMemoryStorage = storage or (
             SQLiteMemoryStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
         )
+        self.topics = config.topics
 
     async def process_semantic_messages(
         self,
@@ -145,6 +153,7 @@ class MemoryCore(BaseMemoryCore):
                     user_id=author_id,
                     message_attributions=list(message_ids),
                     memory_type=MemoryType.SEMANTIC,
+                    topics=fact.topics,
                 )
                 embed_vectors = await self._get_semantic_fact_embeddings(fact.text, metadata)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
@@ -154,7 +163,22 @@ class MemoryCore(BaseMemoryCore):
         # TODO: Implement episodic memory processing
         await self._extract_episodic_memory_from_messages(messages)
 
-    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
+    async def retrieve_memories(
+        self,
+        user_id: Optional[str],
+        config: RetrievalConfig,
+    ) -> List[Memory]:
+        return await self._retrieve_memories(
+            user_id, config.query, config.topics if config.topics else None, config.limit
+        )
+
+    async def _retrieve_memories(
+        self,
+        user_id: Optional[str],
+        query: Optional[str],
+        topics: Optional[List[Topic]],
+        limit: Optional[int],
+    ) -> List[Memory]:
         """Retrieve memories based on a query.
 
         Steps:
@@ -162,8 +186,14 @@ class MemoryCore(BaseMemoryCore):
         2. Find relevant memories
         3. Possibly rerank or filter results
         """
-        embedText = EmbedText(text=query, embedding_vector=await self._get_query_embedding(query))
-        return await self.storage.retrieve_memories(embedText, user_id, limit)
+        if query:
+            text_embedding = TextEmbedding(text=query, embedding_vector=await self._get_query_embedding(query))
+        else:
+            text_embedding = None
+
+        return await self.storage.retrieve_memories(
+            user_id=user_id, text_embedding=text_embedding, topics=topics, limit=limit
+        )
 
     async def update_memory(self, memory_id: str, updated_memory: str) -> None:
         metadata = await self._extract_metadata_from_fact(updated_memory)
@@ -195,10 +225,15 @@ class MemoryCore(BaseMemoryCore):
         logger.info("messages {} are removed".format(",".join(message_ids)))
 
     async def _get_add_memory_processing_decision(
-        self, new_memory_fact: str, user_id: Optional[str]
+        self, new_memory_fact: SemanticFact, user_id: Optional[str]
     ) -> ProcessSemanticMemoryDecision:
-        similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
-        decision = await self._extract_memory_processing_decision(new_memory_fact, similar_memories, user_id)
+        topics = (
+            [topic for topic in self.topics if topic.name in new_memory_fact.topics] if new_memory_fact.topics else None
+        )
+        similar_memories = await self.retrieve_memories(
+            user_id, RetrievalConfig(query=new_memory_fact.text, topics=topics, limit=None)
+        )
+        decision = await self._extract_memory_processing_decision(new_memory_fact.text, similar_memories, user_id)
         return decision
 
     async def _extract_memory_processing_decision(
@@ -306,6 +341,9 @@ Here is the new memory:
             else:
                 # we explicitly ignore internal messages
                 continue
+        topics = "\n".join(
+            [f"<MEMORY_TOPIC NAME={topic.name}>{topic.description}</MEMORY_TOPIC>" for topic in self.topics]
+        )
 
         existing_memories_str = ""
         if existing_memories:
@@ -318,11 +356,7 @@ Here is the new memory:
 that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
 Prioritize:
-- General Interests and Preferences: When a user mentions specific events or actions, focus on the underlying
-interests, hobbies, or preferences they reveal (e.g., if the user mentions attending a conference, focus on the topic of the conference,
-not the date or location).
-- Facts or Details about user: Extract facts that describe relevant information about the user, such as details about things they own.
-- Facts about the user that the assistant might find useful.
+{topics}
 
 Avoid:
 - Extraction memories that already exist in the system. If a fact is already stored, ignore it.
@@ -335,7 +369,6 @@ Here is the transcript of the conversation:
 {messages_str}
 </TRANSCRIPT>
 """  # noqa: E501
-
         llm_messages = [
             {"role": "system", "content": system_message},
             {

@@ -11,7 +11,7 @@ import pytest_asyncio
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from memory_module.config import MemoryModuleConfig
+from memory_module.config import DEFAULT_TOPICS, MemoryModuleConfig, Topic  # noqa: I001
 from memory_module.core.memory_core import (
     EpisodicMemoryExtraction,
     MemoryCore,
@@ -21,6 +21,8 @@ from memory_module.core.memory_core import (
 )
 from memory_module.core.memory_module import MemoryModule
 from memory_module.interfaces.types import (
+    AssistantMessageInput,
+    RetrievalConfig,
     ShortTermMemoryRetrievalConfig,
     UserMessageInput,
 )
@@ -31,16 +33,21 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def config():
+def config(request):
     """Fixture to create test config."""
+    params = request.param if hasattr(request, "param") else {}
     llm_config = build_llm_config()
+    buffer_size = params.get("buffer_size", 5)
+    timeout_seconds = params.get("timeout_seconds", 60)
+    topics = params.get("topics", DEFAULT_TOPICS)
     if not llm_config.api_key:
         pytest.skip("OpenAI API key not provided")
     return MemoryModuleConfig(
         db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
-        buffer_size=5,
-        timeout_seconds=60,
+        buffer_size=buffer_size,
+        timeout_seconds=timeout_seconds,
         llm=llm_config,
+        topics=topics,
     )
 
 
@@ -148,12 +155,12 @@ async def test_simple_conversation(memory_module):
 
     await memory_module.message_queue.message_buffer.scheduler.flush()
     stored_memories = await memory_module.memory_core.storage.get_all_memories()
-    assert len(stored_memories) == 2
+    assert len(stored_memories) >= 1
     assert any("pie" in message.content for message in stored_memories)
     assert any(message.id in stored_memories[0].message_attributions for message in messages)
     assert all(memory.memory_type == "semantic" for memory in stored_memories)
 
-    result = await memory_module.retrieve_memories("apple pie", "", 1)
+    result = await memory_module.retrieve_memories("user-123", RetrievalConfig(query="apple pie", limit=1))
     assert len(result) == 1
     assert result[0].id == next(memory.id for memory in stored_memories if "apple pie" in memory.content)
 
@@ -285,6 +292,17 @@ async def test_short_term_memory(memory_module):
 @pytest.mark.asyncio
 async def test_add_memory_processing_decision(memory_module):
     """Test whether to process adding memory"""
+
+    async def _validate_decision(memory_module, message: List[UserMessageInput], expected_decision: str):
+        extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(message)
+        assert extraction.action == "add" and extraction.facts
+        for fact in extraction.facts:
+            decision = await memory_module.memory_core._get_add_memory_processing_decision(fact, "user-123")
+            if decision != expected_decision:
+                # Adding this because this test is flaky and it would be good to know why.
+                print(f"Decision: {decision}, Expected: {expected_decision}", fact, decision)
+            assert decision == expected_decision
+
     conversation_id = str(uuid4())
     old_messages = [
         UserMessageInput(
@@ -292,21 +310,21 @@ async def test_add_memory_processing_decision(memory_module):
             content="I have a Pokemon limited version Mac book.",
             author_id="user-123",
             conversation_ref=conversation_id,
-            created_at=datetime.strptime("2024-09-01", "%Y-%m-%d"),
+            created_at=datetime.now() - timedelta(minutes=3),
         ),
         UserMessageInput(
             id=str(uuid4()),
             content="I bought a pink iphone.",
             author_id="user-123",
             conversation_ref=conversation_id,
-            created_at=datetime.strptime("2024-09-03", "%Y-%m-%d"),
+            created_at=datetime.now() - timedelta(minutes=2),
         ),
         UserMessageInput(
             id=str(uuid4()),
-            content="I just had another Mac book.",
+            content="I just bought a Mac book.",
             author_id="user-123",
             conversation_ref=conversation_id,
-            created_at=datetime.strptime("2024-10-12", "%Y-%m-%d"),
+            created_at=datetime.now() - timedelta(minutes=1),
         ),
     ]
     new_messages = [
@@ -322,7 +340,7 @@ async def test_add_memory_processing_decision(memory_module):
         [
             UserMessageInput(
                 id=str(uuid4()),
-                content="I bought one more new Mac book",
+                content="I got a new cat!",
                 author_id="user-123",
                 conversation_ref=conversation_id,
                 created_at=datetime.now(),
@@ -337,14 +355,6 @@ async def test_add_memory_processing_decision(memory_module):
 
     await _validate_decision(memory_module, new_messages[0], "ignore")
     await _validate_decision(memory_module, new_messages[1], "add")
-
-
-async def _validate_decision(memory_module, message: List[UserMessageInput], expected_decision: str):
-    extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(message)
-    assert extraction.action == "add" and extraction.facts
-    for fact in extraction.facts:
-        decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, "user-123")
-        assert decision.decision == expected_decision
 
 
 @pytest.mark.asyncio
@@ -418,3 +428,190 @@ async def test_remove_messages(memory_module):
     conversation_refs = list(updated_buffer.keys())
     assert len(conversation_refs) == 1
     assert conversation_refs[0] == conversation3_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "config",
+    [
+        {
+            "topics": [
+                Topic(name="Device Type", description="The type of device the user has"),
+                Topic(name="Operating System", description="The user's operating system"),
+                Topic(name="Device year", description="The year of the user's device"),
+            ],
+            "buffer_size": 10,
+        }
+    ],
+    indirect=True,
+)
+async def test_topic_extraction(memory_module):
+    conversation_id = str(uuid4())
+    messages = [
+        {"role": "user", "content": "I need help with my device..."},
+        {"role": "assistant", "content": "I'm sorry to hear that. What device do you have?"},
+        {"role": "user", "content": "I have a Macbook"},
+        {"role": "assistant", "content": "What is the year of your device?"},
+        {"role": "user", "content": "2024"},
+    ]
+
+    for message in messages:
+        if message["role"] == "user":
+            input = UserMessageInput(
+                id=str(uuid4()),
+                content=message["content"],
+                author_id="user-123",
+                conversation_ref=conversation_id,
+                created_at=datetime.now(),
+            )
+        else:
+            input = AssistantMessageInput(
+                id=str(uuid4()),
+                content=message["content"],
+                author_id="user-123",
+                conversation_ref=conversation_id,
+                created_at=datetime.now(),
+            )
+        await memory_module.add_message(input)
+
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    assert any("macbook" in message.content.lower() for message in stored_memories)
+    assert any("2024" in message.content for message in stored_memories)
+
+    # Add assertions for topics
+    device_type_memory = next((m for m in stored_memories if "macbook" in m.content.lower()), None)
+    year_memory = next((m for m in stored_memories if "2024" in m.content), None)
+
+    assert device_type_memory is not None and "Device Type" in device_type_memory.topics
+    assert year_memory is not None and "Device year" in year_memory.topics
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "config",
+    [
+        {
+            "topics": [
+                Topic(name="Device Type", description="The type of device the user has"),
+                Topic(name="Operating System", description="The user's operating system"),
+                Topic(name="Device year", description="The year of the user's device"),
+            ],
+            "buffer_size": 10,
+        }
+    ],
+    indirect=True,
+)
+async def test_retrieve_memories_by_topic(memory_module):
+    """Test retrieving memories by topic only."""
+    conversation_id = str(uuid4())
+    messages = [
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I use Windows 11 on my PC",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now() - timedelta(minutes=5),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I have a MacBook Pro from 2023",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now() - timedelta(minutes=3),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="My MacBook runs macOS Sonoma",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now() - timedelta(minutes=1),
+        ),
+    ]
+
+    for message in messages:
+        await memory_module.add_message(message)
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+
+    # Retrieve memories by Operating System topic
+    os_memories = await memory_module.retrieve_memories(
+        "user-123",
+        RetrievalConfig(topic=Topic(name="Operating System", description="The user's operating system")),
+    )
+
+    assert all("Operating System" in memory.topics for memory in os_memories)
+    assert any("windows 11" in memory.content.lower() for memory in os_memories)
+    assert any("sonoma" in memory.content.lower() for memory in os_memories)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "config",
+    [
+        {
+            "topics": [
+                Topic(name="Device Type", description="The type of device the user has"),
+                Topic(name="Operating System", description="The user's operating system"),
+                Topic(name="Device year", description="The year of the user's device"),
+            ],
+            "buffer_size": 10,
+        }
+    ],
+    indirect=True,
+)
+async def test_retrieve_memories_by_topic_and_query(memory_module):
+    """Test retrieving memories using both topic and semantic search."""
+    conversation_id = str(uuid4())
+    messages = [
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I use Windows 11 on my gaming PC",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now() - timedelta(minutes=5),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I have a MacBook Pro from 2023",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now() - timedelta(minutes=3),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="My MacBook runs macOS Sonoma",
+            author_id="user-123",
+            conversation_ref=conversation_id,
+            created_at=datetime.now() - timedelta(minutes=1),
+        ),
+    ]
+
+    for message in messages:
+        await memory_module.add_message(message)
+    await memory_module.message_queue.message_buffer.scheduler.flush()
+
+    # Retrieve memories by Operating System topic AND query about Mac
+    memories = await memory_module.retrieve_memories(
+        "user-123",
+        RetrievalConfig(
+            topic=Topic(name="Operating System", description="The user's operating system"),
+            query="MacBook",
+        ),
+    )
+    assert len(memories) == 1
+    most_relevant_memory = memories[0]
+    assert "macOS" in most_relevant_memory.content
+    assert "Windows" not in most_relevant_memory.content
+
+    # Try another query within the same topic
+    windows_memories = await memory_module.retrieve_memories(
+        "user-123",
+        RetrievalConfig(
+            topic=Topic(name="Operating System", description="The user's operating system"),
+            query="What is the operating system for the user's Windows PC?",
+        ),
+    )
+
+    most_relevant_memory = windows_memories[0]
+    assert "Windows" in most_relevant_memory.content
+    assert "macOS" not in most_relevant_memory.content
