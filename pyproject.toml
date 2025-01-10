@@ -4,7 +4,13 @@ name = "teams-memory-agents"
 description = "a framework for creating intelligent agents within Microsoft Teams"
 readme = "README.md"
 requires-python = "==3.12"
-dependencies = ["agent-runtime", "memory-module", "litellm", "evals"]
+dependencies = [
+    "agent-runtime",
+    "memory-module",
+    "litellm",
+    "evals",
+    "uv==0.5.16"
+]
 
 [dependency-groups]
 dev = [
@@ -27,9 +33,6 @@ evals = { workspace = true }
 
 [tool.uv.workspace]
 members = ["packages/*", "src"]
-
-[tool.uv]
-version = "0.5.16"
 
 [tool.ruff]
 line-length = 120
