@@ -31,6 +31,8 @@ from tests.memory_module.utils import build_llm_config
 
 logger = logging.getLogger(__name__)
 
+pytestmark = pytest.mark.asyncio(scope="session")
+
 
 @pytest.fixture
 def config(request):
@@ -340,7 +342,7 @@ async def test_add_memory_processing_decision(memory_module):
         [
             UserMessageInput(
                 id=str(uuid4()),
-                content="I got a new cat!",
+                content="I like cats",
                 author_id="user-123",
                 conversation_ref=conversation_id,
                 created_at=datetime.now(),
