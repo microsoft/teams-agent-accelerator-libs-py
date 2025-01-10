@@ -3,7 +3,7 @@ name = "agent-runtime"
 version = "0.0.0"
 description = ""
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 dependencies = []
 
 [tool.uv]
