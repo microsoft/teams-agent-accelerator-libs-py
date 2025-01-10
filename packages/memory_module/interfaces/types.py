@@ -125,13 +125,13 @@ class TextEmbedding(BaseModel):
 
 class RetrievalConfig(BaseModel):
     query: Optional[str] = None
-    topic: Optional[Topic] = None
+    topics: Optional[List[Topic]] = None
     limit: Optional[int] = None
 
     @model_validator(mode="after")
     def check_parameters(self) -> "RetrievalConfig":
-        if self.query is None and self.topic is None:
-            raise ValueError("Either query or topic must be provided")
+        if self.query is None and (self.topics is None or len(self.topics) == 0):
+            raise ValueError("Either query or topics must be provided")
         return self
 
 

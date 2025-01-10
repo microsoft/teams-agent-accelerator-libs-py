@@ -141,7 +141,7 @@ class MemoryCore(BaseMemoryCore):
 
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
-                decision = await self._get_add_memory_processing_decision(fact.text, author_id)
+                decision = await self._get_add_memory_processing_decision(fact, author_id)
                 if decision.decision == "ignore":
                     logger.info(f"Decision to ignore fact {fact.text}")
                     continue

@@ -536,7 +536,7 @@ async def test_retrieve_memories_by_topic(memory_module):
     # Retrieve memories by Operating System topic
     os_memories = await memory_module.retrieve_memories(
         "user-123",
-        RetrievalConfig(topic=Topic(name="Operating System", description="The user's operating system")),
+        RetrievalConfig(topics=[Topic(name="Operating System", description="The user's operating system")]),
     )
 
     assert all("Operating System" in memory.topics for memory in os_memories)
@@ -594,7 +594,7 @@ async def test_retrieve_memories_by_topic_and_query(memory_module):
     memories = await memory_module.retrieve_memories(
         "user-123",
         RetrievalConfig(
-            topic=Topic(name="Operating System", description="The user's operating system"),
+            topics=[Topic(name="Operating System", description="The user's operating system")],
             query="MacBook",
         ),
     )
@@ -607,7 +607,7 @@ async def test_retrieve_memories_by_topic_and_query(memory_module):
     windows_memories = await memory_module.retrieve_memories(
         "user-123",
         RetrievalConfig(
-            topic=Topic(name="Operating System", description="The user's operating system"),
+            topics=[Topic(name="Operating System", description="The user's operating system")],
             query="What is the operating system for the user's Windows PC?",
         ),
     )
