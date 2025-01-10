@@ -5,6 +5,7 @@ from typing import Awaitable, Callable, List
 from botbuilder.core import TurnContext
 from botbuilder.core.middleware_set import Middleware
 from botbuilder.schema import Activity, ResourceResponse
+
 from memory_module.interfaces.base_memory_module import BaseMemoryModule
 from memory_module.interfaces.types import (
     AssistantMessageInput,

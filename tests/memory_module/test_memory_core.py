@@ -9,7 +9,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
 from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.core.memory_core import EpisodicMemoryExtraction, MemoryCore
 from memory_module.services.llm_service import LLMService
-
 from tests.memory_module.utils import create_test_memory, create_test_user_message, get_env_llm_config
 
 

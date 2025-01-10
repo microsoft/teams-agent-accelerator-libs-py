@@ -14,12 +14,11 @@ from tqdm import tqdm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
+from evals.helpers import Dataset, DatasetItem, load_dataset, setup_mlflow
+from evals.metrics import string_check_metric
 from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.core.memory_module import MemoryModule
 from memory_module.interfaces.types import AssistantMessage, UserMessage
-
-from evals.helpers import Dataset, DatasetItem, load_dataset, setup_mlflow
-from evals.metrics import string_check_metric
 
 setup_mlflow(experiment_name="memory_module")
 

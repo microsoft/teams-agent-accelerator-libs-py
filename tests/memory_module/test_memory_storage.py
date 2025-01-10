@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 
 import pytest
+
 from memory_module.interfaces.types import (
     AssistantMessageInput,
     BaseMemoryInput,

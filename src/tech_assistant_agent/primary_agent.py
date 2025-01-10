@@ -4,8 +4,8 @@ from typing import List
 from botbuilder.core import TurnContext
 from litellm import acompletion
 from litellm.types.utils import Choices, ModelResponse
-from memory_module import BaseMemoryModule, InternalMessageInput, ShortTermMemoryRetrievalConfig
 
+from memory_module import BaseMemoryModule, InternalMessageInput, ShortTermMemoryRetrievalConfig
 from src.tech_assistant_agent.agent import Agent, LLMConfig
 from src.tech_assistant_agent.prompts import system_prompt
 from src.tech_assistant_agent.tech_agent import TechSupportAgent

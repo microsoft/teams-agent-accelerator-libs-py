@@ -24,7 +24,6 @@ from memory_module.interfaces.types import (
     ShortTermMemoryRetrievalConfig,
     UserMessageInput,
 )
-
 from tests.memory_module.utils import build_llm_config
 
 logger = logging.getLogger(__name__)
