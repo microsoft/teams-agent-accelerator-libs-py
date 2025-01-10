@@ -347,21 +347,20 @@ Here is the new memory:
         if existing_memories:
             for memory in existing_memories:
                 existing_memories_str += f"-{memory.content}\n"
-        else:
-            existing_memories_str = "No existing memories."
+            existing_memories_str = f"""
+Avoid:
+- Extraction memories that already exist in the system. If a fact is already stored, ignore it.
+
+Existing Memories:
+{existing_memories_str}
+"""
 
         system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests
 that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
 Prioritize:
 {topics}
-
-Avoid:
-- Extraction memories that already exist in the system. If a fact is already stored, ignore it.
-
-Existing Memories:
 {existing_memories_str}
-
 Here is the transcript of the conversation:
 <TRANSCRIPT>
 {messages_str}
