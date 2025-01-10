@@ -8,8 +8,7 @@ dependencies = [
     "agent-runtime",
     "memory-module",
     "litellm",
-    "evals",
-    "uv==0.5.16"
+    "evals"
 ]
 
 [dependency-groups]
