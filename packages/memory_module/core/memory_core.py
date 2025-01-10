@@ -169,7 +169,7 @@ class MemoryCore(BaseMemoryCore):
         config: RetrievalConfig,
     ) -> List[Memory]:
         return await self._retrieve_memories(
-            user_id, config.query, config.topics if config.topics else None, config.limit
+            user_id, config.query, [config.topic] if config.topic else None, config.limit
         )
 
     async def _retrieve_memories(
@@ -227,12 +227,10 @@ class MemoryCore(BaseMemoryCore):
     async def _get_add_memory_processing_decision(
         self, new_memory_fact: SemanticFact, user_id: Optional[str]
     ) -> ProcessSemanticMemoryDecision:
-        topics = (
-            [topic for topic in self.topics if topic.name in new_memory_fact.topics] if new_memory_fact.topics else None
-        )
-        similar_memories = await self.retrieve_memories(
-            user_id, RetrievalConfig(query=new_memory_fact.text, topics=topics, limit=None)
-        )
+        # topics = (
+        #     [topic for topic in self.topics if topic.name in new_memory_fact.topics] if new_memory_fact.topics else None # noqa: E501
+        # )
+        similar_memories = await self._retrieve_memories(user_id, new_memory_fact.text, None, None)
         decision = await self._extract_memory_processing_decision(new_memory_fact.text, similar_memories, user_id)
         return decision
 

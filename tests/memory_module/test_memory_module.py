@@ -309,7 +309,7 @@ async def test_add_memory_processing_decision(memory_module):
     old_messages = [
         UserMessageInput(
             id=str(uuid4()),
-            content="I have a Pokemon limited version Mac book.",
+            content="I have a Pokemon limited version Macbook.",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=3),
@@ -323,7 +323,7 @@ async def test_add_memory_processing_decision(memory_module):
         ),
         UserMessageInput(
             id=str(uuid4()),
-            content="I just bought a Mac book.",
+            content="I just bought a Macbook.",
             author_id="user-123",
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=1),
@@ -333,7 +333,7 @@ async def test_add_memory_processing_decision(memory_module):
         [
             UserMessageInput(
                 id=str(uuid4()),
-                content="I have a Mac book",
+                content="I have a Macbook",
                 author_id="user-123",
                 conversation_ref=conversation_id,
                 created_at=datetime.now(),
@@ -538,7 +538,7 @@ async def test_retrieve_memories_by_topic(memory_module):
     # Retrieve memories by Operating System topic
     os_memories = await memory_module.retrieve_memories(
         "user-123",
-        RetrievalConfig(topics=[Topic(name="Operating System", description="The user's operating system")]),
+        RetrievalConfig(topic=Topic(name="Operating System", description="The user's operating system")),
     )
 
     assert all("Operating System" in memory.topics for memory in os_memories)
@@ -596,7 +596,7 @@ async def test_retrieve_memories_by_topic_and_query(memory_module):
     memories = await memory_module.retrieve_memories(
         "user-123",
         RetrievalConfig(
-            topics=[Topic(name="Operating System", description="The user's operating system")],
+            topic=Topic(name="Operating System", description="The user's operating system"),
             query="MacBook",
         ),
     )
@@ -609,7 +609,7 @@ async def test_retrieve_memories_by_topic_and_query(memory_module):
     windows_memories = await memory_module.retrieve_memories(
         "user-123",
         RetrievalConfig(
-            topics=[Topic(name="Operating System", description="The user's operating system")],
+            topic=Topic(name="Operating System", description="The user's operating system"),
             query="What is the operating system for the user's Windows PC?",
         ),
     )

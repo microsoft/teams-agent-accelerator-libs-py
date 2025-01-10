@@ -127,7 +127,7 @@ class RetrievalConfig(BaseModel):
     """Configuration for memory retrieval operations.
 
     This class defines the parameters used to retrieve memories from storage. Memories can be
-    retrieved either by a semantic search query or by filtering for specific topics or both.
+    retrieved either by a semantic search query or by filtering for a specific topic or both.
 
     In case of both, the memories are retrieved by the intersection of the two sets.
     """
@@ -135,9 +135,9 @@ class RetrievalConfig(BaseModel):
     query: Optional[str] = Field(
         default=None, description="A natural language query to search for semantically similar memories"
     )
-    topics: Optional[List[Topic]] = Field(
+    topic: Optional[Topic] = Field(
         default=None,
-        description="List of topics to filter memories by. Only memories tagged with these topics will be retrieved",
+        description="Topic to filter memories by. Only memories tagged with this topic will be retrieved",
     )
     limit: Optional[int] = Field(
         default=None,
@@ -146,8 +146,8 @@ class RetrievalConfig(BaseModel):
 
     @model_validator(mode="after")
     def check_parameters(self) -> "RetrievalConfig":
-        if self.query is None and (self.topics is None or len(self.topics) == 0):
-            raise ValueError("Either query or topics must be provided")
+        if self.query is None and self.topic is None:
+            raise ValueError("Either query or topic must be provided")
         return self
 
 
