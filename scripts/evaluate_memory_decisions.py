@@ -5,11 +5,15 @@ from pathlib import Path
 from typing import cast
 from uuid import uuid4
 
-from memory_module import MemoryModule, MemoryModuleConfig, UserMessageInput
-from memory_module.core.scheduler import Scheduler
 from tqdm import tqdm
 
-from tests.memory_module.utils import build_llm_config
+root_dir = Path(__file__).parent.parent
+sys.path.extend([str(root_dir), str(root_dir / "packages")])
+
+from memory_module import MemoryModule, MemoryModuleConfig, UserMessageInput  # noqa: E402
+from memory_module.services.scheduled_events_service import ScheduledEventsService  # noqa: E402
+
+from tests.memory_module.utils import build_llm_config  # noqa: E402
 
 # Test cases from before
 TEST_CASES = [
@@ -202,7 +206,7 @@ async def main():
                 print("-" * 50)
 
     # Cleanup
-    await cast(Scheduler, memory_module.message_queue.message_buffer.scheduler).cleanup()
+    await cast(ScheduledEventsService, memory_module.message_queue.message_buffer.scheduler).cleanup()
 
 
 if __name__ == "__main__":
