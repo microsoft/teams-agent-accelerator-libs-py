@@ -124,9 +124,25 @@ class TextEmbedding(BaseModel):
 
 
 class RetrievalConfig(BaseModel):
-    query: Optional[str] = None
-    topics: Optional[List[Topic]] = None
-    limit: Optional[int] = None
+    """Configuration for memory retrieval operations.
+
+    This class defines the parameters used to retrieve memories from storage. Memories can be
+    retrieved either by a semantic search query or by filtering for specific topics or both.
+
+    In case of both, the memories are retrieved by the intersection of the two sets.
+    """
+
+    query: Optional[str] = Field(
+        default=None, description="A natural language query to search for semantically similar memories"
+    )
+    topics: Optional[List[Topic]] = Field(
+        default=None,
+        description="List of topics to filter memories by. Only memories tagged with these topics will be retrieved",
+    )
+    limit: Optional[int] = Field(
+        default=None,
+        description="Maximum number of memories to retrieve. If not specified, all matching memories are returned",
+    )
 
     @model_validator(mode="after")
     def check_parameters(self) -> "RetrievalConfig":
