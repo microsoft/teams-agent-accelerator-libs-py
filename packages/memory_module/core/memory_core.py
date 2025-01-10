@@ -10,12 +10,14 @@ from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import (
     BaseMemoryInput,
-    EmbedText,
     Memory,
     MemoryType,
     Message,
     MessageInput,
+    RetrievalConfig,
     ShortTermMemoryRetrievalConfig,
+    TextEmbedding,
+    Topic,
 )
 from memory_module.services.llm_service import LLMService
 from memory_module.storage.in_memory_storage import InMemoryStorage
@@ -50,6 +52,11 @@ class SemanticFact(BaseModel):
     message_indices: Set[int] = Field(
         default_factory=set,
         description="The indices of the messages that the fact was extracted from.",
+    )
+    # TODO: Add a validator to ensure that topics are valid
+    topics: Optional[List[str]] = Field(
+        default=None,
+        description="The name of the topic that the fact is most relevant to.",  # noqa: E501
     )
 
 
@@ -106,6 +113,7 @@ class MemoryCore(BaseMemoryCore):
         self.storage: BaseMemoryStorage = storage or (
             SQLiteMemoryStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
         )
+        self.topics = config.topics
 
     async def process_semantic_messages(
         self,
@@ -133,8 +141,8 @@ class MemoryCore(BaseMemoryCore):
 
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
-                decision = await self._get_add_memory_processing_decision(fact.text, author_id)
-                if decision == "ignore":
+                decision = await self._get_add_memory_processing_decision(fact, author_id)
+                if decision.decision == "ignore":
                     logger.info(f"Decision to ignore fact {fact.text}")
                     continue
                 metadata = await self._extract_metadata_from_fact(fact.text)
@@ -145,6 +153,7 @@ class MemoryCore(BaseMemoryCore):
                     user_id=author_id,
                     message_attributions=list(message_ids),
                     memory_type=MemoryType.SEMANTIC,
+                    topics=fact.topics,
                 )
                 embed_vectors = await self._get_semantic_fact_embeddings(fact.text, metadata)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
@@ -154,7 +163,22 @@ class MemoryCore(BaseMemoryCore):
         # TODO: Implement episodic memory processing
         await self._extract_episodic_memory_from_messages(messages)
 
-    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
+    async def retrieve_memories(
+        self,
+        user_id: Optional[str],
+        config: RetrievalConfig,
+    ) -> List[Memory]:
+        return await self._retrieve_memories(
+            user_id, config.query, [config.topic] if config.topic else None, config.limit
+        )
+
+    async def _retrieve_memories(
+        self,
+        user_id: Optional[str],
+        query: Optional[str],
+        topics: Optional[List[Topic]],
+        limit: Optional[int],
+    ) -> List[Memory]:
         """Retrieve memories based on a query.
 
         Steps:
@@ -162,8 +186,14 @@ class MemoryCore(BaseMemoryCore):
         2. Find relevant memories
         3. Possibly rerank or filter results
         """
-        embedText = EmbedText(text=query, embedding_vector=await self._get_query_embedding(query))
-        return await self.storage.retrieve_memories(embedText, user_id, limit)
+        if query:
+            text_embedding = TextEmbedding(text=query, embedding_vector=await self._get_query_embedding(query))
+        else:
+            text_embedding = None
+
+        return await self.storage.retrieve_memories(
+            user_id=user_id, text_embedding=text_embedding, topics=topics, limit=limit
+        )
 
     async def update_memory(self, memory_id: str, updated_memory: str) -> None:
         metadata = await self._extract_metadata_from_fact(updated_memory)
@@ -194,10 +224,15 @@ class MemoryCore(BaseMemoryCore):
         await self.storage.remove_messages(message_ids)
         logger.info("messages {} are removed".format(",".join(message_ids)))
 
-    async def _get_add_memory_processing_decision(self, new_memory_fact: str, user_id: Optional[str]) -> str:
-        similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
-        decision = await self._extract_memory_processing_decision(new_memory_fact, similar_memories, user_id)
-        return decision.decision
+    async def _get_add_memory_processing_decision(
+        self, new_memory_fact: SemanticFact, user_id: Optional[str]
+    ) -> ProcessSemanticMemoryDecision:
+        # topics = (
+        #     [topic for topic in self.topics if topic.name in new_memory_fact.topics] if new_memory_fact.topics else None # noqa: E501
+        # )
+        similar_memories = await self._retrieve_memories(user_id, new_memory_fact.text, None, None)
+        decision = await self._extract_memory_processing_decision(new_memory_fact.text, similar_memories, user_id)
+        return decision
 
     async def _extract_memory_processing_decision(
         self, new_memory: str, old_memories: List[Memory], user_id: Optional[str]
@@ -208,15 +243,35 @@ class MemoryCore(BaseMemoryCore):
         old_memory_content = "\n".join(
             [f"<MEMORY created_at={str(memory.created_at)}>{memory.content}</MEMORY>" for memory in old_memories]
         )
-        system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new memory is duplicated with existing old memories.
+        system_message = f"""You are a semantic memory management agent. Your task is to decide whether the new memory should be added to the memory system or ignored as a duplicate.
+
 Considerations:
-- Time-based order: Each old memory has a creation time. Please take creation time into consideration.
-- Repeated behavior: If the new memory indicates a repeated idea over a period of time, it should be added to reflect the pattern.
-Return value:
-- Add: add new memory while keep old memories
-- Ignore: indicates that this memory is similar to an older memory and should be ignored
+1.	Context Overlap:
+If the new memory conveys information that is substantially covered by an existing memory, it should be ignored.
+If the new memory adds unique or specific information not present in any old memory, it should be added.
+2.	Granularity of Detail:
+Broader or more general memories should not replace specific ones. However, a specific detail can replace a general statement if it conveys the same underlying idea.
+For example:
+Old memory: “The user enjoys hiking in national parks.”
+New memory: “The user enjoys hiking in Yellowstone National Park.”
+Result: Ignore (The older memory already encompasses the specific case).
+3.	Repeated Patterns:
+If the new memory reinforces a pattern of behavior over time (e.g., multiple mentions of a recurring habit, preference, or routine), it should be added to reflect this trend.
+4.	Temporal Relevance:
+If the new memory reflects a significant change or update to the old memory, it should be added.
+For example:
+Old memory: “The user is planning a trip to Japan.”
+New memory: “The user has canceled their trip to Japan.”
+Result: Add (The new memory reflects a change).
+
+Process:
+	1.	Compare the specificity, unique details, and time relevance of the new memory against old memories.
+	2.	Decide whether to add or ignore based on the considerations above.
+	3.	Provide a clear and concise justification for your decision.
+
 Here are the old memories:
 {old_memory_content}
+
 Here is the new memory:
 {new_memory} created at {str(datetime.datetime.now())}
 """  # noqa: E501
@@ -284,6 +339,9 @@ Here is the new memory:
             else:
                 # we explicitly ignore internal messages
                 continue
+        topics = "\n".join(
+            [f"<MEMORY_TOPIC NAME={topic.name}>{topic.description}</MEMORY_TOPIC>" for topic in self.topics]
+        )
 
         existing_memories_str = ""
         if existing_memories:
@@ -296,11 +354,7 @@ Here is the new memory:
 that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
 Prioritize:
-- General Interests and Preferences: When a user mentions specific events or actions, focus on the underlying
-interests, hobbies, or preferences they reveal (e.g., if the user mentions attending a conference, focus on the topic of the conference,
-not the date or location).
-- Facts or Details about user: Extract facts that describe relevant information about the user, such as details about things they own.
-- Facts about the user that the assistant might find useful.
+{topics}
 
 Avoid:
 - Extraction memories that already exist in the system. If a fact is already stored, ignore it.
@@ -313,7 +367,6 @@ Here is the transcript of the conversation:
 {messages_str}
 </TRANSCRIPT>
 """  # noqa: E501
-
         llm_messages = [
             {"role": "system", "content": system_message},
             {

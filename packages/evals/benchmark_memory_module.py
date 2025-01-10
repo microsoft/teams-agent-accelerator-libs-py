@@ -16,9 +16,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.core.memory_module import MemoryModule
-from memory_module.interfaces.types import AssistantMessage, UserMessage
+from memory_module.interfaces.types import AssistantMessage, RetrievalConfig, UserMessage
 
-from evals.helpers import Dataset, DatasetItem, load_dataset, setup_mlflow
+from evals.helpers import Dataset, DatasetItem, SessionMessage, load_dataset, setup_mlflow
 from evals.metrics import string_check_metric
 
 setup_mlflow(experiment_name="memory_module")
@@ -48,7 +48,7 @@ class MemoryModuleManager:
         os.remove(self._db_path)
 
 
-async def add_messages(memory_module: MemoryModule, messages: List[dict]):
+async def add_messages(memory_module: MemoryModule, messages: List[SessionMessage]):
     def create_message(**kwargs):
         params = {
             "id": str(uuid.uuid4()),
@@ -94,7 +94,7 @@ def run_benchmark(
         # buffer size has to be the same as the session length to trigger sm processing
         with MemoryModuleManager(buffer_size=len(session)) as memory_module:
             await add_messages(memory_module, messages=session)
-            memories = await memory_module.retrieve_memories(query, user_id=None, limit=None)
+            memories = await memory_module.retrieve_memories(None, RetrievalConfig(query=query, limit=None))
 
         return {
             "input": {

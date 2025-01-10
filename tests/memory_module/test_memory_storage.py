@@ -6,9 +6,10 @@ import pytest
 from memory_module.interfaces.types import (
     AssistantMessageInput,
     BaseMemoryInput,
-    EmbedText,
     MemoryType,
     ShortTermMemoryRetrievalConfig,
+    TextEmbedding,
+    Topic,
     UserMessageInput,
 )
 from memory_module.storage.in_memory_storage import InMemoryStorage
@@ -90,10 +91,10 @@ async def test_retrieve_memories(memory_storage, sample_memory_input, sample_emb
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=sample_embedding)
 
     # Create query embedding
-    query = EmbedText(text="test query", embedding_vector=sample_embedding[0])
+    query = TextEmbedding(text="test query", embedding_vector=sample_embedding[0])
 
     # Retrieve memories
-    memories = await memory_storage.retrieve_memories(query, "test_user", limit=1)
+    memories = await memory_storage.retrieve_memories(user_id="test_user", text_embedding=query, limit=1)
     assert len(memories) > 0
     assert memories[0].content == sample_memory_input.content
 
@@ -109,9 +110,9 @@ async def test_retrieve_memories_multiple_embeddings(memory_storage, sample_memo
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=embeddings)
 
     # Query should match the second embedding better
-    query = EmbedText(text="test query", embedding_vector=[1.0] * 1536)
+    query = TextEmbedding(text="test query", embedding_vector=[1.0] * 1536)
 
-    memories = await memory_storage.retrieve_memories(query, "test_user", limit=1)
+    memories = await memory_storage.retrieve_memories(user_id="test_user", text_embedding=query, limit=1)
     assert len(memories) == 1
 
 
@@ -327,3 +328,167 @@ async def test_get_messages(memory_storage):
     assert result[memory_id_1][0].id == "msg1"
     assert result[memory_id_1][1].id == "msg2"
     assert result[memory_id_2][0].id == "msg2"
+
+
+@pytest.mark.asyncio
+async def test_retrieve_memories_by_topic(memory_storage, sample_embedding):
+    # Store memories with different topics
+    memory1 = BaseMemoryInput(
+        content="Memory about AI",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["AI"],
+    )
+    memory2 = BaseMemoryInput(
+        content="Memory about nature",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["nature"],
+    )
+
+    await memory_storage.store_memory(memory1, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(memory2, embedding_vectors=sample_embedding)
+
+    # Retrieve memories by single topic
+    memories = await memory_storage.retrieve_memories(
+        user_id="test_user", topics=[Topic(name="AI", description="")], limit=10
+    )
+    assert len(memories) == 1
+    assert memories[0].content == "Memory about AI"
+    assert "AI" in memories[0].topics
+
+    # Test with non-existent topic
+    memories = await memory_storage.retrieve_memories(
+        user_id="test_user", topics=[Topic(name="non_existent_topic", description="")], limit=10
+    )
+    assert len(memories) == 0
+
+
+@pytest.mark.asyncio
+async def test_retrieve_memories_by_topic_and_embedding(memory_storage, sample_embedding):
+    # Store memories with different topics
+    memory1 = BaseMemoryInput(
+        content="Technical discussion about artificial intelligence",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["AI"],
+    )
+    memory2 = BaseMemoryInput(
+        content="Another AI related memory but less relevant",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["AI"],
+    )
+
+    await memory_storage.store_memory(memory1, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(memory2, embedding_vectors=[[0.2] * 1536])  # Less similar embedding
+
+    # Create query embedding
+    query = TextEmbedding(text="AI technology", embedding_vector=sample_embedding[0])
+
+    # Retrieve memories using both topic and semantic similarity
+    memories = await memory_storage.retrieve_memories(
+        user_id="test_user", text_embedding=query, topics=[Topic(name="AI", description="")], limit=2
+    )
+
+    assert len(memories) == 1
+    assert memories[0].content == "Technical discussion about artificial intelligence"
+
+
+@pytest.mark.asyncio
+async def test_retrieve_memories_with_multiple_topics(memory_storage, sample_embedding):
+    # Store memories with multiple topics
+    memory1 = BaseMemoryInput(
+        content="Memory about AI and robotics",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["AI", "robotics"],
+    )
+    memory2 = BaseMemoryInput(
+        content="Memory about AI and machine learning",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["AI", "machine learning"],
+    )
+    memory3 = BaseMemoryInput(
+        content="Memory about nature",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["nature"],
+    )
+
+    await memory_storage.store_memory(memory1, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(memory2, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(memory3, embedding_vectors=sample_embedding)
+
+    # Retrieve memories by AI topic (should get both AI-related memories)
+    memories = await memory_storage.retrieve_memories(
+        user_id="test_user", topics=[Topic(name="AI", description="")], limit=10
+    )
+    assert len(memories) == 2
+    assert all("AI" in memory.topics for memory in memories)
+
+    # Retrieve memories by robotics topic (should get only the robotics memory)
+    memories = await memory_storage.retrieve_memories(
+        user_id="test_user", topics=[Topic(name="robotics", description="")], limit=10
+    )
+    assert len(memories) == 1
+    assert "robotics" in memories[0].topics
+    assert memories[0].content == "Memory about AI and robotics"
+
+
+@pytest.mark.asyncio
+async def test_retrieve_memories_with_multiple_topics_parameter(memory_storage, sample_embedding):
+    # Store memories with multiple topics
+    memory1 = BaseMemoryInput(
+        content="Memory about AI and robotics",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["AI", "robotics"],
+    )
+    memory2 = BaseMemoryInput(
+        content="Memory about AI and machine learning",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["AI", "machine learning"],
+    )
+    memory3 = BaseMemoryInput(
+        content="Memory about nature",
+        created_at=datetime.now(),
+        user_id="test_user",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=[],
+        topics=["nature"],
+    )
+
+    await memory_storage.store_memory(memory1, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(memory2, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(memory3, embedding_vectors=sample_embedding)
+
+    # Retrieve memories by multiple topics
+    memories = await memory_storage.retrieve_memories(
+        user_id="test_user", topics=[Topic(name="AI", description=""), Topic(name="robotics", description="")], limit=10
+    )
+
+    # Should get both AI-related memories
+    assert len(memories) == 2
+    assert any("robotics" in memory.topics for memory in memories)
+    assert all("AI" in memory.topics for memory in memories)

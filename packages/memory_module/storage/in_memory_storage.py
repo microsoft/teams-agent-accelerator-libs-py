@@ -14,13 +14,14 @@ from memory_module.interfaces.types import (
     AssistantMessage,
     AssistantMessageInput,
     BaseMemoryInput,
-    EmbedText,
     InternalMessage,
     InternalMessageInput,
     Memory,
     Message,
     MessageInput,
     ShortTermMemoryRetrievalConfig,
+    TextEmbedding,
+    Topic,
     UserMessage,
     UserMessageInput,
 )
@@ -112,26 +113,54 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         return message_obj
 
     async def retrieve_memories(
-        self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
+        self,
+        *,
+        user_id: Optional[str],
+        text_embedding: Optional[TextEmbedding] = None,
+        topics: Optional[List[Topic]] = None,
+        limit: Optional[int] = None,
     ) -> List[Memory]:
         limit = limit or self.default_limit
-        sorted_memories: list[_MemorySimilarity] = []
+        memories = []
 
-        for memory_id, embeddings in self.storage["embeddings"].items():
-            memory = self.storage["memories"][memory_id]
-            if user_id and memory.user_id != user_id:
-                continue
+        # Filter memories by user_id and topics first
+        filtered_memories = list(self.storage["memories"].values())
+        if user_id:
+            filtered_memories = [m for m in filtered_memories if m.user_id == user_id]
+        if topics:
+            filtered_memories = [
+                m for m in filtered_memories if m.topics and any(topic.name in m.topics for topic in topics)
+            ]
 
-            # Find the embedding with highest similarity (lowest distance)
-            best_similarity = float("-inf")
-            for embedding in embeddings:
-                similarity = self._cosine_similarity(embedText.embedding_vector, embedding)
-                best_similarity = max(best_similarity, similarity)
+        # If we have text_embedding, calculate similarities and sort
+        if text_embedding:
+            sorted_memories: list[_MemorySimilarity] = []
 
-            sorted_memories.append(_MemorySimilarity(memory, best_similarity))
+            for memory in filtered_memories:
+                embeddings = self.storage["embeddings"].get(memory.id, [])
+                if not embeddings:
+                    continue
 
-        sorted_memories.sort(key=lambda x: x.similarity, reverse=True)
-        return [Memory(**item.memory.__dict__) for item in sorted_memories[:limit]]
+                # Find the embedding with lowest distance
+                best_distance = float("inf")
+                for embedding in embeddings:
+                    distance = self.l2_distance(text_embedding.embedding_vector, embedding)
+                    best_distance = min(best_distance, distance)
+
+                # Filter based on distance threshold
+                if best_distance > 1.0:  # adjust threshold as needed
+                    continue
+
+                sorted_memories.append(_MemorySimilarity(memory, best_distance))
+
+            # Sort by distance (ascending instead of descending)
+            sorted_memories.sort(key=lambda x: x.similarity)
+            memories = [Memory(**item.memory.__dict__) for item in sorted_memories[:limit]]
+        else:
+            # If no embedding, sort by created_at
+            memories = sorted(filtered_memories, key=lambda x: x.created_at, reverse=True)[:limit]
+
+        return memories
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return [
@@ -169,8 +198,12 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             self.storage["embeddings"].pop(memory_id, None)
             self.storage["memories"].pop(memory_id, None)
 
-    def _cosine_similarity(self, memory_vector: List[float], query_vector: List[float]) -> float:
-        return np.dot(np.array(query_vector), np.array(memory_vector))
+    def l2_distance(self, memory_vector: List[float], query_vector: List[float]) -> float:
+        memory_array = np.array(memory_vector)
+        query_array = np.array(query_vector)
+
+        # Compute L2 (Euclidean) distance: sqrt(sum((a-b)^2))
+        return np.sqrt(np.sum((memory_array - query_array) ** 2))
 
     async def clear_memories(self, user_id: str) -> None:
         memory_ids_for_user = [

@@ -3,11 +3,12 @@ from typing import Dict, List, Optional
 
 from memory_module.interfaces.types import (
     BaseMemoryInput,
-    EmbedText,
     Memory,
     Message,
     MessageInput,
     ShortTermMemoryRetrievalConfig,
+    TextEmbedding,
+    Topic,
 )
 
 
@@ -47,7 +48,12 @@ class BaseMemoryStorage(ABC):
 
     @abstractmethod
     async def retrieve_memories(
-        self, embedText: EmbedText, user_id: Optional[str], limit: Optional[int] = None
+        self,
+        *,
+        user_id: Optional[str],
+        text_embedding: Optional[TextEmbedding] = None,
+        topics: Optional[List[Topic]] = None,
+        limit: Optional[int] = None,
     ) -> List[Memory]:
         """Retrieve memories based on a query.
 
