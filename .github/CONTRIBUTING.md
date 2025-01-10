@@ -14,6 +14,7 @@ provided by the bot. You will only need to do this once across all repos using o
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 2. `uv sync` - it installs the virtual env and dependencies
+    - If you are using Windows, you may need to manually install [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 3. Activate virtual env - `source .venv/bin/activate` _(for Windows it is `.venv\Scripts\Activate`)_
 
 ## See related
