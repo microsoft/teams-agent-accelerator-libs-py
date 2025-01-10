@@ -116,8 +116,10 @@ def memory_module(config, monkeypatch):
 @pytest_asyncio.fixture(autouse=True)
 async def cleanup_scheduled_events(memory_module):
     """Fixture to cleanup scheduled events after each test."""
-    yield
-    await memory_module.message_queue.message_buffer.scheduler.cleanup()
+    try:
+        yield
+    finally:
+        await memory_module.message_queue.message_buffer.scheduler.cleanup()
 
 
 @pytest.mark.asyncio
@@ -342,7 +344,7 @@ async def _validate_decision(memory_module, message: List[UserMessageInput], exp
     assert extraction.action == "add" and extraction.facts
     for fact in extraction.facts:
         decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, "user-123")
-        assert decision == expected_decision
+        assert decision.decision == expected_decision
 
 
 @pytest.mark.asyncio

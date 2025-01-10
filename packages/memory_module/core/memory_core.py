@@ -134,7 +134,7 @@ class MemoryCore(BaseMemoryCore):
         if extraction.action == "add" and extraction.facts:
             for fact in extraction.facts:
                 decision = await self._get_add_memory_processing_decision(fact.text, author_id)
-                if decision == "ignore":
+                if decision.decision == "ignore":
                     logger.info(f"Decision to ignore fact {fact.text}")
                     continue
                 metadata = await self._extract_metadata_from_fact(fact.text)
@@ -194,10 +194,12 @@ class MemoryCore(BaseMemoryCore):
         await self.storage.remove_messages(message_ids)
         logger.info("messages {} are removed".format(",".join(message_ids)))
 
-    async def _get_add_memory_processing_decision(self, new_memory_fact: str, user_id: Optional[str]) -> str:
+    async def _get_add_memory_processing_decision(
+        self, new_memory_fact: str, user_id: Optional[str]
+    ) -> ProcessSemanticMemoryDecision:
         similar_memories = await self.retrieve_memories(new_memory_fact, user_id, None)
         decision = await self._extract_memory_processing_decision(new_memory_fact, similar_memories, user_id)
-        return decision.decision
+        return decision
 
     async def _extract_memory_processing_decision(
         self, new_memory: str, old_memories: List[Memory], user_id: Optional[str]
