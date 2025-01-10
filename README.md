@@ -24,7 +24,7 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### Installing
 
-1. `uv sync` - it installs the virtual env and dependencies
+1. `uv sync` - it installs the virtual env and dependencies. We recommend using uv >=0.5.16.
 2. Activate virtual env
 
 - Mac: `source .venv/bin/activate`

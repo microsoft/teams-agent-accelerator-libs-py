@@ -13,7 +13,7 @@ provided by the bot. You will only need to do this once across all repos using o
 ## Quick start
 
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
-2. `uv sync` - it installs the virtual env and dependencies
+2. `uv sync` - it installs the virtual env and dependencies. We recommend using uv >=0.5.16.
 3. Activate virtual env - `source .venv/bin/activate` _(for Windows it is `.venv\Scripts\Activate`)_
 
 ## See related
