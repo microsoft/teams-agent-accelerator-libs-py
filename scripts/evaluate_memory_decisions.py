@@ -6,8 +6,6 @@ from typing import cast
 from uuid import uuid4
 
 from memory_module import MemoryModule, MemoryModuleConfig, UserMessageInput
-from memory_module.core.message_buffer import MessageBuffer
-from memory_module.core.message_queue import MessageQueue
 from memory_module.core.scheduler import Scheduler
 from tqdm import tqdm
 
@@ -204,10 +202,7 @@ async def main():
                 print("-" * 50)
 
     # Cleanup
-    message_queue = cast(MessageQueue, memory_module.message_queue)
-    message_buffer = cast(MessageBuffer, message_queue.message_buffer)
-    scheduler = cast(Scheduler, message_buffer.scheduler)
-    await scheduler.cleanup()
+    await cast(Scheduler, memory_module.message_queue.message_buffer.scheduler).cleanup()
 
 
 if __name__ == "__main__":
