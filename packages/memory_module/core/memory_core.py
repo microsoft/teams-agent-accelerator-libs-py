@@ -208,15 +208,35 @@ class MemoryCore(BaseMemoryCore):
         old_memory_content = "\n".join(
             [f"<MEMORY created_at={str(memory.created_at)}>{memory.content}</MEMORY>" for memory in old_memories]
         )
-        system_message = f"""You are a semantic memory management agent. Your goal is to determine whether this new memory is duplicated with existing old memories.
+        system_message = f"""You are a semantic memory management agent. Your task is to decide whether the new memory should be added to the memory system or ignored as a duplicate.
+
 Considerations:
-- Time-based order: Each old memory has a creation time. Please take creation time into consideration.
-- Repeated behavior: If the new memory indicates a repeated idea over a period of time, it should be added to reflect the pattern.
-Return value:
-- Add: add new memory while keep old memories
-- Ignore: indicates that this memory is similar to an older memory and should be ignored
+1.	Context Overlap:
+If the new memory conveys information that is substantially covered by an existing memory, it should be ignored.
+If the new memory adds unique or specific information not present in any old memory, it should be added.
+2.	Granularity of Detail:
+Broader or more general memories should not replace specific ones. However, a specific detail can replace a general statement if it conveys the same underlying idea.
+For example:
+Old memory: “The user enjoys hiking in national parks.”
+New memory: “The user enjoys hiking in Yellowstone National Park.”
+Result: Ignore (The older memory already encompasses the specific case).
+3.	Repeated Patterns:
+If the new memory reinforces a pattern of behavior over time (e.g., multiple mentions of a recurring habit, preference, or routine), it should be added to reflect this trend.
+4.	Temporal Relevance:
+If the new memory reflects a significant change or update to the old memory, it should be added.
+For example:
+Old memory: “The user is planning a trip to Japan.”
+New memory: “The user has canceled their trip to Japan.”
+Result: Add (The new memory reflects a change).
+
+Process:
+	1.	Compare the specificity, unique details, and time relevance of the new memory against old memories.
+	2.	Decide whether to add or ignore based on the considerations above.
+	3.	Provide a clear and concise justification for your decision.
+
 Here are the old memories:
 {old_memory_content}
+
 Here is the new memory:
 {new_memory} created at {str(datetime.datetime.now())}
 """  # noqa: E501
