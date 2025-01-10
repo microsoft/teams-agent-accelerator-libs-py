@@ -135,13 +135,13 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return [
-            self.storage["memories"][memory_id].copy()
+            self.storage["memories"][memory_id].model_copy()
             for memory_id in memory_ids
             if memory_id in self.storage["memories"]
         ]
 
     async def get_user_memories(self, user_id: str) -> List[Memory]:
-        return [memory.copy() for memory in self.storage["memories"].values() if memory.user_id == user_id]
+        return [memory.model_copy() for memory in self.storage["memories"].values() if memory.user_id == user_id]
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         messages_dict: Dict[str, List[Message]] = {}
