@@ -300,10 +300,10 @@ async def test_add_memory_processing_decision(memory_module):
         assert extraction.action == "add" and extraction.facts
         for fact in extraction.facts:
             decision = await memory_module.memory_core._get_add_memory_processing_decision(fact, "user-123")
-            if decision != expected_decision:
+            if decision.decision != expected_decision:
                 # Adding this because this test is flaky and it would be good to know why.
                 print(f"Decision: {decision}, Expected: {expected_decision}", fact, decision)
-            assert decision == expected_decision
+            assert decision.decision == expected_decision
 
     conversation_id = str(uuid4())
     old_messages = [
