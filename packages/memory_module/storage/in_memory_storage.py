@@ -29,7 +29,7 @@ from memory_module.interfaces.types import (
 
 class InMemoryInternalStore(TypedDict):
     memories: Dict[str, Memory]
-    embeddings: Dict[str, List[List[float]]]
+    embeddings: Dict[str, List[TextEmbedding]]
     buffered_messages: Dict[str, List[Message]]
     scheduled_events: Dict[str, Event]
     messages: Dict[str, List[Message]]
@@ -54,7 +54,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self,
         memory: BaseMemoryInput,
         *,
-        embedding_vectors: List[List[float]],
+        embedding_vectors: List[TextEmbedding],
     ) -> str | None:
         memory_id = str(len(self.storage["memories"]) + 1)
         memory_obj = Memory(**memory.model_dump(), id=memory_id)
@@ -62,7 +62,9 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         self.storage["embeddings"][memory_id] = embedding_vectors
         return memory_id
 
-    async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
+    async def update_memory(
+        self, memory_id: str, updated_memory: str, *, embedding_vectors: List[TextEmbedding]
+    ) -> None:
         if memory_id in self.storage["memories"]:
             self.storage["memories"][memory_id].content = updated_memory
             self.storage["embeddings"][memory_id] = embedding_vectors
@@ -144,7 +146,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                 # Find the embedding with lowest distance
                 best_distance = float("inf")
                 for embedding in embeddings:
-                    distance = self.l2_distance(text_embedding.embedding_vector, embedding)
+                    distance = self.l2_distance(text_embedding.embedding_vector, embedding.embedding_vector)
                     best_distance = min(best_distance, distance)
 
                 # Filter based on distance threshold
@@ -153,7 +155,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
 
                 sorted_memories.append(_MemorySimilarity(memory, best_distance))
 
-            # Sort by distance (ascending instead of descending)
+            # Sort by distance (ascending)
             sorted_memories.sort(key=lambda x: x.similarity)
             memories = [Memory(**item.memory.__dict__) for item in sorted_memories[:limit]]
         else:

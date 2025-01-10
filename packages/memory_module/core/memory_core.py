@@ -145,7 +145,8 @@ class MemoryCore(BaseMemoryCore):
                 if decision.decision == "ignore":
                     logger.info(f"Decision to ignore fact {fact.text}")
                     continue
-                metadata = await self._extract_metadata_from_fact(fact.text)
+                topics = [topic for topic in self.topics if topic.name in fact.topics] if fact.topics else None
+                metadata = await self._extract_metadata_from_fact(fact.text, topics)
                 message_ids = set(messages[idx].id for idx in fact.message_indices if idx < len(messages))
                 memory = BaseMemoryInput(
                     content=fact.text,
@@ -187,7 +188,7 @@ class MemoryCore(BaseMemoryCore):
         3. Possibly rerank or filter results
         """
         if query:
-            text_embedding = TextEmbedding(text=query, embedding_vector=await self._get_query_embedding(query))
+            text_embedding = await self._get_query_embedding(query)
         else:
             text_embedding = None
 
@@ -280,7 +281,7 @@ Here is the new memory:
         decision = await self.lm.completion(messages=messages, response_model=ProcessSemanticMemoryDecision)
         return decision
 
-    async def _extract_metadata_from_fact(self, fact: str) -> MessageDigest:
+    async def _extract_metadata_from_fact(self, fact: str, topics: Optional[List[Topic]] = None) -> MessageDigest:
         """Extract meaningful information from the fact using LLM.
 
         Args:
@@ -289,25 +290,31 @@ Here is the new memory:
         Returns:
             MemoryDigest containing the summary, importance, and key points from the fact.
         """
+        if topics:
+            topics_str = "\n".join([f"{topic.name}: {topic.description}" for topic in topics])
+            topics_str = f"This specific fact is related to the following topics:\n{topics_str}\nConsider these when extracting the metadata."  # noqa: E501
+        else:
+            topics_str = ""
+
         return await self.lm.completion(
             messages=[
                 {
                     "role": "system",
-                    "content": "Your role is to rephrase the text in your own words and provide a summary of the text.",
+                    "content": f"""Your role is to rephrase the text in your own words and provide a summary of the text.\n{topics_str}""",  # noqa: E501
                 },
                 {"role": "user", "content": fact},
             ],
             response_model=MessageDigest,
         )
 
-    async def _get_query_embedding(self, query: str) -> List[float]:
+    async def _get_query_embedding(self, query: str) -> TextEmbedding:
         """Create embedding for memory content."""
         res: EmbeddingResponse = await self.lm.embedding(input=[query])
-        return res.data[0]["embedding"]
+        return TextEmbedding(text=query, embedding_vector=res.data[0]["embedding"])
 
     async def _get_semantic_fact_embeddings(
         self, fact: str, metadata: Optional[MessageDigest] = None
-    ) -> List[List[float]]:
+    ) -> List[TextEmbedding]:
         """Create embedding for semantic fact and metadata."""
         embedding_input = [fact]
         if metadata is not None:
@@ -315,7 +322,11 @@ Here is the new memory:
                 [metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
             )
         res: EmbeddingResponse = await self.lm.embedding(input=embedding_input)
-        return [data["embedding"] for data in res.data]
+
+        return [
+            TextEmbedding(text=text, embedding_vector=data["embedding"])
+            for text, data in zip(embedding_input, res.data, strict=False)
+        ]
 
     async def _extract_semantic_fact_from_messages(
         self, messages: List[Message], existing_memories: Optional[List[Memory]] = None

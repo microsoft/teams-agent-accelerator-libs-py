@@ -53,7 +53,7 @@ def sample_message():
 @pytest.fixture
 def sample_embedding():
     # dims = 1536
-    return [[0.1] * 1536]
+    return [TextEmbedding(text="Test memory content", embedding_vector=[0.1] * 1536)]
 
 
 @pytest.mark.asyncio
@@ -91,7 +91,7 @@ async def test_retrieve_memories(memory_storage, sample_memory_input, sample_emb
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=sample_embedding)
 
     # Create query embedding
-    query = TextEmbedding(text="test query", embedding_vector=sample_embedding[0])
+    query = TextEmbedding(text="test query", embedding_vector=sample_embedding[0].embedding_vector)
 
     # Retrieve memories
     memories = await memory_storage.retrieve_memories(user_id="test_user", text_embedding=query, limit=1)
@@ -103,8 +103,8 @@ async def test_retrieve_memories(memory_storage, sample_memory_input, sample_emb
 async def test_retrieve_memories_multiple_embeddings(memory_storage, sample_memory_input):
     # Test with multiple embeddings per memory
     embeddings = [
-        [0.1] * 1536,  # First embedding with low similarity
-        [1.0] * 1536,  # Second embedding with high similarity
+        TextEmbedding(text="First embedding", embedding_vector=[0.1] * 1536),  # Low similarity
+        TextEmbedding(text="Second embedding", embedding_vector=[1.0] * 1536),  # High similarity
     ]
 
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=embeddings)
@@ -389,10 +389,12 @@ async def test_retrieve_memories_by_topic_and_embedding(memory_storage, sample_e
     )
 
     await memory_storage.store_memory(memory1, embedding_vectors=sample_embedding)
-    await memory_storage.store_memory(memory2, embedding_vectors=[[0.2] * 1536])  # Less similar embedding
+    await memory_storage.store_memory(
+        memory2, embedding_vectors=[TextEmbedding(text="Less relevant", embedding_vector=[0.2] * 1536)]
+    )  # Less similar embedding
 
     # Create query embedding
-    query = TextEmbedding(text="AI technology", embedding_vector=sample_embedding[0])
+    query = TextEmbedding(text="AI technology", embedding_vector=sample_embedding[0].embedding_vector)
 
     # Retrieve memories using both topic and semantic similarity
     memories = await memory_storage.retrieve_memories(

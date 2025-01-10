@@ -31,10 +31,10 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         self.db_path = db_path or DEFAULT_DB_PATH
         self.storage = SQLiteStorage(self.db_path)
 
-    async def store_memory(self, memory: BaseMemoryInput, *, embedding_vectors: List[List[float]]) -> str:
+    async def store_memory(self, memory: BaseMemoryInput, *, embedding_vectors: List[TextEmbedding]) -> str:
         """Store a memory and its message attributions."""
         serialized_embeddings = [
-            sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
+            sqlite_vec.serialize_float32(embedding.embedding_vector) for embedding in embedding_vectors
         ]
 
         memory_id = str(uuid.uuid4())
@@ -65,10 +65,13 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     [(memory_id, msg_id) for msg_id in memory.message_attributions],
                 )
 
-            # Store embedding in embeddings table
+            # Store embedding in embeddings table with text
             await cursor.executemany(
-                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-                [(memory_id, serialized_embedding) for serialized_embedding in serialized_embeddings],
+                "INSERT INTO embeddings (memory_id, embedding, text) VALUES (?, ?, ?)",
+                [
+                    (memory_id, serialized_embedding, embedding.text)
+                    for serialized_embedding, embedding in zip(serialized_embeddings, embedding_vectors, strict=False)
+                ],
             )
 
             await cursor.execute(
@@ -82,10 +85,12 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             )
         return memory_id
 
-    async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
+    async def update_memory(
+        self, memory_id: str, updated_memory: str, *, embedding_vectors: List[TextEmbedding]
+    ) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         serialized_embeddings = [
-            sqlite_vec.serialize_float32(embedding_vector) for embedding_vector in embedding_vectors
+            sqlite_vec.serialize_float32(embedding.embedding_vector) for embedding in embedding_vectors
         ]
 
         async with self.storage.transaction() as cursor:
@@ -95,10 +100,13 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             # remove all the embeddings for this memory
             await cursor.execute("DELETE FROM embeddings WHERE memory_id = ?", (memory_id,))
 
-            # Update embedding in embeddings table
+            # Update embedding in embeddings table with text
             await cursor.executemany(
-                "INSERT INTO embeddings (memory_id, embedding) VALUES (?, ?)",
-                [(memory_id, serialized_embedding) for serialized_embedding in serialized_embeddings],
+                "INSERT INTO embeddings (memory_id, embedding, text) VALUES (?, ?, ?)",
+                [
+                    (memory_id, serialized_embedding, embedding.text)
+                    for serialized_embedding, embedding in zip(serialized_embeddings, embedding_vectors, strict=False)
+                ],
             )
 
             await cursor.execute(
@@ -147,10 +155,11 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 JOIN (
                     SELECT
                         e.memory_id,
-                        distance
+                        MIN(distance) as distance
                     FROM vec_items
                     JOIN embeddings e ON vec_items.memory_embedding_id = e.id
                     WHERE vec_items.embedding MATCH ? AND K = ? AND distance < ?
+                    GROUP BY e.memory_id
                 ) rm ON m.id = rm.memory_id
             """
             distance_select = ", rm.distance as _distance"
