@@ -496,7 +496,7 @@ async def test_topic_extraction(memory_module):
         {
             "topics": [
                 Topic(name="Device Type", description="The type of device the user has"),
-                Topic(name="Operating System", description="The user's operating system"),
+                Topic(name="Operating System", description="The operating system for the user's device"),
                 Topic(name="Device year", description="The year of the user's device"),
             ],
             "buffer_size": 10,
@@ -540,7 +540,6 @@ async def test_retrieve_memories_by_topic(memory_module):
         "user-123",
         RetrievalConfig(topic=Topic(name="Operating System", description="The user's operating system")),
     )
-
     assert all("Operating System" in memory.topics for memory in os_memories)
     assert any("windows 11" in memory.content.lower() for memory in os_memories)
     assert any("sonoma" in memory.content.lower() for memory in os_memories)
