@@ -17,6 +17,7 @@ dev = [
     "watchdog>=5.0.3",
     "customer-service-agent-sample",
     "mypy>=1.14.0",
+    "pytest-retry>=1.6.3",
 ]
 
 [tool.uv.sources]
