@@ -52,8 +52,12 @@ def sample_message():
 
 @pytest.fixture
 def sample_embedding():
-    # dims = 1536
-    return [TextEmbedding(text="Test memory content", embedding_vector=[0.1] * 1536)]
+    # Create a normalized vector for cosine similarity
+    vector = [1.0] * 1536  # All ones
+    # Normalize to unit length
+    magnitude = (1536) ** 0.5  # sqrt(sum of squares)
+    normalized = [x / magnitude for x in vector]
+    return [TextEmbedding(text="Test memory content", embedding_vector=normalized)]
 
 
 @pytest.mark.asyncio
@@ -102,15 +106,23 @@ async def test_retrieve_memories(memory_storage, sample_memory_input, sample_emb
 @pytest.mark.asyncio
 async def test_retrieve_memories_multiple_embeddings(memory_storage, sample_memory_input):
     # Test with multiple embeddings per memory
+    # Create two normalized vectors with different distances
+    vector1 = [-1.0] * 1536  # Will give distance of 2 (opposite direction)
+    vector2 = [1.0] * 1536  # Will give distance of 0 (same direction)
+    magnitude1 = (sum(x * x for x in vector1)) ** 0.5
+    magnitude2 = (sum(x * x for x in vector2)) ** 0.5
+
     embeddings = [
-        TextEmbedding(text="First embedding", embedding_vector=[0.1] * 1536),  # Low similarity
-        TextEmbedding(text="Second embedding", embedding_vector=[1.0] * 1536),  # High similarity
+        TextEmbedding(text="First embedding", embedding_vector=[x / magnitude1 for x in vector1]),  # High distance
+        TextEmbedding(text="Second embedding", embedding_vector=[x / magnitude2 for x in vector2]),  # Low distance
     ]
 
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=embeddings)
 
-    # Query should match the second embedding better
-    query = TextEmbedding(text="test query", embedding_vector=[1.0] * 1536)
+    # Query with normalized vector matching second embedding (distance = 0)
+    query_vector = [1.0] * 1536
+    query_magnitude = (sum(x * x for x in query_vector)) ** 0.5
+    query = TextEmbedding(text="test query", embedding_vector=[x / query_magnitude for x in query_vector])
 
     memories = await memory_storage.retrieve_memories(user_id="test_user", text_embedding=query, limit=1)
     assert len(memories) == 1
@@ -389,14 +401,18 @@ async def test_retrieve_memories_by_topic_and_embedding(memory_storage, sample_e
     )
 
     await memory_storage.store_memory(memory1, embedding_vectors=sample_embedding)
-    await memory_storage.store_memory(
-        memory2, embedding_vectors=[TextEmbedding(text="Less relevant", embedding_vector=[0.2] * 1536)]
-    )  # Less similar embedding
 
-    # Create query embedding
+    # Create vector with higher distance (opposite direction)
+    vector = [-1.0] * 1536
+    magnitude = (sum(x * x for x in vector)) ** 0.5
+    await memory_storage.store_memory(
+        memory2,
+        embedding_vectors=[TextEmbedding(text="Less relevant", embedding_vector=[x / magnitude for x in vector])],
+    )
+
+    # Create query embedding (same as sample_embedding for low distance)
     query = TextEmbedding(text="AI technology", embedding_vector=sample_embedding[0].embedding_vector)
 
-    # Retrieve memories using both topic and semantic similarity
     memories = await memory_storage.retrieve_memories(
         user_id="test_user", text_embedding=query, topics=[Topic(name="AI", description="")], limit=2
     )

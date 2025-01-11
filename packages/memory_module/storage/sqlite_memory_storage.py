@@ -197,7 +197,6 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         )
 
         rows = await self.storage.fetch_all(query, tuple(params))
-        print(rows)
         return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
 
     async def clear_memories(self, user_id: str) -> None:
