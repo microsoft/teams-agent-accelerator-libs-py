@@ -155,6 +155,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 JOIN (
                     SELECT
                         e.memory_id,
+                        e.text,
                         MIN(distance) as distance
                     FROM vec_items
                     JOIN embeddings e ON vec_items.memory_embedding_id = e.id
@@ -162,7 +163,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                     GROUP BY e.memory_id
                 ) rm ON m.id = rm.memory_id
             """
-            distance_select = ", rm.distance as _distance"
+            distance_select = ", rm.distance as _distance, rm.text as _embedding_text"
             order_by = "ORDER BY rm.distance ASC"
             params.extend(
                 [sqlite_vec.serialize_float32(text_embedding.embedding_vector), limit or self.default_limit, 1.0]
@@ -196,6 +197,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         )
 
         rows = await self.storage.fetch_all(query, tuple(params))
+        print(rows)
         return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
 
     async def clear_memories(self, user_id: str) -> None:

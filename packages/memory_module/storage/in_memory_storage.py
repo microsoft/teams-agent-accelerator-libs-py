@@ -146,7 +146,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                 # Find the embedding with lowest distance
                 best_distance = float("inf")
                 for embedding in embeddings:
-                    distance = self.l2_distance(text_embedding.embedding_vector, embedding.embedding_vector)
+                    distance = self._cosine_distance(text_embedding.embedding_vector, embedding.embedding_vector)
                     best_distance = min(best_distance, distance)
 
                 # Filter based on distance threshold
@@ -200,12 +200,22 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             self.storage["embeddings"].pop(memory_id, None)
             self.storage["memories"].pop(memory_id, None)
 
-    def l2_distance(self, memory_vector: List[float], query_vector: List[float]) -> float:
+    def _cosine_distance(self, memory_vector: List[float], query_vector: List[float]) -> float:
         memory_array = np.array(memory_vector)
         query_array = np.array(query_vector)
 
-        # Compute L2 (Euclidean) distance: sqrt(sum((a-b)^2))
-        return np.sqrt(np.sum((memory_array - query_array) ** 2))
+        # Compute cosine similarity: dot(a, b) / (norm(a) * norm(b))
+        dot_product = np.dot(memory_array, query_array)
+        norm_a = np.linalg.norm(memory_array)
+        norm_b = np.linalg.norm(query_array)
+
+        # Convert similarity [-1, 1] to distance [0, 2]
+        # 1 (most similar) -> 0 (closest distance)
+        # -1 (least similar) -> 2 (furthest distance)
+        similarity = dot_product / (norm_a * norm_b)
+        distance = 1 - similarity  # Convert to distance [0, 2]
+
+        return distance
 
     async def clear_memories(self, user_id: str) -> None:
         memory_ids_for_user = [

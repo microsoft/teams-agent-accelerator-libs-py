@@ -53,7 +53,11 @@ class MigrationManager:
         conn.enable_load_extension(False)
         conn.execute("""
             CREATE VIRTUAL TABLE IF NOT EXISTS vec_items
-            USING vec0(memory_embedding_id INTEGER PRIMARY KEY AUTOINCREMENT, embedding float[1536]);
+            USING vec0(
+                memory_embedding_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                embedding float[1536] distance_metric=cosine,
+                text TEXT
+            );
         """)
 
     def __create_migrations_table(self, conn):
