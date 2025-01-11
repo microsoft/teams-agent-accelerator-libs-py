@@ -352,7 +352,7 @@ Here is the new memory:
             else:
                 # we explicitly ignore internal messages
                 continue
-        topics = "\n".join(
+        topics_str = "\n".join(
             [f"<MEMORY_TOPIC NAME={topic.name}>{topic.description}</MEMORY_TOPIC>" for topic in self.topics]
         )
 
@@ -368,11 +368,11 @@ Existing Memories:
 {existing_memories_str}
 """
 
-        system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests
-that will remain relevant over time, even if the user is mentioning short-term plans or events.
+        system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
-Prioritize:
-{topics}
+Consider the following topics when extracting the facts. A fact must be related to one or more of these topics:
+{topics_str}
+
 {existing_memories_str}
 Here is the transcript of the conversation:
 <TRANSCRIPT>
