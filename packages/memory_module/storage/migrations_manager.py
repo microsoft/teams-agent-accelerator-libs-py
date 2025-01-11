@@ -55,8 +55,7 @@ class MigrationManager:
             CREATE VIRTUAL TABLE IF NOT EXISTS vec_items
             USING vec0(
                 memory_embedding_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                embedding float[1536] distance_metric=cosine,
-                text TEXT
+                embedding float[1536] distance_metric=cosine
             );
         """)
 

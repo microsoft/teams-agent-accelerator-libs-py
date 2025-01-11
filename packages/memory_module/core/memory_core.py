@@ -312,15 +312,17 @@ Here is the new memory:
         res: EmbeddingResponse = await self.lm.embedding(input=[query])
         return TextEmbedding(text=query, embedding_vector=res.data[0]["embedding"])
 
-    async def _get_semantic_fact_embeddings(
-        self, fact: str, metadata: Optional[MessageDigest] = None
-    ) -> List[TextEmbedding]:
+    async def _get_semantic_fact_embeddings(self, fact: str, metadata: MessageDigest) -> List[TextEmbedding]:
         """Create embedding for semantic fact and metadata."""
-        embedding_input = [fact]
-        if metadata is not None:
-            embedding_input.extend(
-                [metadata.topic, metadata.summary, *metadata.keywords, *metadata.hypothetical_questions]
-            )
+        embedding_input = [fact]  # fact is always included
+
+        if metadata.topic:
+            embedding_input.append(metadata.topic)
+        if metadata.summary:
+            embedding_input.append(metadata.summary)
+        embedding_input.extend(kw for kw in metadata.keywords if kw)
+        embedding_input.extend(q for q in metadata.hypothetical_questions if q)
+
         res: EmbeddingResponse = await self.lm.embedding(input=embedding_input)
 
         return [
