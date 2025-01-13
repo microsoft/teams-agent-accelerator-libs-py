@@ -361,7 +361,6 @@ async def test_add_memory_processing_decision(memory_module):
 
 
 @pytest.mark.asyncio
-@pytest.mark.flaky(retries=2, delay=1)
 async def test_remove_messages(memory_module):
     conversation1_id = str(uuid4())
     conversation2_id = str(uuid4())
@@ -390,20 +389,17 @@ async def test_remove_messages(memory_module):
         await memory_module.add_message(message)
     await memory_module.message_queue.message_buffer.scheduler.flush()
 
-    stored_memories = await memory_module.memory_core.storage.get_all_memories()
-    assert len(stored_memories) == 2
-
     messages2 = [
         UserMessageInput(
             id=message3_id,
-            content="I like to go to TT for grocery shopping.",
+            content="I like to go TT for grocery shopping.",
             author_id="user-123",
             conversation_ref=conversation2_id,
             created_at=datetime.now(),
         ),
         UserMessageInput(
             id=message4_id,
-            content="I like pancakes from TT.",
+            content="I like pancake from TT.",
             author_id="user-123",
             conversation_ref=conversation3_id,
             created_at=datetime.now(),
@@ -413,6 +409,8 @@ async def test_remove_messages(memory_module):
     for message in messages2:
         await memory_module.add_message(message)
 
+    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_memories) == 2
     stored_buffer = await memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(
         [message3_id, message4_id]
     )
