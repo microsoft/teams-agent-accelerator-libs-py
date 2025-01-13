@@ -103,7 +103,7 @@ class BaseMemoryInput(BaseModel):
     updated_at: Optional[datetime] = None
     memory_type: MemoryType
     user_id: Optional[str] = None
-    message_attributions: Optional[Set[str]] = Field(default_factory=set)
+    message_attributions: Optional[Set[str]] = set()
     topics: Optional[List[str]] = None
 
 
