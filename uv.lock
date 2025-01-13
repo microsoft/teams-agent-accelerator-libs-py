@@ -1955,18 +1955,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pytest-retry"
-version = "1.6.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pytest" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9c/95/8e1be0250a5063c28a1e713b9665ce3bb76a7807096da1b8d6b36cb8856b/pytest_retry-1.6.3.tar.gz", hash = "sha256:36ccfa11c8c8f9ddad5e20375182146d040c20c4a791745139c5a99ddf1b557d", size = 19112 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/b3/fa17695ab9096f75b498642e21db59c0cbcc7d97c709daa204ee0953a72c/pytest_retry-1.6.3-py3-none-any.whl", hash = "sha256:e96f7df77ee70b0838d1085f9c3b8b5b7d74bf8947a0baf32e2b8c71b27683c8", size = 13526 },
-]
-
-[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 source = { registry = "https://pypi.org/simple" }
@@ -2465,7 +2453,6 @@ dev = [
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
-    { name = "pytest-retry" },
     { name = "ruff" },
     { name = "termcolor" },
     { name = "watchdog" },
@@ -2487,7 +2474,6 @@ dev = [
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },
-    { name = "pytest-retry", specifier = ">=1.6.3" },
     { name = "ruff", specifier = ">=0.6.5" },
     { name = "termcolor", specifier = ">=2.4.0" },
     { name = "watchdog", specifier = ">=5.0.3" },

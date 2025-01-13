@@ -292,7 +292,6 @@ async def test_short_term_memory(memory_module):
 
 
 @pytest.mark.asyncio
-@pytest.mark.flaky(retries=2, delay=1)
 async def test_add_memory_processing_decision(memory_module):
     """Test whether to process adding memory"""
 
@@ -448,7 +447,6 @@ async def test_remove_messages(memory_module):
     ],
     indirect=True,
 )
-@pytest.mark.flaky(retries=2, delay=1)
 async def test_topic_extraction(memory_module):
     conversation_id = str(uuid4())
     messages = [
@@ -480,8 +478,8 @@ async def test_topic_extraction(memory_module):
 
     await memory_module.message_queue.message_buffer.scheduler.flush()
     stored_memories = await memory_module.memory_core.storage.get_all_memories()
-    assert any("macbook" in memory.content.lower() for memory in stored_memories)
-    assert any("2024" in memory.content for memory in stored_memories)
+    assert any("macbook" in message.content.lower() for message in stored_memories)
+    assert any("2024" in message.content for message in stored_memories)
 
     # Add assertions for topics
     device_type_memory = next((m for m in stored_memories if "macbook" in m.content.lower()), None)
@@ -506,7 +504,6 @@ async def test_topic_extraction(memory_module):
     ],
     indirect=True,
 )
-@pytest.mark.flaky(retries=2, delay=1)
 async def test_retrieve_memories_by_topic(memory_module):
     """Test retrieving memories by topic only."""
     conversation_id = str(uuid4())
@@ -555,7 +552,7 @@ async def test_retrieve_memories_by_topic(memory_module):
         {
             "topics": [
                 Topic(name="Device Type", description="The type of device the user has"),
-                Topic(name="Operating System", description="The operating system for the user's device"),
+                Topic(name="Operating System", description="The user's operating system"),
                 Topic(name="Device year", description="The year of the user's device"),
             ],
             "buffer_size": 10,
@@ -563,7 +560,6 @@ async def test_retrieve_memories_by_topic(memory_module):
     ],
     indirect=True,
 )
-@pytest.mark.flaky(retries=2, delay=1)
 async def test_retrieve_memories_by_topic_and_query(memory_module):
     """Test retrieving memories using both topic and semantic search."""
     conversation_id = str(uuid4())
