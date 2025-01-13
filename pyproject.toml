@@ -3,7 +3,7 @@ name = "teams-memory-agents"
 version = "0.0.0"
 description = "a framework for creating intelligent agents within Microsoft Teams"
 readme = "README.md"
-requires-python = "==3.12"
+requires-python = ">=3.11,<3.13"
 dependencies = ["agent-runtime", "memory-module", "litellm", "evals"]
 
 [dependency-groups]
