@@ -9,6 +9,7 @@ from memory_module.interfaces.types import (
     Memory,
     Message,
     MessageInput,
+    RetrievalConfig,
     ShortTermMemoryRetrievalConfig,
     UserMessage,
     UserMessageInput,
@@ -29,6 +30,7 @@ __all__ = [
     "MessageInput",
     "AssistantMessage",
     "AssistantMessageInput",
+    "RetrievalConfig",
     "ShortTermMemoryRetrievalConfig",
     "MemoryMiddleware",
 ]

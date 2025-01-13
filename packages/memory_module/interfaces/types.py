@@ -104,6 +104,12 @@ class BaseMemoryInput(BaseModel):
     memory_type: MemoryType
     user_id: Optional[str] = None
     message_attributions: Optional[List[str]] = Field(default=[])
+    topics: Optional[List[str]] = None
+
+
+class Topic(BaseModel):
+    name: str = Field(description="A unique name of the topic that the memory module should listen to")
+    description: str = Field(description="Description of the topic")
 
 
 class Memory(BaseMemoryInput):
@@ -112,12 +118,40 @@ class Memory(BaseMemoryInput):
     id: str
 
 
-class EmbedText(BaseModel):
+class TextEmbedding(BaseModel):
     text: str
     embedding_vector: List[float]
 
 
-class ShortTermMemoryRetrievalConfig(BaseModel):
+class RetrievalConfig(BaseModel):
+    """Configuration for memory retrieval operations.
+
+    This class defines the parameters used to retrieve memories from storage. Memories can be
+    retrieved either by a semantic search query or by filtering for a specific topic or both.
+
+    In case of both, the memories are retrieved by the intersection of the two sets.
+    """
+
+    query: Optional[str] = Field(
+        default=None, description="A natural language query to search for semantically similar memories"
+    )
+    topic: Optional[Topic] = Field(
+        default=None,
+        description="Topic to filter memories by. Only memories tagged with this topic will be retrieved",
+    )
+    limit: Optional[int] = Field(
+        default=None,
+        description="Maximum number of memories to retrieve. If not specified, all matching memories are returned",
+    )
+
+    @model_validator(mode="after")
+    def check_parameters(self) -> "RetrievalConfig":
+        if self.query is None and self.topic is None:
+            raise ValueError("Either query or topic must be provided")
+        return self
+
+
+class ShortTermMemoryRetrievalConfig(RetrievalConfig):
     n_messages: Optional[int] = None  # Number of messages to retrieve
     last_minutes: Optional[float] = None  # Time frame in minutes
     before: Optional[datetime] = None  # Retrieve messages up until a specific timestamp

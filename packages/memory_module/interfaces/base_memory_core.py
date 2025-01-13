@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
-from memory_module.interfaces.types import Memory, Message, MessageInput, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import (
+    Memory,
+    Message,
+    MessageInput,
+    RetrievalConfig,
+    ShortTermMemoryRetrievalConfig,
+)
 
 
 class BaseMemoryCore(ABC):
@@ -22,7 +28,11 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
+    async def retrieve_memories(
+        self,
+        user_id: Optional[str],
+        config: RetrievalConfig,
+    ) -> List[Memory]:
         """Retrieve memories based on a query."""
         pass
 

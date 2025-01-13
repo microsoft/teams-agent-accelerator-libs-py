@@ -7,7 +7,13 @@ from memory_module.core.message_queue import MessageQueue
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.base_memory_module import BaseMemoryModule
 from memory_module.interfaces.base_message_queue import BaseMessageQueue
-from memory_module.interfaces.types import Memory, Message, MessageInput, ShortTermMemoryRetrievalConfig
+from memory_module.interfaces.types import (
+    Memory,
+    Message,
+    MessageInput,
+    RetrievalConfig,
+    ShortTermMemoryRetrievalConfig,
+)
 from memory_module.services.llm_service import LLMService
 from memory_module.utils.logging import configure_logging
 
@@ -50,10 +56,14 @@ class MemoryModule(BaseMemoryModule):
         await self.message_queue.enqueue(message_res)
         return message_res
 
-    async def retrieve_memories(self, query: str, user_id: Optional[str], limit: Optional[int]) -> List[Memory]:
+    async def retrieve_memories(
+        self,
+        user_id: Optional[str],
+        config: RetrievalConfig,
+    ) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
-        logger.debug(f"retrieve memories from (query: {query}, user_id: {user_id}, limit: {limit})")
-        memories = await self.memory_core.retrieve_memories(query, user_id, limit)
+        logger.debug(f"retrieve memories from (query: {config.query}, user_id: {user_id}, limit: {config.limit})")
+        memories = await self.memory_core.retrieve_memories(user_id=user_id, config=config)
         logger.debug(f"retrieved memories: {memories}")
         return memories
 
