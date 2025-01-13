@@ -370,7 +370,7 @@ Existing Memories:
 
         system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
-Consider the following topics when extracting the facts. A fact must be related to one or more of these topics:
+Consider the following topics when extracting the facts. If a fact fits multiple topics, include all of them in the 'topics' list.:
 {topics_str}
 
 {existing_memories_str}
