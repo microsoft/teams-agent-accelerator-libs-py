@@ -72,7 +72,7 @@ def memory_module(config, monkeypatch):
                 facts=[
                     SemanticFact(
                         text="Mocked LLM response about pie",
-                        message_indices=[0, 1],
+                        message_indices={0, 1},
                     )
                 ],
             )

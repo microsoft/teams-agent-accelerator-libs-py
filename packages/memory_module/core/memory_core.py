@@ -151,7 +151,7 @@ class MemoryCore(BaseMemoryCore):
                     content=fact.text,
                     created_at=messages[0].created_at or datetime.datetime.now(),
                     user_id=author_id,
-                    message_attributions=list(message_ids),
+                    message_attributions=message_ids,
                     memory_type=MemoryType.SEMANTIC,
                     topics=fact.topics,
                 )

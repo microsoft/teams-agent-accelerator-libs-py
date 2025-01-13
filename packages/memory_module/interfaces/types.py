@@ -1,7 +1,7 @@
 from abc import ABC
 from datetime import datetime
 from enum import Enum
-from typing import ClassVar, List, Optional
+from typing import ClassVar, List, Optional, Set
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -103,7 +103,7 @@ class BaseMemoryInput(BaseModel):
     updated_at: Optional[datetime] = None
     memory_type: MemoryType
     user_id: Optional[str] = None
-    message_attributions: Optional[List[str]] = Field(default=[])
+    message_attributions: Optional[Set[str]] = Field(default_factory=set)
     topics: Optional[List[str]] = None
 
 
