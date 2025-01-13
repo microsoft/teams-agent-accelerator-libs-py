@@ -6,7 +6,7 @@ on:
     paths:
       - packages/memory_module/**
   push:
-    branches: ["**"]
+    branches: ["main"]
     paths:
       - packages/memory_module/**
 
@@ -28,7 +28,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.12"]
 
     steps:
       # TODO: Re-enable once repo goes public
