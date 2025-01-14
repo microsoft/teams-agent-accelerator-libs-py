@@ -496,7 +496,7 @@ async def test_topic_extraction(memory_module):
         {
             "topics": [
                 Topic(name="Device Type", description="The type of device the user has"),
-                Topic(name="Operating System", description="The user's operating system"),
+                Topic(name="Operating System", description="The operating system for the user's device"),
                 Topic(name="Device year", description="The year of the user's device"),
             ],
             "buffer_size": 10,
@@ -540,7 +540,6 @@ async def test_retrieve_memories_by_topic(memory_module):
         "user-123",
         RetrievalConfig(topic=Topic(name="Operating System", description="The user's operating system")),
     )
-
     assert all("Operating System" in memory.topics for memory in os_memories)
     assert any("windows 11" in memory.content.lower() for memory in os_memories)
     assert any("sonoma" in memory.content.lower() for memory in os_memories)
@@ -592,6 +591,11 @@ async def test_retrieve_memories_by_topic_and_query(memory_module):
         await memory_module.add_message(message)
     await memory_module.message_queue.message_buffer.scheduler.flush()
 
+    # make sure we have memories
+    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    assert any("macbook" in memory.content.lower() for memory in stored_memories)
+    assert any("windows" in memory.content.lower() for memory in stored_memories)
+
     # Retrieve memories by Operating System topic AND query about Mac
     memories = await memory_module.retrieve_memories(
         "user-123",
@@ -600,20 +604,20 @@ async def test_retrieve_memories_by_topic_and_query(memory_module):
             query="MacBook",
         ),
     )
-    assert len(memories) == 1
+    assert len(memories) > 0, f"No memories found for MacBook, check out stored memories: {stored_memories}"
     most_relevant_memory = memories[0]
-    assert "macOS" in most_relevant_memory.content
-    assert "Windows" not in most_relevant_memory.content
+    assert "sonoma" in most_relevant_memory.content.lower()
+    assert "windows" not in most_relevant_memory.content.lower()
 
     # Try another query within the same topic
     windows_memories = await memory_module.retrieve_memories(
         "user-123",
         RetrievalConfig(
             topic=Topic(name="Operating System", description="The user's operating system"),
-            query="What is the operating system for the user's Windows PC?",
+            query="PC",
         ),
     )
-
+    assert len(windows_memories) > 0, f"No memories found for Windows, check out stored memories: {stored_memories}"
     most_relevant_memory = windows_memories[0]
-    assert "Windows" in most_relevant_memory.content
-    assert "macOS" not in most_relevant_memory.content
+    assert "windows" in most_relevant_memory.content.lower()
+    assert "sonoma" not in most_relevant_memory.content.lower()

@@ -22,18 +22,20 @@ class BaseMemoryStorage(ABC):
         self,
         memory: BaseMemoryInput,
         *,
-        embedding_vectors: List[List[float]],
+        embedding_vectors: List[TextEmbedding],
     ) -> str | None:
         """Store a memory in the storage system.
 
         Args:
             memory: The Memory object to store
-            embedding_vector: Optional embedding vector for the memory
+            embedding_vectors: List of TextEmbedding objects containing both vectors and their source text
         """
         pass
 
     @abstractmethod
-    async def update_memory(self, memory_id: str, updated_memory: str, *, embedding_vectors: List[List[float]]) -> None:
+    async def update_memory(
+        self, memory_id: str, updated_memory: str, *, embedding_vectors: List[TextEmbedding]
+    ) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         pass
 
