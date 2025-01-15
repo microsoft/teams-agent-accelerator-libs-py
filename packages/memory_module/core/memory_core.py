@@ -389,6 +389,7 @@ Here is the transcript of the conversation:
         ]
 
         res = await self.lm.completion(messages=llm_messages, response_model=SemanticMemoryExtraction)
+        logger.info(f"Extracted semantic memory: {res}")
         return res
 
     async def _extract_episodic_memory_from_messages(self, messages: List[Message]) -> EpisodicMemoryExtraction:

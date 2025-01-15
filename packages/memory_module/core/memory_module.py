@@ -5,7 +5,7 @@ from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import MemoryCore
 from memory_module.core.message_queue import MessageQueue
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
-from memory_module.interfaces.base_memory_module import BaseMemoryModule
+from memory_module.interfaces.base_memory_module import BaseMemoryModule, BaseScopedMemoryModule
 from memory_module.interfaces.base_message_queue import BaseMessageQueue
 from memory_module.interfaces.types import (
     Memory,
@@ -102,3 +102,47 @@ class MemoryModule(BaseMemoryModule):
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         return await self.memory_core.retrieve_chat_history(conversation_ref, config)
+
+
+class ScopedMemoryModule(BaseScopedMemoryModule):
+    def __init__(self, memory_module: BaseMemoryModule, users_in_conversation_scope: List[str], conversation_ref: str):
+        self.memory_module = memory_module
+        self._users_in_conversation_scope = users_in_conversation_scope
+        self._conversation_ref = conversation_ref
+
+    @property
+    def users_in_conversation_scope(self):
+        return self._users_in_conversation_scope
+
+    @property
+    def conversation_ref(self):
+        return self._conversation_ref
+
+    async def add_message(self, message: MessageInput) -> Message:
+        if message.user_id not in self.users_in_conversation_scope:
+            raise ValueError(f"User {message.user_id} is not in the conversation scope")
+        return await self.memory_module.add_message(message)
+
+    async def retrieve_memories(self, user_id: Optional[str], config: RetrievalConfig) -> List[Memory]:
+        if user_id and user_id not in self.users_in_conversation_scope:
+            raise ValueError(f"User {user_id} is not in the conversation scope")
+        if not user_id:
+            if len(self.users_in_conversation_scope) > 1:
+                raise ValueError("No user id provided and there are multiple users in the conversation scope")
+            user_id = self.users_in_conversation_scope[0]
+        return await self.memory_module.retrieve_memories(user_id, config)
+
+    async def retrieve_chat_history(self, config: ShortTermMemoryRetrievalConfig) -> List[Message]:
+        return await self.memory_module.retrieve_chat_history(self.conversation_ref, config)
+
+    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
+        return await self.memory_module.get_memories(memory_ids)
+
+    async def get_user_memories(self, user_id: str) -> List[Memory]:
+        return await self.memory_module.get_user_memories(user_id)
+
+    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
+        return await self.memory_module.get_messages(memory_ids)
+
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        return await self.memory_module.remove_messages(message_ids)

@@ -4,7 +4,9 @@ from typing import Awaitable, Callable, List
 
 from botbuilder.core import TurnContext
 from botbuilder.core.middleware_set import Middleware
+from botbuilder.core.teams import TeamsInfo
 from botbuilder.schema import Activity, ResourceResponse
+from memory_module.core.memory_module import ScopedMemoryModule
 from memory_module.interfaces.base_memory_module import BaseMemoryModule
 from memory_module.interfaces.types import (
     AssistantMessageInput,
@@ -25,11 +27,35 @@ def build_deep_link(context: TurnContext, message_id: str):
     return f"https://teams.microsoft.com/l/message/{deeplink_conversation_id}/{message_id}?context=%7B%22contextType%22%3A%22chat%22%7D"
 
 
+async def get_roster(conversation_ref: dict, context: TurnContext) -> List[str]:
+    conversation_type = conversation_ref.get("conversation", {}).get("conversationType")
+
+    if conversation_type == "personal":
+        user = conversation_ref.get("user", {})
+        user_id = user.get("id")
+        if user_id:
+            return [user_id]
+        else:
+            raise ValueError("User ID not found in conversation reference")
+    elif conversation_type == "groupChat":
+        roster = await TeamsInfo.get_members(context)
+        return [member.id for member in roster]
+    else:
+        print(f"Unknown conversation type: {conversation_type}")
+        return []
+
+
+async def build_scoped_memory_module(memory_module: BaseMemoryModule, context: TurnContext):
+    conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
+    users_in_conversation_scope = await get_roster(conversation_ref_dict, context)
+    return ScopedMemoryModule(memory_module, users_in_conversation_scope, conversation_ref_dict.conversation.id)
+
+
 class MemoryMiddleware(Middleware):
     def __init__(self, memory_module: BaseMemoryModule):
         self.memory_module = memory_module
 
-    async def add_user_message(self, context: TurnContext):
+    async def _add_user_message(self, context: TurnContext):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
         content = context.activity.text
         if not content:
@@ -58,7 +84,7 @@ class MemoryMiddleware(Middleware):
         )
         return True
 
-    async def add_agent_message(
+    async def _add_agent_message(
         self, context: TurnContext, activities: List[Activity], responses: List[ResourceResponse]
     ):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
@@ -91,6 +117,10 @@ class MemoryMiddleware(Middleware):
         if tasks:
             await gather(*tasks)
         return True
+
+    async def _augment_context(self, context: TurnContext):
+        scoped_memory_module = await build_scoped_memory_module(self.memory_module, context)
+        context.set("memory_module", scoped_memory_module)
 
     async def on_turn(self, context: TurnContext, logic: Callable[[], Awaitable]):
         # Handle incoming message
