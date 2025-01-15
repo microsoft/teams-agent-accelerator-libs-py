@@ -123,8 +123,9 @@ class MemoryMiddleware(Middleware):
         context.set("memory_module", scoped_memory_module)
 
     async def on_turn(self, context: TurnContext, logic: Callable[[], Awaitable]):
+        await self._augment_context(context)
         # Handle incoming message
-        await self.add_user_message(context)
+        await self._add_user_message(context)
 
         # Store the original send_activities method
         original_send_activities = context.send_activities
@@ -135,7 +136,7 @@ class MemoryMiddleware(Middleware):
         # https://github.com/microsoft/botbuilder-python/issues/2197
         async def wrapped_send_activities(activities: List[Activity]):
             responses = await original_send_activities(activities)
-            await self.add_agent_message(context, activities, responses)
+            await self._add_agent_message(context, activities, responses)
             return responses
 
         # Replace the send_activities method
