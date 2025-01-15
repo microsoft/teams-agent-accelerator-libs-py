@@ -19,6 +19,15 @@ class _CommonBaseMemoryModule(ABC):
         pass
 
     @abstractmethod
+    async def retrieve_memories(
+        self,
+        user_id: Optional[str],
+        config: RetrievalConfig,
+    ) -> List[Memory]:
+        """Retrieve relevant memories based on a query."""
+        pass
+
+    @abstractmethod
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         """Get memories based on memory ids."""
         pass
@@ -69,15 +78,6 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
     @property
     @abstractmethod
     def users_in_conversation_scope(self): ...
-
-    @abstractmethod
-    async def retrieve_memories(
-        self,
-        user_id: Optional[str],
-        config: RetrievalConfig,
-    ) -> List[Memory]:
-        """Retrieve relevant memories based on a query."""
-        pass
 
     @abstractmethod
     async def retrieve_chat_history(self, config: ShortTermMemoryRetrievalConfig) -> List[Message]:

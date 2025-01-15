@@ -3,7 +3,7 @@ from typing import List, Literal
 
 from botbuilder.core import TurnContext
 from botbuilder.schema import Activity
-from memory_module import BaseMemoryModule, Memory, RetrievalConfig, Topic
+from memory_module import BaseScopedMemoryModule, Memory, RetrievalConfig, Topic
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
 
@@ -52,7 +52,7 @@ async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
     return candidate_task.model_dump_json()
 
 
-async def get_memorized_fields(memory_module: BaseMemoryModule, fields_to_retrieve: GetMemorizedFields) -> str:
+async def get_memorized_fields(memory_module: BaseScopedMemoryModule, fields_to_retrieve: GetMemorizedFields) -> str:
     empty_obj: dict = {}
     for topic in fields_to_retrieve.memory_topics:
         relevant_topic = next((t for t in topics if t.name == topic))
@@ -69,7 +69,7 @@ async def get_memorized_fields(memory_module: BaseMemoryModule, fields_to_retrie
 
 
 async def confirm_memorized_fields(
-    memory_module: BaseMemoryModule, fields_to_confirm: ConfirmMemorizedFields, context: TurnContext
+    memory_module: BaseScopedMemoryModule, fields_to_confirm: ConfirmMemorizedFields, context: TurnContext
 ) -> str:
     print("Confirming memorized fields", fields_to_confirm)
     flattened_memory_ids = [
