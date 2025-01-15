@@ -1130,6 +1130,7 @@ source = { virtual = "packages/memory_module" }
 dependencies = [
     { name = "aiosqlite" },
     { name = "botbuilder" },
+    { name = "botframework-connector" },
     { name = "instructor" },
     { name = "litellm" },
     { name = "numpy" },
@@ -1142,6 +1143,7 @@ dependencies = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20.0" },
     { name = "botbuilder", specifier = ">=0.0.1" },
+    { name = "botframework-connector", specifier = ">=4.16.2" },
     { name = "instructor", specifier = ">=1.6.4" },
     { name = "litellm", specifier = "==1.54.1" },
     { name = "numpy" },
