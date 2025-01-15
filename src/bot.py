@@ -64,7 +64,7 @@ async def on_members_added(context: TurnContext, state: TurnState):
 
 @bot_app.activity("message")
 async def on_message(context: TurnContext, state: TurnState):
-    tech_assistant_agent = TechAssistantAgent(agent_llm_config, memory_module)
+    tech_assistant_agent = TechAssistantAgent(agent_llm_config)
     await tech_assistant_agent.run(context)
     return True
 

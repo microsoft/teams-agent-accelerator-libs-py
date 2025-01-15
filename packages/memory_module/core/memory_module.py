@@ -5,7 +5,10 @@ from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import MemoryCore
 from memory_module.core.message_queue import MessageQueue
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
-from memory_module.interfaces.base_memory_module import BaseMemoryModule, BaseScopedMemoryModule
+from memory_module.interfaces.base_memory_module import (
+    BaseMemoryModule,
+    BaseScopedMemoryModule,
+)
 from memory_module.interfaces.base_message_queue import BaseMessageQueue
 from memory_module.interfaces.types import (
     Memory,
@@ -62,7 +65,9 @@ class MemoryModule(BaseMemoryModule):
         config: RetrievalConfig,
     ) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
-        logger.debug(f"retrieve memories from (query: {config.query}, user_id: {user_id}, limit: {config.limit})")
+        logger.debug(
+            f"retrieve memories from (query: {config.query}, topic: {config.topic}, user_id: {user_id}, limit: {config.limit})"  # noqa E501
+        )
         memories = await self.memory_core.retrieve_memories(user_id=user_id, config=config)
         logger.debug(f"retrieved memories: {memories}")
         return memories
@@ -119,8 +124,6 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         return self._conversation_ref
 
     async def add_message(self, message: MessageInput) -> Message:
-        if message.user_id not in self.users_in_conversation_scope:
-            raise ValueError(f"User {message.user_id} is not in the conversation scope")
         return await self.memory_module.add_message(message)
 
     async def retrieve_memories(self, user_id: Optional[str], config: RetrievalConfig) -> List[Memory]:

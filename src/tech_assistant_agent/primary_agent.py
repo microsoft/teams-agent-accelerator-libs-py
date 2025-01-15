@@ -160,6 +160,7 @@ class TechAssistantAgent(Agent):
 
     async def _add_internal_message(self, context: TurnContext, content: str):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
+        memory_module: BaseScopedMemoryModule = context.get("memory_module")
         if not content:
             print("content is not text, so ignoring...")
             return False
@@ -172,7 +173,7 @@ class TechAssistantAgent(Agent):
         if conversation_ref_dict.conversation is None:
             print("conversation_ref_dict.conversation is None")
             return False
-        await self._memory_module.add_message(
+        await memory_module.add_message(
             InternalMessageInput(
                 content=content,
                 author_id=conversation_ref_dict.bot.id,
