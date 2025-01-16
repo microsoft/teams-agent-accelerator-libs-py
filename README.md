@@ -14,7 +14,7 @@ As the maintainer of this project, please make a few updates:
 ## Getting Started
 
 ### Prerequisites
-Note: Ensure uv version is >= 0.4.27<br>
+Note: Ensure uv version is >= 0.4.27
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 ### Installing
 
