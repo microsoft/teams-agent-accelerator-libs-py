@@ -56,6 +56,7 @@ class MemoryModule(BaseMemoryModule):
         await self.message_queue.enqueue(message_res)
         return message_res
 
+    # TODO: Ambiguity between retrieve_memories and get_memories. Should update to "search_memories" or similar.
     async def retrieve_memories(
         self,
         user_id: Optional[str],
@@ -67,12 +68,15 @@ class MemoryModule(BaseMemoryModule):
         logger.debug(f"retrieved memories: {memories}")
         return memories
 
+    # TODO: Better name is "get_memories_by_id"
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return await self.memory_core.get_memories(memory_ids)
 
+    # TODO: Better name is "get_memories_by_user_id"
     async def get_user_memories(self, user_id: str) -> List[Memory]:
         return await self.memory_core.get_user_memories(user_id)
 
+    # TODO: Better name is "get_messages_by_memory_ids"
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         return await self.memory_core.get_messages(memory_ids)
 
