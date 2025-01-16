@@ -242,7 +242,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                 memory
                 for memory in memories
                 if memory.message_attributions is not None
-                and len(np.intersect1d(np.array(message_ids), np.array(memory.message_attributions)).tolist()) > 0
+                and len(np.intersect1d(np.array(message_ids), np.array(list(memory.message_attributions))).tolist()) > 0
             ]
 
         return memories
