@@ -1,4 +1,3 @@
-import logging
 import os
 import sys
 from datetime import datetime, timedelta
@@ -29,8 +28,6 @@ from memory_module.interfaces.types import (
 
 from tests.memory_module.utils import build_llm_config
 
-logger = logging.getLogger(__name__)
-
 pytestmark = pytest.mark.asyncio(scope="session")
 
 
@@ -50,6 +47,7 @@ def config(request):
         timeout_seconds=timeout_seconds,
         llm=llm_config,
         topics=topics,
+        enable_logging=True,
     )
 
 

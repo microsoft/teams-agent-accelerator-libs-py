@@ -382,8 +382,6 @@ Extract new FACTS from the user messages in the TRANSCRIPT.
 FACTS are patterns and interests that will remain relevant over time, even if the user is mentioning short-term plans or events.
 Treat FACTS independently, even if multiple facts relate to the same topic.
 Ignore FACTS found in EXISTING_MEMORIES.
-Return FACTS as markdown using the OUTPUT_FORMAT.
-Return NONE if no new FACTS are found in teh TRANSCRIPT.
 """,  # noqa: E501
             },
         ]
@@ -412,8 +410,9 @@ Return NONE if no new FACTS are found in teh TRANSCRIPT.
             facts=(List[ValidatedSemanticMemoryFact], Field(description="List of extracted facts")),  # type: ignore[valid-type]
         )
 
+        logger.debug("LLM messages: %s", llm_messages)
         res = await self.lm.completion(messages=llm_messages, response_model=ValidatedSemanticMemoryExtraction)
-        logger.info(f"Extracted semantic memory: {res}")
+        logger.info("Extracted semantic memory: %s", res)
         return res
 
     async def _extract_episodic_memory_from_messages(self, messages: List[Message]) -> EpisodicMemoryExtraction:

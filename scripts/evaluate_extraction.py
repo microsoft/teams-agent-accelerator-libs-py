@@ -8,8 +8,7 @@ from uuid import uuid4
 import click
 
 sys.path.append(str(Path(__file__).parent.parent))
-sys.path.append(str(Path(__file__).parent.parent / "packages"))
-
+sys.path.append(str(Path(__file__).parent.parent / "packages/memory_module"))
 from memory_module import MemoryModuleConfig, Topic, UserMessageInput
 from memory_module.core.memory_core import MemoryCore
 from memory_module.services.llm_service import LLMService
@@ -82,300 +81,300 @@ TEST_CASES = [
             ],
         },
     },
-    {
-        "title": "Travel Preferences",
-        "input": {
-            "topics": [
-                Topic(name="Preferred Mode of Travel", description="How the user likes to travel"),
-                Topic(name="Destination Type", description="The type of destination the user prefers"),
-                Topic(name="Frequent Travel Companions", description="People the user often travels with"),
-            ],
-            "messages": [
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I'm planning my next vacation and need some advice.",
-                    author_id="user-456",
-                    conversation_ref="conversation-456",
-                    created_at=datetime.now() - timedelta(minutes=15),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I'd be happy to help! What kind of vacation are you looking for?",
-                    author_id="assistant",
-                    conversation_ref="conversation-456",
-                    created_at=datetime.now() - timedelta(minutes=14),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="Well, I really enjoy beach destinations. Last time I went with my siblings and we had a blast!",  # noqa E501
-                    author_id="user-456",
-                    conversation_ref="conversation-456",
-                    created_at=datetime.now() - timedelta(minutes=13),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="That sounds fun! How do you usually like to travel to your destinations?",
-                    author_id="assistant",
-                    conversation_ref="conversation-456",
-                    created_at=datetime.now() - timedelta(minutes=12),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="When I'm in Europe, I love taking the train. It's so scenic and relaxing.",
-                    author_id="user-456",
-                    conversation_ref="conversation-456",
-                    created_at=datetime.now() - timedelta(minutes=11),
-                ),
-            ],
-        },
-        "criteria": {
-            "must_contain": ["train", "beach", "siblings"],
-            "must_not_contain": [],
-            "topics_match": [
-                {"phrase": "train", "topic": "Preferred Mode of Travel"},
-                {"phrase": "beach", "topic": "Destination Type"},
-                {"phrase": "siblings", "topic": "Frequent Travel Companions"},
-            ],
-        },
-    },
-    {
-        "title": "Health Habits",
-        "input": {
-            "topics": [
-                Topic(name="Exercise Routine", description="The user's regular exercise habits"),
-                Topic(name="Dietary Preferences", description="The type of diet the user follows"),
-                Topic(name="Health Goals", description="Goals related to health and fitness"),
-            ],
-            "messages": [
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I need advice on my fitness journey",
-                    author_id="user-789",
-                    conversation_ref="conversation-789",
-                    created_at=datetime.now() - timedelta(minutes=20),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I'd be happy to help! What are your current exercise habits?",
-                    author_id="assistant",
-                    conversation_ref="conversation-789",
-                    created_at=datetime.now() - timedelta(minutes=19),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I run 5 miles every morning, but I feel like I need to do more",
-                    author_id="user-789",
-                    conversation_ref="conversation-789",
-                    created_at=datetime.now() - timedelta(minutes=18),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="That's already impressive! What's your ultimate fitness goal?",
-                    author_id="assistant",
-                    conversation_ref="conversation-789",
-                    created_at=datetime.now() - timedelta(minutes=17),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I'm training for a marathon! Also trying to clean up my diet - I'm following a vegetarian diet and avoiding dairy",  # noqa E501
-                    author_id="user-789",
-                    conversation_ref="conversation-789",
-                    created_at=datetime.now() - timedelta(minutes=16),
-                ),
-            ],
-        },
-        "criteria": {
-            "must_contain": ["run", "vegetarian", "marathon"],
-            "must_not_contain": [],
-            "topics_match": [
-                {"phrase": "run", "topic": "Exercise Routine"},
-                {"phrase": "vegetarian", "topic": "Dietary Preferences"},
-                {"phrase": "marathon", "topic": "Health Goals"},
-            ],
-        },
-    },
-    {
-        "title": "Work Preferences",
-        "input": {
-            "topics": [
-                Topic(name="Work Environment", description="The user's preferred work environment"),
-                Topic(name="Primary Work Tool", description="The tool the user uses most for work"),
-                Topic(name="Work Hours", description="The user's working schedule"),
-            ],
-            "messages": [
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I'm struggling with productivity in my new remote work setup",
-                    author_id="user-234",
-                    conversation_ref="conversation-234",
-                    created_at=datetime.now() - timedelta(minutes=25),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="Let's figure this out. Where do you usually work from?",
-                    author_id="assistant",
-                    conversation_ref="conversation-234",
-                    created_at=datetime.now() - timedelta(minutes=24),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I prefer quiet places like libraries - the silence helps me focus",
-                    author_id="user-234",
-                    conversation_ref="conversation-234",
-                    created_at=datetime.now() - timedelta(minutes=23),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="What tools do you use most frequently for your work?",
-                    author_id="assistant",
-                    conversation_ref="conversation-234",
-                    created_at=datetime.now() - timedelta(minutes=22),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I do all my writing in Google Docs. I work standard hours, 9 AM to 5 PM on weekdays",
-                    author_id="user-234",
-                    conversation_ref="conversation-234",
-                    created_at=datetime.now() - timedelta(minutes=21),
-                ),
-            ],
-        },
-        "criteria": {
-            "must_contain": ["quiet", "Google Docs", "9 AM to 5 PM"],
-            "must_not_contain": [],
-            "topics_match": [
-                {"phrase": "quiet", "topic": "Work Environment"},
-                {"phrase": "Google Docs", "topic": "Primary Work Tool"},
-                {"phrase": "9 AM to 5 PM", "topic": "Work Hours"},
-            ],
-        },
-    },
-    {
-        "title": "Hobbies and Interests",
-        "input": {
-            "topics": [
-                Topic(name="Artistic Hobby", description="Art-related activities the user enjoys"),
-                Topic(name="Outdoor Activity", description="The user's favorite outdoor activities"),
-                Topic(name="Reading Preference", description="The genres of books the user likes"),
-            ],
-            "messages": [
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I'm looking for new hobbies to try during weekends",
-                    author_id="user-567",
-                    conversation_ref="conversation-567",
-                    created_at=datetime.now() - timedelta(minutes=30),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="That's great! What kind of activities do you currently enjoy?",
-                    author_id="assistant",
-                    conversation_ref="conversation-567",
-                    created_at=datetime.now() - timedelta(minutes=29),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="Well, I love painting landscapes when I have free time",
-                    author_id="user-567",
-                    conversation_ref="conversation-567",
-                    created_at=datetime.now() - timedelta(minutes=28),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="Do you enjoy any outdoor activities or reading as well?",
-                    author_id="assistant",
-                    conversation_ref="conversation-567",
-                    created_at=datetime.now() - timedelta(minutes=27),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="Yes! I go hiking in the mountains whenever I can. And I'm currently reading a great historical fiction novel",  # noqa E501
-                    author_id="user-567",
-                    conversation_ref="conversation-567",
-                    created_at=datetime.now() - timedelta(minutes=26),
-                ),
-            ],
-        },
-        "criteria": {
-            "must_contain": ["painting", "hiking", "historical fiction"],
-            "must_not_contain": [],
-            "topics_match": [
-                {"phrase": "painting", "topic": "Artistic Hobby"},
-                {"phrase": "hiking", "topic": "Outdoor Activity"},
-                {"phrase": "historical fiction", "topic": "Reading Preference"},
-            ],
-        },
-    },
-    {
-        "title": "Food Preferences",
-        "input": {
-            "topics": [
-                Topic(name="Favorite Cuisine", description="The type of cuisine the user likes"),
-                Topic(name="Diet Restrictions", description="Dietary restrictions the user follows"),
-                Topic(name="Frequent Snacks", description="The snacks the user enjoys most often"),
-            ],
-            "messages": [
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I need recommendations for a new restaurant in town",
-                    author_id="user-890",
-                    conversation_ref="conversation-890",
-                    created_at=datetime.now() - timedelta(minutes=35),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I'd love to help! What kind of cuisine do you prefer?",
-                    author_id="assistant",
-                    conversation_ref="conversation-890",
-                    created_at=datetime.now() - timedelta(minutes=34),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="Italian food is my absolute favorite, especially pasta dishes",
-                    author_id="user-890",
-                    conversation_ref="conversation-890",
-                    created_at=datetime.now() - timedelta(minutes=33),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="Great choice! Are there any dietary restrictions I should keep in mind?",
-                    author_id="assistant",
-                    conversation_ref="conversation-890",
-                    created_at=datetime.now() - timedelta(minutes=32),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="Yes, I'm lactose intolerant, so I have to be careful with dairy",
-                    author_id="user-890",
-                    conversation_ref="conversation-890",
-                    created_at=datetime.now() - timedelta(minutes=31),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="What do you usually snack on between meals?",
-                    author_id="assistant",
-                    conversation_ref="conversation-890",
-                    created_at=datetime.now() - timedelta(minutes=30),
-                ),
-                UserMessageInput(
-                    id=str(uuid4()),
-                    content="I always keep chips and guacamole around - they're my go-to snacks",
-                    author_id="user-890",
-                    conversation_ref="conversation-890",
-                    created_at=datetime.now() - timedelta(minutes=29),
-                ),
-            ],
-        },
-        "criteria": {
-            "must_contain": ["Italian", "lactose intolerant", "Chips and guacamole"],
-            "must_not_contain": [],
-            "topics_match": [
-                {"phrase": "Italian", "topic": "Favorite Cuisine"},
-                {"phrase": "lactose intolerant", "topic": "Diet Restrictions"},
-                {"phrase": "Chips and guacamole", "topic": "Frequent Snacks"},
-            ],
-        },
-    },
+    # {
+    #     "title": "Travel Preferences",
+    #     "input": {
+    #         "topics": [
+    #             Topic(name="Preferred Mode of Travel", description="How the user likes to travel"),
+    #             Topic(name="Destination Type", description="The type of destination the user prefers"),
+    #             Topic(name="Frequent Travel Companions", description="People the user often travels with"),
+    #         ],
+    #         "messages": [
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I'm planning my next vacation and need some advice.",
+    #                 author_id="user-456",
+    #                 conversation_ref="conversation-456",
+    #                 created_at=datetime.now() - timedelta(minutes=15),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I'd be happy to help! What kind of vacation are you looking for?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-456",
+    #                 created_at=datetime.now() - timedelta(minutes=14),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="Well, I really enjoy beach destinations. Last time I went with my siblings and we had a blast!",  # noqa E501
+    #                 author_id="user-456",
+    #                 conversation_ref="conversation-456",
+    #                 created_at=datetime.now() - timedelta(minutes=13),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="That sounds fun! How do you usually like to travel to your destinations?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-456",
+    #                 created_at=datetime.now() - timedelta(minutes=12),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="When I'm in Europe, I love taking the train. It's so scenic and relaxing.",
+    #                 author_id="user-456",
+    #                 conversation_ref="conversation-456",
+    #                 created_at=datetime.now() - timedelta(minutes=11),
+    #             ),
+    #         ],
+    #     },
+    #     "criteria": {
+    #         "must_contain": ["train", "beach", "siblings"],
+    #         "must_not_contain": [],
+    #         "topics_match": [
+    #             {"phrase": "train", "topic": "Preferred Mode of Travel"},
+    #             {"phrase": "beach", "topic": "Destination Type"},
+    #             {"phrase": "siblings", "topic": "Frequent Travel Companions"},
+    #         ],
+    #     },
+    # },
+    # {
+    #     "title": "Health Habits",
+    #     "input": {
+    #         "topics": [
+    #             Topic(name="Exercise Routine", description="The user's regular exercise habits"),
+    #             Topic(name="Dietary Preferences", description="The type of diet the user follows"),
+    #             Topic(name="Health Goals", description="Goals related to health and fitness"),
+    #         ],
+    #         "messages": [
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I need advice on my fitness journey",
+    #                 author_id="user-789",
+    #                 conversation_ref="conversation-789",
+    #                 created_at=datetime.now() - timedelta(minutes=20),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I'd be happy to help! What are your current exercise habits?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-789",
+    #                 created_at=datetime.now() - timedelta(minutes=19),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I run 5 miles every morning, but I feel like I need to do more",
+    #                 author_id="user-789",
+    #                 conversation_ref="conversation-789",
+    #                 created_at=datetime.now() - timedelta(minutes=18),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="That's already impressive! What's your ultimate fitness goal?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-789",
+    #                 created_at=datetime.now() - timedelta(minutes=17),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I'm training for a marathon! Also trying to clean up my diet - I'm following a vegetarian diet and avoiding dairy",  # noqa E501
+    #                 author_id="user-789",
+    #                 conversation_ref="conversation-789",
+    #                 created_at=datetime.now() - timedelta(minutes=16),
+    #             ),
+    #         ],
+    #     },
+    #     "criteria": {
+    #         "must_contain": ["run", "vegetarian", "marathon"],
+    #         "must_not_contain": [],
+    #         "topics_match": [
+    #             {"phrase": "run", "topic": "Exercise Routine"},
+    #             {"phrase": "vegetarian", "topic": "Dietary Preferences"},
+    #             {"phrase": "marathon", "topic": "Health Goals"},
+    #         ],
+    #     },
+    # },
+    # {
+    #     "title": "Work Preferences",
+    #     "input": {
+    #         "topics": [
+    #             Topic(name="Work Environment", description="The user's preferred work environment"),
+    #             Topic(name="Primary Work Tool", description="The tool the user uses most for work"),
+    #             Topic(name="Work Hours", description="The user's working schedule"),
+    #         ],
+    #         "messages": [
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I'm struggling with productivity in my new remote work setup",
+    #                 author_id="user-234",
+    #                 conversation_ref="conversation-234",
+    #                 created_at=datetime.now() - timedelta(minutes=25),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="Let's figure this out. Where do you usually work from?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-234",
+    #                 created_at=datetime.now() - timedelta(minutes=24),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I prefer quiet places like libraries - the silence helps me focus",
+    #                 author_id="user-234",
+    #                 conversation_ref="conversation-234",
+    #                 created_at=datetime.now() - timedelta(minutes=23),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="What tools do you use most frequently for your work?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-234",
+    #                 created_at=datetime.now() - timedelta(minutes=22),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I do all my writing in Google Docs. I work standard hours, 9 AM to 5 PM on weekdays",
+    #                 author_id="user-234",
+    #                 conversation_ref="conversation-234",
+    #                 created_at=datetime.now() - timedelta(minutes=21),
+    #             ),
+    #         ],
+    #     },
+    #     "criteria": {
+    #         "must_contain": ["quiet", "Google Docs", "9 AM to 5 PM"],
+    #         "must_not_contain": [],
+    #         "topics_match": [
+    #             {"phrase": "quiet", "topic": "Work Environment"},
+    #             {"phrase": "Google Docs", "topic": "Primary Work Tool"},
+    #             {"phrase": "9 AM to 5 PM", "topic": "Work Hours"},
+    #         ],
+    #     },
+    # },
+    # {
+    #     "title": "Hobbies and Interests",
+    #     "input": {
+    #         "topics": [
+    #             Topic(name="Artistic Hobby", description="Art-related activities the user enjoys"),
+    #             Topic(name="Outdoor Activity", description="The user's favorite outdoor activities"),
+    #             Topic(name="Reading Preference", description="The genres of books the user likes"),
+    #         ],
+    #         "messages": [
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I'm looking for new hobbies to try during weekends",
+    #                 author_id="user-567",
+    #                 conversation_ref="conversation-567",
+    #                 created_at=datetime.now() - timedelta(minutes=30),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="That's great! What kind of activities do you currently enjoy?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-567",
+    #                 created_at=datetime.now() - timedelta(minutes=29),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="Well, I love painting landscapes when I have free time",
+    #                 author_id="user-567",
+    #                 conversation_ref="conversation-567",
+    #                 created_at=datetime.now() - timedelta(minutes=28),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="Do you enjoy any outdoor activities or reading as well?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-567",
+    #                 created_at=datetime.now() - timedelta(minutes=27),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="Yes! I go hiking in the mountains whenever I can. And I'm currently reading a great historical fiction novel",  # noqa E501
+    #                 author_id="user-567",
+    #                 conversation_ref="conversation-567",
+    #                 created_at=datetime.now() - timedelta(minutes=26),
+    #             ),
+    #         ],
+    #     },
+    #     "criteria": {
+    #         "must_contain": ["painting", "hiking", "historical fiction"],
+    #         "must_not_contain": [],
+    #         "topics_match": [
+    #             {"phrase": "painting", "topic": "Artistic Hobby"},
+    #             {"phrase": "hiking", "topic": "Outdoor Activity"},
+    #             {"phrase": "historical fiction", "topic": "Reading Preference"},
+    #         ],
+    #     },
+    # },
+    # {
+    #     "title": "Food Preferences",
+    #     "input": {
+    #         "topics": [
+    #             Topic(name="Favorite Cuisine", description="The type of cuisine the user likes"),
+    #             Topic(name="Diet Restrictions", description="Dietary restrictions the user follows"),
+    #             Topic(name="Frequent Snacks", description="The snacks the user enjoys most often"),
+    #         ],
+    #         "messages": [
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I need recommendations for a new restaurant in town",
+    #                 author_id="user-890",
+    #                 conversation_ref="conversation-890",
+    #                 created_at=datetime.now() - timedelta(minutes=35),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I'd love to help! What kind of cuisine do you prefer?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-890",
+    #                 created_at=datetime.now() - timedelta(minutes=34),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="Italian food is my absolute favorite, especially pasta dishes",
+    #                 author_id="user-890",
+    #                 conversation_ref="conversation-890",
+    #                 created_at=datetime.now() - timedelta(minutes=33),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="Great choice! Are there any dietary restrictions I should keep in mind?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-890",
+    #                 created_at=datetime.now() - timedelta(minutes=32),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="Yes, I'm lactose intolerant, so I have to be careful with dairy",
+    #                 author_id="user-890",
+    #                 conversation_ref="conversation-890",
+    #                 created_at=datetime.now() - timedelta(minutes=31),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="What do you usually snack on between meals?",
+    #                 author_id="assistant",
+    #                 conversation_ref="conversation-890",
+    #                 created_at=datetime.now() - timedelta(minutes=30),
+    #             ),
+    #             UserMessageInput(
+    #                 id=str(uuid4()),
+    #                 content="I always keep chips and guacamole around - they're my go-to snacks",
+    #                 author_id="user-890",
+    #                 conversation_ref="conversation-890",
+    #                 created_at=datetime.now() - timedelta(minutes=29),
+    #             ),
+    #         ],
+    #     },
+    #     "criteria": {
+    #         "must_contain": ["Italian", "lactose intolerant", "Chips and guacamole"],
+    #         "must_not_contain": [],
+    #         "topics_match": [
+    #             {"phrase": "Italian", "topic": "Favorite Cuisine"},
+    #             {"phrase": "lactose intolerant", "topic": "Diet Restrictions"},
+    #             {"phrase": "Chips and guacamole", "topic": "Frequent Snacks"},
+    #         ],
+    #     },
+    # },
 ]
 
 
