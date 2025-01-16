@@ -8,6 +8,10 @@ from memory_module.interfaces.types import Message
 class BaseMessageBufferStorage(ABC):
     """Base class for storing buffered messages."""
 
+    # TODO: Remove "buffered" from the method names. [confirmed]
+    # TODO: Update to store message reference instead of message object. [confirmed]
+    # TODO: Update message input to message_id, conversation_ref, and message. [confirmed]
+    # TODO: rename to store_message_reference. [confirmed]
     @abstractmethod
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer.

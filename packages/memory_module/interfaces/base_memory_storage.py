@@ -17,6 +17,7 @@ class BaseMemoryStorage(ABC):
 
     default_limit = 3
 
+    # TODO: change to upsert_memory
     @abstractmethod
     async def store_memory(
         self,
@@ -39,6 +40,8 @@ class BaseMemoryStorage(ABC):
         """replace an existing memory with new extracted fact and embedding"""
         pass
 
+    # TODO: Should change to upsert_message. [green light]
+    # TODO: What if a message is edited? Maybe we should consider a message updating functionality.
     @abstractmethod
     async def store_short_term_memory(self, message: MessageInput) -> Message:
         """Store a short-term memory entry.
@@ -48,6 +51,7 @@ class BaseMemoryStorage(ABC):
         """
         pass
 
+    # TODO: Should change to search_memories
     @abstractmethod
     async def retrieve_memories(
         self,
@@ -69,16 +73,19 @@ class BaseMemoryStorage(ABC):
         """
         pass
 
+    # TODO: delete_memories [confirmed]. Consolidate line remove_memories with it.
     @abstractmethod
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given conversation."""
         pass
 
+    # TODO: conslidate with get_user_memories on line 103, and get_all_memories from line 108 [confirmed]
     @abstractmethod
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         """Get memories based on memory ids."""
         pass
 
+    # TODO: get_messages by message id instead. [confirmed]
     @abstractmethod
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         """Get messages based on memory ids."""
