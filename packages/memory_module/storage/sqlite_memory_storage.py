@@ -197,7 +197,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         )
 
         rows = await self.storage.fetch_all(query, tuple(params))
-        return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
+        return [self._build_memory(row, set((row["message_attributions"] or "").split(","))) for row in rows]
 
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given user."""
@@ -227,7 +227,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         if not row:
             return None
 
-        return self._build_memory(row, (row["message_attributions"] or "").split(","))
+        return self._build_memory(row, set((row["message_attributions"] or "").split(",")))
 
     async def get_all_memories(
         self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
@@ -257,7 +257,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             params += (limit,)
 
         rows = await self.storage.fetch_all(query, params)
-        return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
+        return [self._build_memory(row, set((row["message_attributions"] or "").split(","))) for row in rows]
 
     async def store_short_term_memory(self, message: MessageInput) -> Message:
         """Store a short-term memory entry."""
@@ -339,7 +339,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         rows = await self.storage.fetch_all(query, tuple(memory_ids))
 
-        return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
+        return [self._build_memory(row, set((row["message_attributions"] or "").split(","))) for row in rows]
 
     async def get_user_memories(self, user_id: str) -> List[Memory]:
         query = """
@@ -353,7 +353,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         """
 
         rows = await self.storage.fetch_all(query, (user_id,))
-        return [self._build_memory(row, (row["message_attributions"] or "").split(",")) for row in rows]
+        return [self._build_memory(row, set((row["message_attributions"] or "").split(","))) for row in rows]
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         query = f"""
@@ -378,7 +378,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         return messages_dict
 
-    def _build_memory(self, memory_values: dict, message_attributions: List[str]) -> Memory:
+    def _build_memory(self, memory_values: dict, message_attributions: set[str]) -> Memory:
         memory_keys = ["id", "content", "created_at", "user_id", "memory_type", "topics"]
         # Convert topics string back to list if it exists
         if memory_values.get("topics"):

@@ -3,7 +3,7 @@ import logging
 from typing import Dict, List, Literal, Optional, Set
 
 from litellm.types.utils import EmbeddingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model, field_validator
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
@@ -62,10 +62,6 @@ class SemanticFact(BaseModel):
 
 class SemanticMemoryExtraction(BaseModel):
     action: Literal["add", "ignore"] = Field(..., description="Action to take on the extracted fact")
-    reason_for_action: Optional[str] = Field(
-        ...,
-        description="Reason for the action taken on the extracted fact or the reason it was ignored.",
-    )
     facts: Optional[List[SemanticFact]] = Field(
         default=None,
         description="One or more facts about the user. If the action is 'ignore', this field should be empty.",
@@ -152,7 +148,7 @@ class MemoryCore(BaseMemoryCore):
                     content=fact.text,
                     created_at=messages[0].created_at or datetime.datetime.now(),
                     user_id=author_id,
-                    message_attributions=list(message_ids),
+                    message_attributions=message_ids,
                     memory_type=MemoryType.SEMANTIC,
                     topics=fact.topics,
                 )
@@ -359,36 +355,64 @@ Here is the new memory:
         existing_memories_str = ""
         if existing_memories:
             for memory in existing_memories:
-                existing_memories_str += f"-{memory.content}\n"
-            existing_memories_str = f"""
-Avoid:
-- Extraction memories that already exist in the system. If a fact is already stored, ignore it.
-
-Existing Memories:
-{existing_memories_str}
-"""
+                existing_memories_str = "\n".join(
+                    [f"<EXISTING MEMORY>{memory.content}</EXISTING MEMORY>" for memory in existing_memories]
+                )
+        else:
+            existing_memories_str = "NO EXISTING MEMORIES"
 
         system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests that will remain relevant over time, even if the user is mentioning short-term plans or events.
 
-Consider the following topics when extracting the facts. If a fact fits multiple topics, include all of them in the 'topics' list.:
+<TOPICS>
 {topics_str}
 
+<EXISTING_MEMORIES>
 {existing_memories_str}
-Here is the transcript of the conversation:
-<TRANSCRIPT>
-{messages_str}
-</TRANSCRIPT>
 """  # noqa: E501
         llm_messages = [
             {"role": "system", "content": system_message},
             {
                 "role": "user",
-                "content": "Please analyze this message and decide whether to extract facts or ignore it."
-                "For each fact, include the indices of the messages that the fact was extracted from.",
+                "content": f"""
+<TRANSCRIPT>
+{messages_str}
+
+<INSTRUCTIONS>
+Extract new FACTS from the user messages in the TRANSCRIPT.
+FACTS are patterns and interests that will remain relevant over time, even if the user is mentioning short-term plans or events.
+Treat FACTS independently, even if multiple facts relate to the same topic.
+Ignore FACTS found in EXISTING_MEMORIES.
+Return FACTS as markdown using the OUTPUT_FORMAT.
+Return NONE if no new FACTS are found in teh TRANSCRIPT.
+""",  # noqa: E501
             },
         ]
 
-        res = await self.lm.completion(messages=llm_messages, response_model=SemanticMemoryExtraction)
+        def topics_validator(cls, v):
+            # Fix the casing if that's the only issue
+            validated_topics = []
+            for topic in v:
+                config_topic = next((t for t in self.topics if t.name.lower() == topic.lower()), None)
+                if config_topic:
+                    validated_topics.append(config_topic.name)
+                else:
+                    raise ValueError(f"Topic {topic} not found in topics")
+            return validated_topics
+
+        ValidatedSemanticMemoryFact = create_model(
+            "ValidatedSemanticMemoryFact",
+            __base__=SemanticFact,
+            __validators__={"validate_topics": field_validator("topics")(topics_validator)},
+        )
+
+        # Dynamically create validated model
+        ValidatedSemanticMemoryExtraction = create_model(
+            "ValidatedSemanticMemoryExtraction",
+            __base__=SemanticMemoryExtraction,
+            facts=(List[ValidatedSemanticMemoryFact], Field(description="List of extracted facts")),  # type: ignore[valid-type]
+        )
+
+        res = await self.lm.completion(messages=llm_messages, response_model=ValidatedSemanticMemoryExtraction)
         logger.info(f"Extracted semantic memory: {res}")
         return res
 
