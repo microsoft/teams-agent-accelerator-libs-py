@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 from typing import List, Literal
 
 from botbuilder.core import TurnContext
@@ -7,7 +9,9 @@ from memory_module import BaseScopedMemoryModule, Memory, RetrievalConfig, Topic
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
 
-from src.tech_assistant_agent.supported_tech_tasks import tasks_by_config
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+from tech_assistant_agent.supported_tech_tasks import tasks_by_config
 
 topics = [
     Topic(name="Device Type", description="The type of device the user has"),
@@ -86,7 +90,7 @@ async def confirm_memorized_fields(
         )
 
     cited_memories: List[Memory] = [memory for _, memory in user_details_with_memories if memory is not None]
-    messages_for_cited_memories = await memory_module.get_messages([memory.id for memory in cited_memories])
+    messages_for_cited_memories = await memory_module.get_messages([memory for memory in cited_memories])
     print("messages_for_cited_memories", messages_for_cited_memories)
     memory_strs = []
     citations: List[ClientCitation] = []

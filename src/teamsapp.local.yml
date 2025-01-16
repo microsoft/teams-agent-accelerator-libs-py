@@ -34,7 +34,7 @@ provision:
     with:
       botId: ${{BOT_ID}}
       name: customer_service_ag_sample
-      messagingEndpoint: ${{BOT_ENDPOINT}}/api/messages
+      messagingEndpoint: https://${{BOT_DOMAIN}}/api/messages
       description: ""
       channels:
         - name: msteams
