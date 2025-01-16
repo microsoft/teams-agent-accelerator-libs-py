@@ -66,5 +66,5 @@ mlflow server
 3. Run the benchmark:
 
 ```
-python evals/benchmark_memory_module.py
+python packages/evals/benchmark_memory_module.py
 ```

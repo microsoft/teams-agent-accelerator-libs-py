@@ -1,17 +1,12 @@
-import os
-import sys
 from unittest import mock
 
 import instructor
 import litellm
 import pytest
 from dotenv import load_dotenv
-from pydantic import BaseModel
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from memory_module.config import LLMConfig
 from memory_module.services.llm_service import LLMService
+from pydantic import BaseModel
 
 from tests.memory_module.utils import EnvLLMConfig, get_env_llm_config
 
@@ -72,7 +67,7 @@ async def test_completion_calls_litellm_client(mock_completion):
     api_base = "api base"
     api_version = "api version"
     api_key = "api key"
-    messages = []
+    messages: list = []
     litellm_params = {"test key": "test value"}
     local_args = {"local test key": "local test value"}
 

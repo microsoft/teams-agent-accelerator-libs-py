@@ -11,8 +11,20 @@
     "botAadAppClientSecret": {
       "value": "${{SECRET_BOT_PASSWORD}}"
     },
-    "openaiKey": {
-      "value": "${{SECRET_OPENAI_API_KEY}}"
+    "azureOpenaiKey": {
+      "value": "${{AZURE_OPENAI_API_KEY}}"
+    },
+    "azureOpenaiDeployment": {
+      "value": "${{AZURE_OPENAI_DEPLOYMENT}}"
+    },
+    "azureOpenaiEmbeddingDeployment": {
+      "value": "${{AZURE_OPENAI_EMBEDDING_DEPLOYMENT}}"
+    },
+    "azureOpenaiApiBase": {
+      "value": "${{AZURE_OPENAI_API_BASE}}"
+    },
+    "azureOpenaiApiVersion": {
+      "value": "${{AZURE_OPENAI_API_VERSION}}"
     },
     "webAppSKU": {
       "value": "B1"
@@ -21,7 +33,7 @@
       "value": "customer_service_ag_sample"
     },
     "linuxFxVersion": {
-      "value": "PYTHON|3.11"
+      "value": "PYTHON|3.12"
     }
   }
 }
