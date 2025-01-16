@@ -3,6 +3,8 @@ import sys
 import traceback
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../packages/memory_module"))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from botbuilder.core import MemoryStorage, TurnContext
 from memory_module import (
@@ -15,20 +17,30 @@ from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.state import TurnState
 
 from config import Config
-from src.tech_assistant_agent.agent import LLMConfig as AgentLLMConfig
-from src.tech_assistant_agent.primary_agent import TechAssistantAgent
+from tech_assistant_agent.agent import LLMConfig as AgentLLMConfig
+from tech_assistant_agent.primary_agent import TechAssistantAgent
 
 config = Config()
 
-memory_llm_config = {
-    "model": f"azure/{config.AZURE_OPENAI_DEPLOYMENT}" if config.AZURE_OPENAI_DEPLOYMENT else config.OPENAI_MODEL_NAME,
-    "api_key": config.AZURE_OPENAI_API_KEY or config.OPENAI_API_KEY,
-    "api_base": config.AZURE_OPENAI_API_BASE,
-    "api_version": config.AZURE_OPENAI_API_VERSION,
-    "embedding_model": f"azure/{config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT}"
-    if config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
-    else config.OPENAI_EMBEDDING_MODEL_NAME,
-}
+memory_llm_config: dict
+if config.AZURE_OPENAI_API_KEY:
+    memory_llm_config = {
+        "model": f"azure/{config.AZURE_OPENAI_DEPLOYMENT}",
+        "api_key": config.AZURE_OPENAI_API_KEY,
+        "api_base": config.AZURE_OPENAI_API_BASE,
+        "api_version": config.AZURE_OPENAI_API_VERSION,
+        "embedding_model": f"azure/{config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT}",
+    }
+elif config.OPENAI_API_KEY:
+    memory_llm_config = {
+        "model": config.OPENAI_MODEL_NAME,
+        "api_key": config.OPENAI_API_KEY,
+        "api_base": None,
+        "api_version": None,
+        "embedding_model": config.OPENAI_EMBEDDING_MODEL_NAME,
+    }
+else:
+    raise ValueError("You need to provide either OpenAI or Azure OpenAI credentials")
 
 agent_llm_config = AgentLLMConfig(
     model=memory_llm_config["model"],

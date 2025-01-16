@@ -41,8 +41,8 @@
         {
             "entityId": "index0",
             "name": "Memories",
-            "contentUrl": "${{BOT_ENDPOINT}}/memoriesTab/index.html",
-            "websiteUrl": "${{BOT_ENDPOINT}}/memoriesTab/index.html",
+            "contentUrl": "https://${{BOT_DOMAIN}}/memoriesTab/index.html",
+            "websiteUrl": "https://${{BOT_DOMAIN}}/memoriesTab/index.html",
             "scopes": [
                 "personal"
             ]

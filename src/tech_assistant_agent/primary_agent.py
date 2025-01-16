@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 from typing import List
 
 from botbuilder.core import TurnContext
@@ -6,10 +8,12 @@ from litellm import acompletion
 from litellm.types.utils import Choices, ModelResponse
 from memory_module import BaseMemoryModule, InternalMessageInput, ShortTermMemoryRetrievalConfig
 
-from src.tech_assistant_agent.agent import Agent, LLMConfig
-from src.tech_assistant_agent.prompts import system_prompt
-from src.tech_assistant_agent.tech_agent import TechSupportAgent
-from src.tech_assistant_agent.tools import (
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+from tech_assistant_agent.agent import Agent, LLMConfig
+from tech_assistant_agent.prompts import system_prompt
+from tech_assistant_agent.tech_agent import TechSupportAgent
+from tech_assistant_agent.tools import (
     ConfirmMemorizedFields,
     ExecuteTask,
     GetCandidateTasks,

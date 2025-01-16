@@ -4,10 +4,13 @@ Licensed under the MIT License.
 """
 
 import os
+import sys
 from http import HTTPStatus
 
 from aiohttp import web
 from botbuilder.core.integration import aiohttp_error_middleware
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from bot import bot_app, memory_module
 from config import Config
