@@ -35,7 +35,7 @@ def sample_memory_input():
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=["msg1", "msg2"],
+        message_attributions={"msg1", "msg2"},
     )
 
 
@@ -186,7 +186,7 @@ async def test_get_all_memories(memory_storage, sample_memory_input, sample_embe
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
     )
     await memory_storage.store_memory(second_memory, embedding_vectors=sample_embedding)
 
@@ -222,7 +222,7 @@ async def test_get_all_memories_by_message_ids(memory_storage, sample_memory_inp
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=["msg2"],
+        message_attributions={"msg2"},
     )
     second_message = UserMessageInput(
         id="msg2",
@@ -238,7 +238,7 @@ async def test_get_all_memories_by_message_ids(memory_storage, sample_memory_inp
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=["msg3"],
+        message_attributions={"msg3"},
     )
     third_message = UserMessageInput(
         id="msg3",
@@ -313,7 +313,7 @@ async def test_get_messages(memory_storage):
             created_at=datetime.now(),
             user_id="user1",
             memory_type=MemoryType.SEMANTIC,
-            message_attributions=["msg1", "msg2"],
+            message_attributions={"msg1", "msg2"},
         ),
         embedding_vectors=[],
     )
@@ -323,7 +323,7 @@ async def test_get_messages(memory_storage):
             created_at=datetime.now(),
             user_id="user1",
             memory_type=MemoryType.SEMANTIC,
-            message_attributions=["msg2"],
+            message_attributions={"msg2"},
         ),
         embedding_vectors=[],
     )
@@ -350,7 +350,7 @@ async def test_retrieve_memories_by_topic(memory_storage, sample_embedding):
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["AI"],
     )
     memory2 = BaseMemoryInput(
@@ -358,7 +358,7 @@ async def test_retrieve_memories_by_topic(memory_storage, sample_embedding):
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["nature"],
     )
 
@@ -388,7 +388,7 @@ async def test_retrieve_memories_by_topic_and_embedding(memory_storage, sample_e
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["AI"],
     )
     memory2 = BaseMemoryInput(
@@ -396,7 +396,7 @@ async def test_retrieve_memories_by_topic_and_embedding(memory_storage, sample_e
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["AI"],
     )
 
@@ -429,7 +429,7 @@ async def test_retrieve_memories_with_multiple_topics(memory_storage, sample_emb
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["AI", "robotics"],
     )
     memory2 = BaseMemoryInput(
@@ -437,7 +437,7 @@ async def test_retrieve_memories_with_multiple_topics(memory_storage, sample_emb
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["AI", "machine learning"],
     )
     memory3 = BaseMemoryInput(
@@ -445,7 +445,7 @@ async def test_retrieve_memories_with_multiple_topics(memory_storage, sample_emb
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["nature"],
     )
 
@@ -477,7 +477,7 @@ async def test_retrieve_memories_with_multiple_topics_parameter(memory_storage, 
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["AI", "robotics"],
     )
     memory2 = BaseMemoryInput(
@@ -485,7 +485,7 @@ async def test_retrieve_memories_with_multiple_topics_parameter(memory_storage, 
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["AI", "machine learning"],
     )
     memory3 = BaseMemoryInput(
@@ -493,7 +493,7 @@ async def test_retrieve_memories_with_multiple_topics_parameter(memory_storage, 
         created_at=datetime.now(),
         user_id="test_user",
         memory_type=MemoryType.SEMANTIC,
-        message_attributions=[],
+        message_attributions=set(),
         topics=["nature"],
     )
 
