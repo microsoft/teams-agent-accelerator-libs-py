@@ -1,10 +1,15 @@
+import os
+import sys
+
 from botbuilder.core import TurnContext
 from litellm import acompletion
 from litellm.types.utils import Choices, ModelResponse
 
-from src.tech_assistant_agent.agent import Agent, LLMConfig
-from src.tech_assistant_agent.prompts import execute_task_prompt
-from src.tech_assistant_agent.tools import (
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+from tech_assistant_agent.agent import Agent, LLMConfig
+from tech_assistant_agent.prompts import execute_task_prompt
+from tech_assistant_agent.tools import (
     ExecuteTask,
 )
 

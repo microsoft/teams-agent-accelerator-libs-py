@@ -11,8 +11,20 @@ param botAadAppClientId string
 param botAadAppClientSecret string
 
 @secure()
-@description('Required in your bot project to access OpenAI service. You can get it from OpenAI > API > API Key')
-param openaiKey string
+@description('Required in your bot project to access Azure OpenAI service')
+param azureOpenaiKey string
+
+@description('Azure OpenAI deployment name')
+param azureOpenaiDeployment string
+
+@description('Azure OpenAI embedding deployment name')
+param azureOpenaiEmbeddingDeployment string
+
+@description('Azure OpenAI API base URL')
+param azureOpenaiApiBase string
+
+@description('Azure OpenAI API version')
+param azureOpenaiApiVersion string
 
 param webAppSKU string
 param linuxFxVersion string
@@ -22,7 +34,7 @@ param botDisplayName string
 
 param serverfarmsName string = resourceBaseName
 param webAppName string = resourceBaseName
-param location string = resourceGroup().location
+param location string = 'eastus2'
 param pythonVersion string = linuxFxVersion
 
 // Compute resources for your Web App
@@ -67,8 +79,24 @@ resource webApp 'Microsoft.Web/sites@2021-02-01' = {
           value: botAadAppClientSecret
         }
         {
-          name: 'OPENAI_API_KEY'
-          value: openaiKey
+          name: 'AZURE_OPENAI_API_KEY'
+          value: azureOpenaiKey
+        }
+        {
+          name: 'AZURE_OPENAI_DEPLOYMENT'
+          value: azureOpenaiDeployment
+        }
+        {
+          name: 'AZURE_OPENAI_EMBEDDING_DEPLOYMENT'
+          value: azureOpenaiEmbeddingDeployment
+        }
+        {
+          name: 'AZURE_OPENAI_API_BASE'
+          value: azureOpenaiApiBase
+        }
+        {
+          name: 'AZURE_OPENAI_API_VERSION'
+          value: azureOpenaiApiVersion
         }
       ]
       ftpsState: 'FtpsOnly'

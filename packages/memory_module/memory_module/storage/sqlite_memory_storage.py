@@ -334,7 +334,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 GROUP_CONCAT(ma.message_id) as message_attributions
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-            WHERE m.id IN ({','.join(['?'] * len(memory_ids))})
+            WHERE m.id IN ({",".join(["?"] * len(memory_ids))})
         """
 
         rows = await self.storage.fetch_all(query, tuple(memory_ids))
@@ -362,7 +362,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 m.*
             FROM memory_attributions ma
             JOIN messages m ON ma.message_id = m.id
-            WHERE ma.memory_id IN ({','.join(['?'] * len(memory_ids))})
+            WHERE ma.memory_id IN ({",".join(["?"] * len(memory_ids))})
         """
 
         rows = await self.storage.fetch_all(query, tuple(memory_ids))
@@ -391,7 +391,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     async def remove_messages(self, message_ids: List[str]) -> None:
         async with self.storage.transaction() as cursor:
             await cursor.execute(
-                f"DELETE FROM messages WHERE id in ({",".join(["?"]*len(message_ids))})",
+                f"DELETE FROM messages WHERE id in ({','.join(['?'] * len(message_ids))})",
                 tuple(message_ids),
             )
 

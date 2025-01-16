@@ -1,13 +1,9 @@
-import os
-import sys
 from unittest import mock
 
 import pytest
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
-
 from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.core.memory_core import EpisodicMemoryExtraction, MemoryCore
+from memory_module.interfaces.types import TextEmbedding
 from memory_module.services.llm_service import LLMService
 
 from tests.memory_module.utils import create_test_memory, create_test_user_message, get_env_llm_config
@@ -103,6 +99,7 @@ async def test_extract_episodic_memory_from_messages(config):
     ]
     res: EpisodicMemoryExtraction = await memory_core._extract_episodic_memory_from_messages(messages=messages)
 
+    assert res.summary is not None
     assert includes(res.summary, "Azure")
     assert includes(res.summary, "software development tools")
 
@@ -120,6 +117,8 @@ async def test_get_query_embedding_from_messages(config):
     memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
 
     query = "Which country has a maple leaf in its flag?"
-    res: list[float] = await memory_core._get_query_embedding(query=query)
+    res: TextEmbedding = await memory_core._get_query_embedding(query=query)
 
-    assert len(res) >= 512  # 512 is the smallest configurable embedding size for the text-embedding-3-small model
+    assert (
+        len(res.embedding_vector) >= 512
+    )  # 512 is the smallest configurable embedding size for the text-embedding-3-small model
