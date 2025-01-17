@@ -8,7 +8,7 @@ from uuid import uuid4
 import click
 
 sys.path.append(str(Path(__file__).parent.parent))
-sys.path.append(str(Path(__file__).parent.parent / "packages"))
+sys.path.append(str(Path(__file__).parent.parent / "packages/memory_module"))
 
 from memory_module import MemoryModuleConfig, RetrievalConfig, Topic
 from memory_module.core.memory_core import MemoryCore

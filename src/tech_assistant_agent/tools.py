@@ -5,13 +5,19 @@ from typing import List, Literal
 
 from botbuilder.core import TurnContext
 from botbuilder.schema import Activity
-from memory_module import BaseMemoryModule, Memory, RetrievalConfig
+from memory_module import BaseScopedMemoryModule, Memory, RetrievalConfig, Topic
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from tech_assistant_agent.supported_tech_tasks import tasks_by_config
+
+topics = [
+    Topic(name="Device Type", description="The type of device the user has"),
+    Topic(name="Operating System", description="The operating system for the user's device"),
+    Topic(name="Device year", description="The year of the user's device"),
+]
 
 
 class GetCandidateTasks(BaseModel):
@@ -22,8 +28,8 @@ class GetCandidateTasks(BaseModel):
 
 class GetMemorizedFields(BaseModel):
     model_config = {"json_schema_extra": {"additionalProperties": False}}
-    queries_for_fields: list[str] = Field(
-        description="A list of questions to see if any information exists about the fields. These must be questions."
+    memory_topics: List[Literal["Device Type", "Operating System", "Device year"]] = Field(
+        description="Topics for memories that the user may have revealed previously."
     )
 
 
@@ -50,23 +56,24 @@ async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
     return candidate_task.model_dump_json()
 
 
-async def get_memorized_fields(memory_module: BaseMemoryModule, fields_to_retrieve: GetMemorizedFields) -> str:
+async def get_memorized_fields(memory_module: BaseScopedMemoryModule, fields_to_retrieve: GetMemorizedFields) -> str:
     empty_obj: dict = {}
-    for query in fields_to_retrieve.queries_for_fields:
-        result = await memory_module.retrieve_memories(None, RetrievalConfig(query=query, limit=None))
-        print("Getting memorized queries: ", query)
+    for topic in fields_to_retrieve.memory_topics:
+        relevant_topic = next((t for t in topics if t.name == topic))
+        result = await memory_module.retrieve_memories(config=RetrievalConfig(topic=relevant_topic, limit=None))
+        print("Getting memorized queries: ", topic)
         print(result)
         print("---")
 
         if result:
-            empty_obj[query] = ", ".join([f"{r.id}. {r.content}" for r in result])
+            empty_obj[topic] = ", ".join([f"{r.id}. {r.content}" for r in result])
         else:
-            empty_obj[query] = None
+            empty_obj[topic] = None
     return json.dumps(empty_obj)
 
 
 async def confirm_memorized_fields(
-    memory_module: BaseMemoryModule, fields_to_confirm: ConfirmMemorizedFields, context: TurnContext
+    memory_module: BaseScopedMemoryModule, fields_to_confirm: ConfirmMemorizedFields, context: TurnContext
 ) -> str:
     print("Confirming memorized fields", fields_to_confirm)
     flattened_memory_ids = [

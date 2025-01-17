@@ -8,9 +8,8 @@ from uuid import uuid4
 import click
 
 sys.path.append(str(Path(__file__).parent.parent))
-sys.path.append(str(Path(__file__).parent.parent / "packages"))
-
-from memory_module import MemoryModuleConfig, Topic, UserMessageInput
+sys.path.append(str(Path(__file__).parent.parent / "packages/memory_module"))
+from memory_module import AssistantMessageInput, MemoryModuleConfig, Topic, UserMessageInput
 from memory_module.core.memory_core import MemoryCore
 from memory_module.services.llm_service import LLMService
 
@@ -34,7 +33,7 @@ TEST_CASES = [
                     conversation_ref="conversation-123",
                     created_at=datetime.now() - timedelta(minutes=10),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="I'm sorry to hear that. What device do you have?",
                     author_id="assistant",
@@ -48,7 +47,7 @@ TEST_CASES = [
                     conversation_ref="conversation-123",
                     created_at=datetime.now() - timedelta(minutes=8),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="Which one are you having issues with? And what operating systems are they running?",
                     author_id="assistant",
@@ -98,7 +97,7 @@ TEST_CASES = [
                     conversation_ref="conversation-456",
                     created_at=datetime.now() - timedelta(minutes=15),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="I'd be happy to help! What kind of vacation are you looking for?",
                     author_id="assistant",
@@ -112,7 +111,7 @@ TEST_CASES = [
                     conversation_ref="conversation-456",
                     created_at=datetime.now() - timedelta(minutes=13),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="That sounds fun! How do you usually like to travel to your destinations?",
                     author_id="assistant",
@@ -154,7 +153,7 @@ TEST_CASES = [
                     conversation_ref="conversation-789",
                     created_at=datetime.now() - timedelta(minutes=20),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="I'd be happy to help! What are your current exercise habits?",
                     author_id="assistant",
@@ -168,7 +167,7 @@ TEST_CASES = [
                     conversation_ref="conversation-789",
                     created_at=datetime.now() - timedelta(minutes=18),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="That's already impressive! What's your ultimate fitness goal?",
                     author_id="assistant",
@@ -210,7 +209,7 @@ TEST_CASES = [
                     conversation_ref="conversation-234",
                     created_at=datetime.now() - timedelta(minutes=25),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="Let's figure this out. Where do you usually work from?",
                     author_id="assistant",
@@ -224,7 +223,7 @@ TEST_CASES = [
                     conversation_ref="conversation-234",
                     created_at=datetime.now() - timedelta(minutes=23),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="What tools do you use most frequently for your work?",
                     author_id="assistant",
@@ -266,7 +265,7 @@ TEST_CASES = [
                     conversation_ref="conversation-567",
                     created_at=datetime.now() - timedelta(minutes=30),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="That's great! What kind of activities do you currently enjoy?",
                     author_id="assistant",
@@ -280,7 +279,7 @@ TEST_CASES = [
                     conversation_ref="conversation-567",
                     created_at=datetime.now() - timedelta(minutes=28),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="Do you enjoy any outdoor activities or reading as well?",
                     author_id="assistant",
@@ -322,7 +321,7 @@ TEST_CASES = [
                     conversation_ref="conversation-890",
                     created_at=datetime.now() - timedelta(minutes=35),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="I'd love to help! What kind of cuisine do you prefer?",
                     author_id="assistant",
@@ -336,7 +335,7 @@ TEST_CASES = [
                     conversation_ref="conversation-890",
                     created_at=datetime.now() - timedelta(minutes=33),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="Great choice! Are there any dietary restrictions I should keep in mind?",
                     author_id="assistant",
@@ -350,7 +349,7 @@ TEST_CASES = [
                     conversation_ref="conversation-890",
                     created_at=datetime.now() - timedelta(minutes=31),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="What do you usually snack on between meals?",
                     author_id="assistant",
@@ -373,6 +372,49 @@ TEST_CASES = [
                 {"phrase": "Italian", "topic": "Favorite Cuisine"},
                 {"phrase": "lactose intolerant", "topic": "Diet Restrictions"},
                 {"phrase": "Chips and guacamole", "topic": "Frequent Snacks"},
+            ],
+        },
+    },
+    {
+        "title": "Device Information with Topic Retrieval",
+        "input": {
+            "topics": [
+                Topic(name="Device Type", description="The type of device the user has"),
+                Topic(name="Operating System", description="The user's operating system"),
+                Topic(name="Device Year", description="The year of the user's device"),
+            ],
+            "messages": [
+                UserMessageInput(
+                    id=str(uuid4()),
+                    content="I use Windows 11 on my PC",
+                    author_id="user-123",
+                    conversation_ref="conversation-123",
+                    created_at=datetime.now() - timedelta(minutes=5),
+                ),
+                UserMessageInput(
+                    id=str(uuid4()),
+                    content="I have a MacBook Pro from 2023",
+                    author_id="user-123",
+                    conversation_ref="conversation-123",
+                    created_at=datetime.now() - timedelta(minutes=3),
+                ),
+                UserMessageInput(
+                    id=str(uuid4()),
+                    content="My MacBook runs macOS Sonoma",
+                    author_id="user-123",
+                    conversation_ref="conversation-123",
+                    created_at=datetime.now() - timedelta(minutes=1),
+                ),
+            ],
+        },
+        "criteria": {
+            "must_contain": ["Windows 11", "MacBook Pro", "macOS Sonoma", "2023"],
+            "must_not_contain": [],
+            "topics_match": [
+                {"phrase": "Windows 11", "topic": "Operating System"},
+                {"phrase": "macOS Sonoma", "topic": "Operating System"},
+                {"phrase": "MacBook Pro", "topic": "Device Type"},
+                {"phrase": "2023", "topic": "Device Year"},
             ],
         },
     },
@@ -399,6 +441,7 @@ class SystemPromptEvaluator(BaseEvaluator):
                 timeout_seconds=60,
                 llm=self.llm_config,
                 topics=test_case["input"]["topics"],
+                enable_logging=True,
             )
             memory_core = MemoryCore(config, self.llm_service)
             response = await memory_core._extract_semantic_fact_from_messages(messages=test_case["input"]["messages"])
