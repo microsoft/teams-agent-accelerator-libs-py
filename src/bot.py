@@ -2,12 +2,8 @@ import os
 import sys
 import traceback
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages/memory_module"))
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from botbuilder.core import MemoryStorage, TurnContext
-from memory_module import LLMConfig, MemoryMiddleware, MemoryModule, MemoryModuleConfig
+from memory_module import LLMConfig, MemoryMiddleware, MemoryModuleConfig
 from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.state import TurnState
 
@@ -45,16 +41,6 @@ agent_llm_config = AgentLLMConfig(
     api_version=memory_llm_config["api_version"],
 )
 
-memory_module = MemoryModule(
-    config=MemoryModuleConfig(
-        llm=LLMConfig(**memory_llm_config),
-        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
-        timeout_seconds=60,
-        enable_logging=True,
-        topics=topics,
-    )
-)
-
 # Define storage and application
 storage = MemoryStorage()
 bot_app = Application[TurnState](
@@ -65,7 +51,16 @@ bot_app = Application[TurnState](
     )
 )
 
-bot_app.adapter.use(MemoryMiddleware(memory_module))
+memory_middleware = MemoryMiddleware(
+    config=MemoryModuleConfig(
+        llm=LLMConfig(**memory_llm_config),
+        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
+        timeout_seconds=60,
+        enable_logging=True,
+        topics=topics,
+    )
+)
+bot_app.adapter.use(memory_middleware)
 
 
 @bot_app.conversation_update("membersAdded")

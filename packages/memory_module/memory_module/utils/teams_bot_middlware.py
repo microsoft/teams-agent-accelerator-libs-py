@@ -1,14 +1,19 @@
 import datetime
 import logging
+import os
+import sys
 from asyncio import gather
-from typing import Awaitable, Callable, List, cast
+from typing import Awaitable, Callable, List, Optional, cast
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from botbuilder.core import TurnContext
 from botbuilder.core.middleware_set import Middleware
 from botbuilder.core.teams import TeamsInfo
 from botbuilder.schema import Activity, ConversationReference, ResourceResponse
 from botframework.connector.models import ChannelAccount, ConversationAccount
-from memory_module.core.memory_module import ScopedMemoryModule
+from memory_module.config import MemoryModuleConfig
+from memory_module.core.memory_module import MemoryModule, ScopedMemoryModule
 from memory_module.interfaces.base_memory_module import BaseMemoryModule
 from memory_module.interfaces.types import (
     AssistantMessageInput,
@@ -32,8 +37,17 @@ def build_deep_link(context: TurnContext, message_id: str):
 
 
 class MemoryMiddleware(Middleware):
-    def __init__(self, memory_module: BaseMemoryModule):
-        self.memory_module = memory_module
+    def __init__(
+        self, *, config: Optional[MemoryModuleConfig] = None, memory_module: Optional[BaseMemoryModule] = None
+    ):
+        if config and memory_module:
+            logger.warning("config and memory_module are both provided, using memory_module")
+        elif config:
+            self.memory_module: BaseMemoryModule = MemoryModule(config=config)
+        elif memory_module:
+            self.memory_module = memory_module
+        else:
+            raise ValueError("Either config or memory_module must be provided")
 
     async def _add_user_message(self, context: TurnContext):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
@@ -69,13 +83,13 @@ class MemoryMiddleware(Middleware):
     ):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
         if conversation_ref_dict is None:
-            print("conversation_ref_dict is None")
+            logger.error("conversation_ref_dict is None")
             return False
         if conversation_ref_dict.bot is None:
-            print("conversation_ref_dict.bot is None")
+            logger.error("conversation_ref_dict.bot is None")
             return False
         if conversation_ref_dict.conversation is None:
-            print("conversation_ref_dict.conversation is None")
+            logger.error("conversation_ref_dict.conversation is None")
             return False
 
         tasks = []
