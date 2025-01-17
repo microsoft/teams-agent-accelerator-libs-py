@@ -37,6 +37,7 @@ docstring-code-format = true
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B", "Q", "I", "ASYNC"]
+ignore = ["E501"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 [tool.ruff.lint.flake8-tidy-imports.banned-api]

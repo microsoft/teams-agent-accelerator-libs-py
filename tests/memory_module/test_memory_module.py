@@ -18,7 +18,7 @@ from memory_module.core.memory_core import (
     SemanticFact,
     SemanticMemoryExtraction,
 )
-from memory_module.core.memory_module import MemoryModule
+from memory_module.core.memory_module import MemoryModule, ScopedMemoryModule
 from memory_module.interfaces.types import (
     AssistantMessageInput,
     RetrievalConfig,
@@ -52,7 +52,20 @@ def config(request):
 
 
 @pytest.fixture
-def memory_module(config, monkeypatch):
+def conversation_id():
+    return str(uuid4())
+
+
+@pytest.fixture
+def user_ids_in_conversation_scope():
+    return ["user-123", "user-456"]
+
+
+@pytest.fixture
+def memory_module(
+    config,
+    monkeypatch,
+):
     """Fixture to create a fresh MemoryModule instance for each test."""
     # Delete the db file if it exists
     if config.db_path.exists():
@@ -120,47 +133,53 @@ def memory_module(config, monkeypatch):
     return memory_module
 
 
+@pytest_asyncio.fixture
+def scoped_memory_module(memory_module, user_ids_in_conversation_scope, conversation_id):
+    return ScopedMemoryModule(memory_module, user_ids_in_conversation_scope, conversation_id)
+
+
 @pytest_asyncio.fixture(autouse=True)
-async def cleanup_scheduled_events(memory_module):
+async def cleanup_scheduled_events(scoped_memory_module):
     """Fixture to cleanup scheduled events after each test."""
     try:
         yield
     finally:
-        await memory_module.message_queue.message_buffer.scheduler.cleanup()
+        await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.cleanup()
 
 
 @pytest.mark.asyncio
-async def test_simple_conversation(memory_module):
+async def test_simple_conversation(scoped_memory_module, conversation_id, user_ids_in_conversation_scope):
     """Test a simple conversation about pie."""
-    conversation_id = str(uuid4())
     messages = [
         UserMessageInput(
             id=str(uuid4()),
             content="I love pie!",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now(),
         ),
         UserMessageInput(
             id=str(uuid4()),
             content="Apple pie is the best!",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now(),
         ),
     ]
 
     for message in messages:
-        await memory_module.add_message(message)
+        await scoped_memory_module.memory_module.add_message(message)
 
-    await memory_module.message_queue.message_buffer.scheduler.flush()
-    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    stored_memories = await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
     assert len(stored_memories) >= 1
     assert any("pie" in message.content for message in stored_memories)
     assert any(message.id in stored_memories[0].message_attributions for message in messages)
     assert all(memory.memory_type == "semantic" for memory in stored_memories)
 
-    result = await memory_module.retrieve_memories("user-123", RetrievalConfig(query="apple pie", limit=1))
+    result = await scoped_memory_module.memory_module.retrieve_memories(
+        user_ids_in_conversation_scope[0], RetrievalConfig(query="apple pie", limit=1)
+    )
     assert len(result) == 1
     assert result[0].id == next(memory.id for memory in stored_memories if "apple pie" in memory.content)
 
@@ -172,7 +191,7 @@ async def test_no_memories_found():
 
 
 @pytest.mark.asyncio
-async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
+async def test_episodic_memory_timeout(scoped_memory_module, config, monkeypatch):
     """Test that episodic memory is triggered after timeout."""
     pytest.skip(
         "Skipping episodic memory timeout test. We are debating if we need to build long-term episodic memories or not."
@@ -184,7 +203,9 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
         nonlocal extraction_called
         extraction_called = True
 
-    monkeypatch.setattr(memory_module.memory_core, "_extract_episodic_memory_from_messages", mock_extract_episodic)
+    monkeypatch.setattr(
+        scoped_memory_module.memory_module.memory_core, "_extract_episodic_memory_from_messages", mock_extract_episodic
+    )
 
     conversation_id = str(uuid4())
     messages = [
@@ -199,74 +220,71 @@ async def test_episodic_memory_timeout(memory_module, config, monkeypatch):
     ]
 
     for message in messages:
-        await memory_module.add_message(message)
+        await scoped_memory_module.memory_module.add_message(message)
 
-    await memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
     assert extraction_called, "Episodic memory extraction should have been triggered by timeout"
 
 
 @pytest.mark.asyncio
-async def test_update_memory(memory_module):
+async def test_update_memory(scoped_memory_module, conversation_id, user_ids_in_conversation_scope):
     """Test memory update"""
-    conversation_id = str(uuid4())
     messages = [
         UserMessageInput(
             id=str(uuid4()),
             content="Seattle is my favorite city!",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now(),
         ),
     ]
 
     for message in messages:
-        await memory_module.add_message(message)
+        await scoped_memory_module.memory_module.add_message(message)
 
-    await memory_module.message_queue.message_buffer.scheduler.flush()
-    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    stored_memories = await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
     assert len(stored_memories) >= 1
 
     memory_id = next(memory.id for memory in stored_memories if "Seattle" in memory.content)
-    await memory_module.update_memory(memory_id, "The user like San Diego city")
-    updated_message = await memory_module.memory_core.storage.get_memory(memory_id)
+    await scoped_memory_module.memory_module.update_memory(memory_id, "The user like San Diego city")
+    updated_message = await scoped_memory_module.memory_module.memory_core.storage.get_memory(memory_id)
     assert "San Diego" in updated_message.content
 
 
 @pytest.mark.asyncio
-async def test_remove_memory(memory_module):
+async def test_remove_memory(scoped_memory_module, conversation_id, user_ids_in_conversation_scope):
     """Test a simple conversation removal based on user id."""
-    conversation_id = str(uuid4())
     messages = [
         UserMessageInput(
             id=str(uuid4()),
             content="I like pho a lot!",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now(),
         ),
     ]
 
     for message in messages:
-        await memory_module.add_message(message)
-    await memory_module.message_queue.message_buffer.scheduler.flush()
-    stored_messages = await memory_module.memory_core.storage.get_all_memories()
+        await scoped_memory_module.memory_module.add_message(message)
+    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    stored_messages = await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
     assert len(stored_messages) >= 0
 
-    await memory_module.remove_memories("user-123")
+    await scoped_memory_module.memory_module.remove_memories(user_ids_in_conversation_scope[0])
 
-    stored_messages = await memory_module.memory_core.storage.get_all_memories()
+    stored_messages = await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
     assert len(stored_messages) == 0
 
 
 @pytest.mark.asyncio
-async def test_short_term_memory(memory_module):
+async def test_short_term_memory(scoped_memory_module, conversation_id, user_ids_in_conversation_scope):
     """Test that messages are stored in short-term memory."""
-    conversation_id = str(uuid4())
     messages = [
         UserMessageInput(
             id=str(uuid4()),
             content=f"Test message {i}",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() + timedelta(seconds=-i * 25),
         )
@@ -275,10 +293,10 @@ async def test_short_term_memory(memory_module):
 
     # Add messages one by one
     for message in messages:
-        await memory_module.add_message(message)
+        await scoped_memory_module.memory_module.add_message(message)
 
     # Check short-term memory using retrieve method
-    chat_history_messages = await memory_module.retrieve_chat_history(
+    chat_history_messages = await scoped_memory_module.memory_module.retrieve_chat_history(
         conversation_id, ShortTermMemoryRetrievalConfig(last_minutes=1)
     )
     assert len(chat_history_messages) == 3
@@ -290,39 +308,40 @@ async def test_short_term_memory(memory_module):
 
 
 @pytest.mark.asyncio
-async def test_add_memory_processing_decision(memory_module):
+async def test_add_memory_processing_decision(scoped_memory_module, conversation_id, user_ids_in_conversation_scope):
     """Test whether to process adding memory"""
 
-    async def _validate_decision(memory_module, message: List[UserMessageInput], expected_decision: str):
-        extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(message)
+    async def _validate_decision(scoped_memory_module, message: List[UserMessageInput], expected_decision: str):
+        extraction = await scoped_memory_module.memory_module.memory_core._extract_semantic_fact_from_messages(message)
         assert extraction.action == "add" and extraction.facts
         for fact in extraction.facts:
-            decision = await memory_module.memory_core._get_add_memory_processing_decision(fact, "user-123")
+            decision = await scoped_memory_module.memory_module.memory_core._get_add_memory_processing_decision(
+                fact, user_ids_in_conversation_scope[0]
+            )
             if decision.decision != expected_decision:
                 # Adding this because this test is flaky and it would be good to know why.
                 print(f"Decision: {decision}, Expected: {expected_decision}", fact, decision)
             assert decision.decision == expected_decision
 
-    conversation_id = str(uuid4())
     old_messages = [
         UserMessageInput(
             id=str(uuid4()),
             content="I have a Pokemon limited version Macbook.",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=3),
         ),
         UserMessageInput(
             id=str(uuid4()),
             content="I bought a pink iphone.",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=2),
         ),
         UserMessageInput(
             id=str(uuid4()),
             content="I just bought a Macbook.",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=1),
         ),
@@ -332,7 +351,7 @@ async def test_add_memory_processing_decision(memory_module):
             UserMessageInput(
                 id=str(uuid4()),
                 content="I have a Macbook",
-                author_id="user-123",
+                author_id=user_ids_in_conversation_scope[0],
                 conversation_ref=conversation_id,
                 created_at=datetime.now(),
             )
@@ -341,7 +360,7 @@ async def test_add_memory_processing_decision(memory_module):
             UserMessageInput(
                 id=str(uuid4()),
                 content="I like cats",
-                author_id="user-123",
+                author_id=user_ids_in_conversation_scope[0],
                 conversation_ref=conversation_id,
                 created_at=datetime.now(),
             )
@@ -349,17 +368,16 @@ async def test_add_memory_processing_decision(memory_module):
     ]
 
     for message in old_messages:
-        await memory_module.add_message(message)
+        await scoped_memory_module.memory_module.add_message(message)
 
-    await memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
 
-    await _validate_decision(memory_module, new_messages[0], "ignore")
-    await _validate_decision(memory_module, new_messages[1], "add")
+    await _validate_decision(scoped_memory_module, new_messages[0], "ignore")
+    await _validate_decision(scoped_memory_module, new_messages[1], "add")
 
 
 @pytest.mark.asyncio
-async def test_remove_messages(memory_module):
-    conversation1_id = str(uuid4())
+async def test_remove_messages(scoped_memory_module, conversation_id, user_ids_in_conversation_scope):
     conversation2_id = str(uuid4())
     conversation3_id = str(uuid4())
     message1_id = str(uuid4())
@@ -370,59 +388,59 @@ async def test_remove_messages(memory_module):
         UserMessageInput(
             id=message1_id,
             content="I like strawberry flavor ice cream a lot.",
-            author_id="user-123",
-            conversation_ref=conversation1_id,
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
             created_at=datetime.now(),
         ),
         UserMessageInput(
             id=message2_id,
             content="I like eating noodle.",
-            author_id="user-123",
-            conversation_ref=conversation1_id,
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
             created_at=datetime.now(),
         ),
     ]
     for message in messages:
-        await memory_module.add_message(message)
-    await memory_module.message_queue.message_buffer.scheduler.flush()
+        await scoped_memory_module.memory_module.add_message(message)
+    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+
+    stored_memories = await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
+    assert len(stored_memories) == 2
 
     messages2 = [
         UserMessageInput(
             id=message3_id,
             content="I like to go TT for grocery shopping.",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation2_id,
             created_at=datetime.now(),
         ),
         UserMessageInput(
             id=message4_id,
             content="I like pancake from TT.",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation3_id,
             created_at=datetime.now(),
         ),
     ]
 
     for message in messages2:
-        await memory_module.add_message(message)
-
-    stored_memories = await memory_module.memory_core.storage.get_all_memories()
-    assert len(stored_memories) == 2
-    stored_buffer = await memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(
+        await scoped_memory_module.memory_module.add_message(message)
+    stored_buffer = await scoped_memory_module.memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(
         [message3_id, message4_id]
     )
     assert len(list(stored_buffer.keys())) == 2
 
     remove_messages = [message1_id, message3_id]
 
-    await memory_module.remove_messages(remove_messages)
+    await scoped_memory_module.memory_module.remove_messages(remove_messages)
 
-    updated_memories = await memory_module.memory_core.storage.get_all_memories()
+    updated_memories = await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
     assert len(updated_memories) == 1
     assert any("noodle" in memory.content for memory in updated_memories)
     assert not any("strawberry" in memory.content for memory in updated_memories)
 
-    updated_buffer = await memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(
+    updated_buffer = await scoped_memory_module.memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(
         [message3_id, message4_id]
     )
     conversation_refs = list(updated_buffer.keys())
@@ -445,8 +463,7 @@ async def test_remove_messages(memory_module):
     ],
     indirect=True,
 )
-async def test_topic_extraction(memory_module):
-    conversation_id = str(uuid4())
+async def test_topic_extraction(scoped_memory_module, conversation_id, user_ids_in_conversation_scope):
     messages = [
         {"role": "user", "content": "I need help with my device..."},
         {"role": "assistant", "content": "I'm sorry to hear that. What device do you have?"},
@@ -460,7 +477,7 @@ async def test_topic_extraction(memory_module):
             input = UserMessageInput(
                 id=str(uuid4()),
                 content=message["content"],
-                author_id="user-123",
+                author_id=user_ids_in_conversation_scope[0],
                 conversation_ref=conversation_id,
                 created_at=datetime.now(),
             )
@@ -468,20 +485,20 @@ async def test_topic_extraction(memory_module):
             input = AssistantMessageInput(
                 id=str(uuid4()),
                 content=message["content"],
-                author_id="user-123",
+                author_id=user_ids_in_conversation_scope[0],
                 conversation_ref=conversation_id,
                 created_at=datetime.now(),
             )
-        await memory_module.add_message(input)
+        await scoped_memory_module.memory_module.add_message(input)
 
-    await memory_module.message_queue.message_buffer.scheduler.flush()
-    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    stored_memories = await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
     assert any("macbook" in message.content.lower() for message in stored_memories)
     assert any("2024" in message.content for message in stored_memories)
 
     # Add assertions for topics
-    device_type_memory = next((m for m in stored_memories if "macbook" in m.content.lower()), None)
-    year_memory = next((m for m in stored_memories if "2024" in m.content), None)
+    device_type_memory = next((m for m in stored_memories if "Device Type" in m.topics), None)
+    year_memory = next((m for m in stored_memories if "Device year" in m.topics), None)
 
     assert device_type_memory is not None and "Device Type" in device_type_memory.topics
     assert year_memory is not None and "Device year" in year_memory.topics
@@ -502,40 +519,38 @@ async def test_topic_extraction(memory_module):
     ],
     indirect=True,
 )
-async def test_retrieve_memories_by_topic(memory_module):
+async def test_retrieve_memories_by_topic(scoped_memory_module, conversation_id, user_ids_in_conversation_scope):
     """Test retrieving memories by topic only."""
-    conversation_id = str(uuid4())
     messages = [
         UserMessageInput(
             id=str(uuid4()),
             content="I use Windows 11 on my PC",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=5),
         ),
         UserMessageInput(
             id=str(uuid4()),
             content="I have a MacBook Pro from 2023",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=3),
         ),
         UserMessageInput(
             id=str(uuid4()),
             content="My MacBook runs macOS Sonoma",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=1),
         ),
     ]
 
     for message in messages:
-        await memory_module.add_message(message)
-    await memory_module.message_queue.message_buffer.scheduler.flush()
+        await scoped_memory_module.memory_module.add_message(message)
+    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
 
     # Retrieve memories by Operating System topic
-    os_memories = await memory_module.retrieve_memories(
-        "user-123",
+    os_memories = await scoped_memory_module.retrieve_memories(
         RetrievalConfig(topic=Topic(name="Operating System", description="The user's operating system")),
     )
     assert all("Operating System" in memory.topics for memory in os_memories)
@@ -558,45 +573,45 @@ async def test_retrieve_memories_by_topic(memory_module):
     ],
     indirect=True,
 )
-async def test_retrieve_memories_by_topic_and_query(memory_module):
+async def test_retrieve_memories_by_topic_and_query(
+    scoped_memory_module, conversation_id, user_ids_in_conversation_scope
+):
     """Test retrieving memories using both topic and semantic search."""
-    conversation_id = str(uuid4())
     messages = [
         UserMessageInput(
             id=str(uuid4()),
             content="I use Windows 11 on my gaming PC",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=5),
         ),
         UserMessageInput(
             id=str(uuid4()),
             content="I have a MacBook Pro from 2023",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=3),
         ),
         UserMessageInput(
             id=str(uuid4()),
             content="My MacBook runs macOS Sonoma",
-            author_id="user-123",
+            author_id=user_ids_in_conversation_scope[0],
             conversation_ref=conversation_id,
             created_at=datetime.now() - timedelta(minutes=1),
         ),
     ]
 
     for message in messages:
-        await memory_module.add_message(message)
-    await memory_module.message_queue.message_buffer.scheduler.flush()
+        await scoped_memory_module.memory_module.add_message(message)
+    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
 
     # make sure we have memories
-    stored_memories = await memory_module.memory_core.storage.get_all_memories()
+    stored_memories = await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
     assert any("macbook" in memory.content.lower() for memory in stored_memories)
     assert any("windows" in memory.content.lower() for memory in stored_memories)
 
     # Retrieve memories by Operating System topic AND query about Mac
-    memories = await memory_module.retrieve_memories(
-        "user-123",
+    memories = await scoped_memory_module.retrieve_memories(
         RetrievalConfig(
             topic=Topic(name="Operating System", description="The user's operating system"),
             query="MacBook",
@@ -606,8 +621,7 @@ async def test_retrieve_memories_by_topic_and_query(memory_module):
     assert not any("windows" in memory.content.lower() for memory in memories)
 
     # Try another query within the same topic
-    windows_memories = await memory_module.retrieve_memories(
-        "user-123",
+    windows_memories = await scoped_memory_module.retrieve_memories(
         RetrievalConfig(
             topic=Topic(name="Operating System", description="The user's operating system"),
             query="What operating system does the user use for their Windows PC?",

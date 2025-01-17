@@ -52,6 +52,8 @@ class MemoryModule(BaseMemoryModule):
         if config.enable_logging:
             configure_logging()
 
+        logger.debug(f"MemoryModule initialized with config: {config}")
+
     async def add_message(self, message: MessageInput) -> Message:
         """Add a message to be processed into memory."""
         logger.debug(f"add message to memory module. {message.type}: `{message.content}`")
@@ -123,29 +125,34 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
     def conversation_ref(self):
         return self._conversation_ref
 
-    async def add_message(self, message: MessageInput) -> Message:
-        return await self.memory_module.add_message(message)
-
-    async def retrieve_memories(self, user_id: Optional[str], config: RetrievalConfig) -> List[Memory]:
+    def _validate_user(self, user_id: Optional[str]) -> str:
         if user_id and user_id not in self.users_in_conversation_scope:
             raise ValueError(f"User {user_id} is not in the conversation scope")
         if not user_id:
             if len(self.users_in_conversation_scope) > 1:
                 raise ValueError("No user id provided and there are multiple users in the conversation scope")
-            user_id = self.users_in_conversation_scope[0]
-        return await self.memory_module.retrieve_memories(user_id, config)
+            return self.users_in_conversation_scope[0]
+        return user_id
+
+    async def retrieve_memories(self, user_id: Optional[str], config: RetrievalConfig) -> List[Memory]:
+        validated_user_id = self._validate_user(user_id)
+        return await self.memory_module.retrieve_memories(validated_user_id, config)
 
     async def retrieve_chat_history(self, config: ShortTermMemoryRetrievalConfig) -> List[Message]:
         return await self.memory_module.retrieve_chat_history(self.conversation_ref, config)
 
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        return await self.memory_module.get_memories(memory_ids)
+    # Implement abstract methods by forwarding to memory_module
+    async def add_message(self, message):
+        return await self.memory_module.add_message(message)
 
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        return await self.memory_module.get_user_memories(user_id)
+    async def get_memories(self, *args, **kwargs):
+        return await self.memory_module.get_memories(*args, **kwargs)
 
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        return await self.memory_module.get_messages(memory_ids)
+    async def get_messages(self, *args, **kwargs):
+        return await self.memory_module.get_messages(*args, **kwargs)
 
-    async def remove_messages(self, message_ids: List[str]) -> None:
-        return await self.memory_module.remove_messages(message_ids)
+    async def get_user_memories(self, *args, **kwargs):
+        return await self.memory_module.get_user_memories(*args, **kwargs)
+
+    async def remove_messages(self, *args, **kwargs):
+        return await self.memory_module.remove_messages(*args, **kwargs)
