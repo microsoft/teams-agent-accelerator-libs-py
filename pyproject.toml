@@ -17,7 +17,7 @@ dev = [
     "watchdog>=5.0.3",
     "customer-service-agent-sample",
     "mypy>=1.14.0",
-    "azure-identity>=1.19.0"
+    "azure-identity>=1.19.0",
     "black>=24.10.0",
 ]
 
