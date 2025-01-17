@@ -13,6 +13,7 @@ dependencies = [
     "sqlite-vec>=0.1.6",
     "litellm==1.54.1",
     "botbuilder>=0.0.1",
+    "botframework-connector>=4.16.2",
 ]
 
 [dependency-groups]
