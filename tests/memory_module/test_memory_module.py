@@ -491,8 +491,10 @@ async def test_topic_extraction(scoped_memory_module, conversation_id, user_ids_
 
     await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
     stored_memories = await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
-    assert any("macbook" in message.content.lower() for message in stored_memories)
-    assert any("2024" in message.content for message in stored_memories)
+    assert any(
+        "macbook" in message.content.lower() for message in stored_memories
+    ), f"Stored memories: {stored_memories}"
+    assert any("2024" in message.content for message in stored_memories), f"Stored memories: {stored_memories}"
 
     # Add assertions for topics
     device_type_memory = next((m for m in stored_memories if "Device Type" in m.topics), None)
