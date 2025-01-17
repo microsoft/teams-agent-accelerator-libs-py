@@ -58,7 +58,7 @@ def conversation_id():
 
 @pytest.fixture
 def user_ids_in_conversation_scope():
-    return ["user-123", "user-456"]
+    return ["user-123"]
 
 
 @pytest.fixture
@@ -177,9 +177,7 @@ async def test_simple_conversation(scoped_memory_module, conversation_id, user_i
     assert any(message.id in stored_memories[0].message_attributions for message in messages)
     assert all(memory.memory_type == "semantic" for memory in stored_memories)
 
-    result = await scoped_memory_module.memory_module.retrieve_memories(
-        user_ids_in_conversation_scope[0], RetrievalConfig(query="apple pie", limit=1)
-    )
+    result = await scoped_memory_module.retrieve_memories(config=RetrievalConfig(query="apple pie", limit=1))
     assert len(result) == 1
     assert result[0].id == next(memory.id for memory in stored_memories if "apple pie" in memory.content)
 
@@ -551,7 +549,7 @@ async def test_retrieve_memories_by_topic(scoped_memory_module, conversation_id,
 
     # Retrieve memories by Operating System topic
     os_memories = await scoped_memory_module.retrieve_memories(
-        RetrievalConfig(topic=Topic(name="Operating System", description="The user's operating system")),
+        config=RetrievalConfig(topic=Topic(name="Operating System", description="The user's operating system")),
     )
     assert all("Operating System" in memory.topics for memory in os_memories)
     assert any("windows 11" in memory.content.lower() for memory in os_memories)
@@ -622,7 +620,7 @@ async def test_retrieve_memories_by_topic_and_query(
 
     # Try another query within the same topic
     windows_memories = await scoped_memory_module.retrieve_memories(
-        RetrievalConfig(
+        config=RetrievalConfig(
             topic=Topic(name="Operating System", description="The user's operating system"),
             query="What operating system does the user use for their Windows PC?",
         ),

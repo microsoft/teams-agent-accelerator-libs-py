@@ -67,9 +67,7 @@ class MemoryModule(BaseMemoryModule):
         config: RetrievalConfig,
     ) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
-        logger.debug(
-            f"retrieve memories from (query: {config.query}, topic: {config.topic}, user_id: {user_id}, limit: {config.limit})"  # noqa E501
-        )
+        logger.debug("retrieve memories from config: %s", config)
         memories = await self.memory_core.retrieve_memories(user_id=user_id, config=config)
         logger.debug(f"retrieved memories: {memories}")
         return memories
@@ -134,7 +132,7 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
             return self.users_in_conversation_scope[0]
         return user_id
 
-    async def retrieve_memories(self, user_id: Optional[str], config: RetrievalConfig) -> List[Memory]:
+    async def retrieve_memories(self, config: RetrievalConfig, user_id: Optional[str] = None) -> List[Memory]:
         validated_user_id = self._validate_user(user_id)
         return await self.memory_module.retrieve_memories(validated_user_id, config)
 

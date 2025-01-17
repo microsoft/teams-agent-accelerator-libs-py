@@ -60,7 +60,7 @@ async def get_memorized_fields(memory_module: BaseScopedMemoryModule, fields_to_
     empty_obj: dict = {}
     for topic in fields_to_retrieve.memory_topics:
         relevant_topic = next((t for t in topics if t.name == topic))
-        result = await memory_module.retrieve_memories(None, RetrievalConfig(topic=relevant_topic, limit=None))
+        result = await memory_module.retrieve_memories(config=RetrievalConfig(topic=relevant_topic, limit=None))
         print("Getting memorized queries: ", topic)
         print(result)
         print("---")
