@@ -90,11 +90,3 @@ class MessageQueue(BaseMessageQueue):
             all_memories.extend(memories)
 
         return messages, all_memories
-
-    async def _process_for_episodic_messages(self, messages: List[Message]) -> None:
-        """Process a list of messages as episodic memory.
-
-        Args:
-            messages: List of messages to process
-        """
-        await self.memory_core.process_episodic_messages(messages)

@@ -491,6 +491,8 @@ class SystemPromptEvaluator(BaseEvaluator):
         self.llm_config = llm_config
         self.llm_service = LLMService(llm_config)
 
+        print(f"LLM Config: {self.llm_config}")
+
     async def evaluate_single(self, test_case: Dict) -> EvaluationResult:
         try:
             db_path = Path(__file__).parent / "data" / "evaluation" / "memory_module.db"
