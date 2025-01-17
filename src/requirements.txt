@@ -1,3 +1,7 @@
+./dist/memory_module-0.1.0.tar.gz
 python-dotenv
 aiohttp
-teams-ai~=1.5.0
+teams-ai
+botbuilder
+pydantic>=2.10.3
+litellm==1.54.1

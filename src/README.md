@@ -20,15 +20,24 @@ This template showcases a bot app that responds to user questions like an AI ass
 1. create _.env_ in root folder. Copy the below template into it.
 
 ```
+# AZURE CONFIG
+
 AZURE_OPENAI_API_KEY=<API key>
 AZURE_OPENAI_DEPLOYMENT=gpt-4o
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-small
 AZURE_OPENAI_API_BASE=https://<domain name>.openai.azure.com
 AZURE_OPENAI_API_VERSION=<version number>
-OPENAI_API_KEY=
+
+# OPENAI CONFIG
+
+OPENAI_MODEL_NAME=gpt-4o
+OPENAI_API_KEY=<API key>
+OPENAI_EMBEDDING_MODEL_NAME=text-embedding-3-small
 ```
 
-### Start server
+Fill out only one of Azure OpenAI and OpenAI configurations.
+
+### Debug with Teams Test Tool
 
 1. Open a new terminal under root folder.
 1. run `npm install -g @microsoft/teamsapp-cli`
@@ -43,6 +52,30 @@ OPENAI_API_KEY=
 1. run `node src/devTools/teamsapptester/node_modules/@microsoft/teams-app-test-tool/cli.js start`  
    If success, a test website will show up
    ![alt text](image.png)
+
+### Debug in Teams
+
+1. Open a new terminal under root folder.
+1. run `uv sync`
+1. run `.venv\Scripts\Activate`
+1. Open this folder as a VSCode workspace.
+1. Navigate to the `Run and Debug` tab in VSCode, and select `Debug in Teams (Edge)`. This will start the flow to sideload the bot into Teams, start the server locally, and start the tunnel that exposes the server to the web.
+
+### Deploy to Azure
+
+Currently the scaffolding only supports Azure OpenAI related configurations but can be easily update to support OpenAI configuration.
+
+1. Open a new terminal under root folder.
+1. run `uv sync`
+1. run `.venv\Scripts\Activate`
+1. Build the memory module into a distribtuion file by doing `uv build packages/memory_module`. This should create the artifact `dist/memory_module-0.1.0.tar.gz`. Copy this into the `src/dist/` folder.
+1. Open this folder as a VSCode workspace.
+1. Copy the contents of the `.env` file and add it to the `env/.env.dev.user` file.
+1. Navigate to the Teams Toolkit extension in VSCode.
+1. Under `Lifecycle`, first click `Provision` to provision resources to Azure.
+1. Then click `Deploy`, this should deploy the project to the Azure App Service instance, and run the start up script.
+1. If the above two steps completed successfully, then click `Publish`. This will create an app package in `./appPackage/build/appPackage.dev.zip`.
+1. Sideload the app package in Teams and start chatting with the bot.
 
 **Congratulations**! You are running an application that can now interact with users in Teams:
 

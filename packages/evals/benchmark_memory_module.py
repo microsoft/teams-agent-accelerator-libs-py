@@ -13,6 +13,7 @@ import pandas as pd
 from tqdm import tqdm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../memory_module"))
 
 from memory_module.config import LLMConfig, MemoryModuleConfig
 from memory_module.core.memory_module import MemoryModule
@@ -87,11 +88,12 @@ def run_benchmark(
 
     # benchmark function
     async def benchmark_memory_module(input: DatasetItem):
-        session = input["session"]
+        session: List[SessionMessage] = input["session"]
         query = input["query"]
         expected_strings_in_memories = input["expected_strings_in_memories"]
 
         # buffer size has to be the same as the session length to trigger sm processing
+        memory_module: MemoryModule
         with MemoryModuleManager(buffer_size=len(session)) as memory_module:
             await add_messages(memory_module, messages=session)
             memories = await memory_module.retrieve_memories(None, RetrievalConfig(query=query, limit=None))

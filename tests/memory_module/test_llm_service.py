@@ -1,18 +1,13 @@
-import os
-import sys
 from unittest import mock
 
 import instructor
 import litellm
 import pytest
-from dotenv import load_dotenv
-from pydantic import BaseModel
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from dotenv import load_dotenv
 from memory_module.config import LLMConfig
 from memory_module.services.llm_service import LLMService
+from pydantic import BaseModel
 
 from tests.memory_module.utils import EnvLLMConfig, get_env_llm_config
 
@@ -73,7 +68,7 @@ async def test_completion_calls_litellm_client(mock_completion):
     api_base = "api base"
     api_version = "api version"
     api_key = "api key"
-    messages = []
+    messages: list = []
     litellm_params = {"test key": "test value"}
     local_args = {"local test key": "local test value"}
 
@@ -207,8 +202,11 @@ async def test_completion_azure_openai_managed_identity_auth(config: EnvLLMConfi
     )
 
     llm_config = LLMConfig(
-        model=model, api_base=api_base, api_version=api_version, azure_ad_token_provider=azure_ad_token_provider
-    )  # type: ignore
+        model=model,
+        api_base=api_base,
+        api_version=api_version,
+        azure_ad_token_provider=azure_ad_token_provider,  # type: ignore
+    )
     lm = LLMService(config=llm_config)
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
