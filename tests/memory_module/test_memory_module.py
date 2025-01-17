@@ -182,7 +182,7 @@ async def test_simple_conversation(
     result = await scoped_memory_module.search_memories(query="apple pie", limit=1)
     assert len(result) == 1
     assert result[0].id == next(
-        memory.id for memory in stored_memories if "apple pie" in memory.content
+        memory.id for memory in stored_memories if "apple pie" in memory.content.lower()
     )
 
 
