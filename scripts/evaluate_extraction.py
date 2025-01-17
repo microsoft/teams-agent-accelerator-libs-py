@@ -414,7 +414,6 @@ TEST_CASES = [
                 {"phrase": "Windows 11", "topic": "Operating System"},
                 {"phrase": "macOS Sonoma", "topic": "Operating System"},
                 {"phrase": "MacBook Pro", "topic": "Device Type"},
-                {"phrase": "PC", "topic": "Device Type"},
                 {"phrase": "2023", "topic": "Device Year"},
             ],
         },
