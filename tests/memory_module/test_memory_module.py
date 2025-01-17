@@ -89,7 +89,9 @@ def memory_module(
             )
 
         monkeypatch.setattr(
-            memory_module.memory_core, "_extract_semantic_fact_from_messages", _mock_extract_semantic_fact_from_messages
+            memory_module.memory_core,
+            "_extract_semantic_fact_from_messages",
+            _mock_extract_semantic_fact_from_messages,
         )
 
         async def _mock_episodic_memory_extraction(messages, **kwargs):
@@ -100,7 +102,9 @@ def memory_module(
             )
 
         monkeypatch.setattr(
-            memory_module.memory_core, "_extract_episodic_memory_from_messages", _mock_episodic_memory_extraction
+            memory_module.memory_core,
+            "_extract_episodic_memory_from_messages",
+            _mock_episodic_memory_extraction,
         )
 
         async def _mock_extract_metadata_from_fact(fact: SemanticFact, **kwargs):
@@ -111,7 +115,11 @@ def memory_module(
                 hypothetical_questions=["What food does the user like?"],
             )
 
-        monkeypatch.setattr(memory_module.memory_core, "_extract_metadata_from_fact", _mock_extract_metadata_from_fact)
+        monkeypatch.setattr(
+            memory_module.memory_core,
+            "_extract_metadata_from_fact",
+            _mock_extract_metadata_from_fact,
+        )
 
         async def _mock_embedding(**kwargs):
             return type(
@@ -202,7 +210,9 @@ async def test_episodic_memory_timeout(scoped_memory_module, config, monkeypatch
         extraction_called = True
 
     monkeypatch.setattr(
-        scoped_memory_module.memory_module.memory_core, "_extract_episodic_memory_from_messages", mock_extract_episodic
+        scoped_memory_module.memory_module.memory_core,
+        "_extract_episodic_memory_from_messages",
+        mock_extract_episodic,
     )
 
     conversation_id = str(uuid4())
@@ -318,7 +328,11 @@ async def test_add_memory_processing_decision(scoped_memory_module, conversation
             )
             if decision.decision != expected_decision:
                 # Adding this because this test is flaky and it would be good to know why.
-                print(f"Decision: {decision}, Expected: {expected_decision}", fact, decision)
+                print(
+                    f"Decision: {decision}, Expected: {expected_decision}",
+                    fact,
+                    decision,
+                )
             assert decision.decision == expected_decision
 
     old_messages = [
@@ -424,7 +438,7 @@ async def test_remove_messages(scoped_memory_module, conversation_id, user_ids_i
 
     for message in messages2:
         await scoped_memory_module.memory_module.add_message(message)
-    stored_buffer = await scoped_memory_module.memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(
+    stored_buffer = await scoped_memory_module.memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(  # noqa: E501
         [message3_id, message4_id]
     )
     assert len(list(stored_buffer.keys())) == 2
@@ -438,7 +452,7 @@ async def test_remove_messages(scoped_memory_module, conversation_id, user_ids_i
     assert any("noodle" in memory.content for memory in updated_memories)
     assert not any("strawberry" in memory.content for memory in updated_memories)
 
-    updated_buffer = await scoped_memory_module.memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(
+    updated_buffer = await scoped_memory_module.memory_module.message_queue.message_buffer.storage.get_conversations_from_buffered_messages(  # noqa: E501
         [message3_id, message4_id]
     )
     conversation_refs = list(updated_buffer.keys())
@@ -464,7 +478,10 @@ async def test_remove_messages(scoped_memory_module, conversation_id, user_ids_i
 async def test_topic_extraction(scoped_memory_module, conversation_id, user_ids_in_conversation_scope):
     messages = [
         {"role": "user", "content": "I need help with my device..."},
-        {"role": "assistant", "content": "I'm sorry to hear that. What device do you have?"},
+        {
+            "role": "assistant",
+            "content": "I'm sorry to hear that. What device do you have?",
+        },
         {"role": "user", "content": "I have a Macbook"},
         {"role": "assistant", "content": "What is the year of your device?"},
         {"role": "user", "content": "2024"},
@@ -511,7 +528,10 @@ async def test_topic_extraction(scoped_memory_module, conversation_id, user_ids_
         {
             "topics": [
                 Topic(name="Device Type", description="The type of device the user has"),
-                Topic(name="Operating System", description="The operating system for the user's device"),
+                Topic(
+                    name="Operating System",
+                    description="The operating system for the user's device",
+                ),
                 Topic(name="Device year", description="The year of the user's device"),
             ],
             "buffer_size": 10,

@@ -17,6 +17,7 @@ dev = [
     "watchdog>=5.0.3",
     "customer-service-agent-sample",
     "mypy>=1.14.0",
+    "black>=24.10.0",
 ]
 
 [tool.uv.sources]
@@ -37,7 +38,6 @@ docstring-code-format = true
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B", "Q", "I", "ASYNC"]
-ignore = ["E501"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 [tool.ruff.lint.flake8-tidy-imports.banned-api]

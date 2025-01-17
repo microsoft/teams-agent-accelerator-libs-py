@@ -97,7 +97,7 @@ TEST_CASES = [
                     conversation_ref="conversation-456",
                     created_at=datetime.now() - timedelta(minutes=15),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="I'd be happy to help! What kind of vacation are you looking for?",
                     author_id="assistant",
@@ -111,7 +111,7 @@ TEST_CASES = [
                     conversation_ref="conversation-456",
                     created_at=datetime.now() - timedelta(minutes=13),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="That sounds fun! How do you usually like to travel to your destinations?",
                     author_id="assistant",
@@ -153,7 +153,7 @@ TEST_CASES = [
                     conversation_ref="conversation-789",
                     created_at=datetime.now() - timedelta(minutes=20),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="I'd be happy to help! What are your current exercise habits?",
                     author_id="assistant",
@@ -167,7 +167,7 @@ TEST_CASES = [
                     conversation_ref="conversation-789",
                     created_at=datetime.now() - timedelta(minutes=18),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="That's already impressive! What's your ultimate fitness goal?",
                     author_id="assistant",
@@ -209,7 +209,7 @@ TEST_CASES = [
                     conversation_ref="conversation-234",
                     created_at=datetime.now() - timedelta(minutes=25),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="Let's figure this out. Where do you usually work from?",
                     author_id="assistant",
@@ -223,7 +223,7 @@ TEST_CASES = [
                     conversation_ref="conversation-234",
                     created_at=datetime.now() - timedelta(minutes=23),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="What tools do you use most frequently for your work?",
                     author_id="assistant",
@@ -265,7 +265,7 @@ TEST_CASES = [
                     conversation_ref="conversation-567",
                     created_at=datetime.now() - timedelta(minutes=30),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="That's great! What kind of activities do you currently enjoy?",
                     author_id="assistant",
@@ -279,7 +279,7 @@ TEST_CASES = [
                     conversation_ref="conversation-567",
                     created_at=datetime.now() - timedelta(minutes=28),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="Do you enjoy any outdoor activities or reading as well?",
                     author_id="assistant",
@@ -321,7 +321,7 @@ TEST_CASES = [
                     conversation_ref="conversation-890",
                     created_at=datetime.now() - timedelta(minutes=35),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="I'd love to help! What kind of cuisine do you prefer?",
                     author_id="assistant",
@@ -335,7 +335,7 @@ TEST_CASES = [
                     conversation_ref="conversation-890",
                     created_at=datetime.now() - timedelta(minutes=33),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="Great choice! Are there any dietary restrictions I should keep in mind?",
                     author_id="assistant",
@@ -349,7 +349,7 @@ TEST_CASES = [
                     conversation_ref="conversation-890",
                     created_at=datetime.now() - timedelta(minutes=31),
                 ),
-                UserMessageInput(
+                AssistantMessageInput(
                     id=str(uuid4()),
                     content="What do you usually snack on between meals?",
                     author_id="assistant",
