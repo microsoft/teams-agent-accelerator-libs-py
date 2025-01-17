@@ -12,7 +12,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from memory_module.config import DEFAULT_TOPICS, MemoryModuleConfig, Topic  # noqa: I001
 from memory_module.core.memory_core import (
-    EpisodicMemoryExtraction,
     MemoryCore,
     MessageDigest,
     SemanticFact,
@@ -90,19 +89,6 @@ def memory_module(
             memory_module.memory_core,
             "_extract_semantic_fact_from_messages",
             _mock_extract_semantic_fact_from_messages,
-        )
-
-        async def _mock_episodic_memory_extraction(messages, **kwargs):
-            return EpisodicMemoryExtraction(
-                action="add",
-                reason_for_action="Mocked LLM response about pie",
-                summary="Mocked LLM response about pie",
-            )
-
-        monkeypatch.setattr(
-            memory_module.memory_core,
-            "_extract_episodic_memory_from_messages",
-            _mock_episodic_memory_extraction,
         )
 
         async def _mock_extract_metadata_from_fact(fact: SemanticFact, **kwargs):
