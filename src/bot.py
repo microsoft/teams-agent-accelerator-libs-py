@@ -2,48 +2,43 @@ import os
 import sys
 import traceback
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
-
 from botbuilder.core import MemoryStorage, TurnContext
-from memory_module import (
-    LLMConfig,
-    MemoryMiddleware,
-    MemoryModule,
-    MemoryModuleConfig,
-)
+from memory_module import LLMConfig, MemoryMiddleware, MemoryModuleConfig
 from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.state import TurnState
 
 from config import Config
-from src.tech_assistant_agent.agent import LLMConfig as AgentLLMConfig
-from src.tech_assistant_agent.primary_agent import TechAssistantAgent
+from tech_assistant_agent.agent import LLMConfig as AgentLLMConfig
+from tech_assistant_agent.primary_agent import TechAssistantAgent
+from tech_assistant_agent.tools import topics
 
 config = Config()
 
-memory_llm_config = {
-    "model": f"azure/{config.AZURE_OPENAI_DEPLOYMENT}" if config.AZURE_OPENAI_DEPLOYMENT else config.OPENAI_MODEL_NAME,
-    "api_key": config.AZURE_OPENAI_API_KEY or config.OPENAI_API_KEY,
-    "api_base": config.AZURE_OPENAI_API_BASE,
-    "api_version": config.AZURE_OPENAI_API_VERSION,
-    "embedding_model": f"azure/{config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT}"
-    if config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
-    else config.OPENAI_EMBEDDING_MODEL_NAME,
-}
+memory_llm_config: dict
+if config.AZURE_OPENAI_API_KEY:
+    memory_llm_config = {
+        "model": f"azure/{config.AZURE_OPENAI_DEPLOYMENT}",
+        "api_key": config.AZURE_OPENAI_API_KEY,
+        "api_base": config.AZURE_OPENAI_API_BASE,
+        "api_version": config.AZURE_OPENAI_API_VERSION,
+        "embedding_model": f"azure/{config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT}",
+    }
+elif config.OPENAI_API_KEY:
+    memory_llm_config = {
+        "model": config.OPENAI_MODEL_NAME,
+        "api_key": config.OPENAI_API_KEY,
+        "api_base": None,
+        "api_version": None,
+        "embedding_model": config.OPENAI_EMBEDDING_MODEL_NAME,
+    }
+else:
+    raise ValueError("You need to provide either OpenAI or Azure OpenAI credentials")
 
 agent_llm_config = AgentLLMConfig(
     model=memory_llm_config["model"],
     api_key=memory_llm_config["api_key"],
     api_base=memory_llm_config["api_base"],
     api_version=memory_llm_config["api_version"],
-)
-
-memory_module = MemoryModule(
-    config=MemoryModuleConfig(
-        llm=LLMConfig(**memory_llm_config),
-        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
-        timeout_seconds=60,
-        enable_logging=True,
-    )
 )
 
 # Define storage and application
@@ -56,7 +51,16 @@ bot_app = Application[TurnState](
     )
 )
 
-bot_app.adapter.use(MemoryMiddleware(memory_module))
+memory_middleware = MemoryMiddleware(
+    config=MemoryModuleConfig(
+        llm=LLMConfig(**memory_llm_config),
+        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
+        timeout_seconds=60,
+        enable_logging=True,
+        topics=topics,
+    )
+)
+bot_app.adapter.use(memory_middleware)
 
 
 @bot_app.conversation_update("membersAdded")
@@ -67,7 +71,7 @@ async def on_members_added(context: TurnContext, state: TurnState):
 
 @bot_app.activity("message")
 async def on_message(context: TurnContext, state: TurnState):
-    tech_assistant_agent = TechAssistantAgent(agent_llm_config, memory_module)
+    tech_assistant_agent = TechAssistantAgent(agent_llm_config)
     await tech_assistant_agent.run(context)
     return True
 

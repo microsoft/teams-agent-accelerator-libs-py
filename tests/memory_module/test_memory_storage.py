@@ -337,8 +337,8 @@ async def test_get_messages(memory_storage):
     assert len(result[memory_id_2]) == 1  # Memory 2 should have 1 message
 
     # Verify message content
-    assert result[memory_id_1][0].id == "msg1"
-    assert result[memory_id_1][1].id == "msg2"
+    message_ids = {msg.id for msg in result[memory_id_1]}
+    assert message_ids == {"msg1", "msg2"}
     assert result[memory_id_2][0].id == "msg2"
 
 

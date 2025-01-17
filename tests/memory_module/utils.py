@@ -1,12 +1,8 @@
 import os
-import sys
 from datetime import datetime
 from typing import Optional
 
 from dotenv import load_dotenv
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
-
 from memory_module.interfaces.types import AssistantMessage, Memory, UserMessage
 from memory_module.services.llm_service import LLMConfig
 from pydantic import BaseModel

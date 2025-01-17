@@ -1,15 +1,19 @@
 import json
+import os
+import sys
 from typing import List
 
 from botbuilder.core import TurnContext
 from litellm import acompletion
 from litellm.types.utils import Choices, ModelResponse
-from memory_module import BaseMemoryModule, InternalMessageInput, ShortTermMemoryRetrievalConfig
+from memory_module import BaseScopedMemoryModule, InternalMessageInput, ShortTermMemoryRetrievalConfig
 
-from src.tech_assistant_agent.agent import Agent, LLMConfig
-from src.tech_assistant_agent.prompts import system_prompt
-from src.tech_assistant_agent.tech_agent import TechSupportAgent
-from src.tech_assistant_agent.tools import (
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+from tech_assistant_agent.agent import Agent, LLMConfig
+from tech_assistant_agent.prompts import system_prompt
+from tech_assistant_agent.tech_agent import TechSupportAgent
+from tech_assistant_agent.tools import (
     ConfirmMemorizedFields,
     ExecuteTask,
     GetCandidateTasks,
@@ -21,17 +25,16 @@ from src.tech_assistant_agent.tools import (
 
 
 class TechAssistantAgent(Agent):
-    def __init__(self, llm_config: LLMConfig, memory_module: BaseMemoryModule) -> None:
+    def __init__(self, llm_config: LLMConfig) -> None:
         self._llm_config = llm_config
-        self._memory_module = memory_module
         super().__init__()
 
     async def run(self, context: TurnContext):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)  # noqa E501
+        memory_module: BaseScopedMemoryModule = context.get("memory_module")
         assert conversation_ref_dict.conversation
-        messages = await self._memory_module.retrieve_chat_history(
-            conversation_ref_dict.conversation.id, ShortTermMemoryRetrievalConfig(last_minutes=1)
-        )
+        assert memory_module
+        messages = await memory_module.retrieve_chat_history(ShortTermMemoryRetrievalConfig(last_minutes=1))
         llm_messages: List = [
             {
                 "role": "system",
@@ -81,10 +84,10 @@ class TechAssistantAgent(Agent):
                     res = await get_candidate_tasks(args)
                 elif function_name == "get_memorized_fields":
                     args = GetMemorizedFields.model_validate_json(function_args)
-                    res = await get_memorized_fields(self._memory_module, args)
+                    res = await get_memorized_fields(memory_module, args)
                 elif function_name == "confirm_memorized_fields":
                     args = ConfirmMemorizedFields.model_validate_json(function_args)
-                    res = await confirm_memorized_fields(self._memory_module, args, context)
+                    res = await confirm_memorized_fields(memory_module, args, context)
                     should_break = True
                 elif function_name == "execute_task":
                     args = ExecuteTask.model_validate_json(function_args)
@@ -161,6 +164,7 @@ class TechAssistantAgent(Agent):
 
     async def _add_internal_message(self, context: TurnContext, content: str):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
+        memory_module: BaseScopedMemoryModule = context.get("memory_module")
         if not content:
             print("content is not text, so ignoring...")
             return False
@@ -173,7 +177,7 @@ class TechAssistantAgent(Agent):
         if conversation_ref_dict.conversation is None:
             print("conversation_ref_dict.conversation is None")
             return False
-        await self._memory_module.add_message(
+        await memory_module.add_message(
             InternalMessageInput(
                 content=content,
                 author_id=conversation_ref_dict.bot.id,

@@ -1,15 +1,26 @@
 import datetime
+import logging
+import os
+import sys
 from asyncio import gather
-from typing import Awaitable, Callable, List
+from typing import Awaitable, Callable, List, Optional, cast
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from botbuilder.core import TurnContext
 from botbuilder.core.middleware_set import Middleware
-from botbuilder.schema import Activity, ResourceResponse
+from botbuilder.core.teams import TeamsInfo
+from botbuilder.schema import Activity, ConversationReference, ResourceResponse
+from botframework.connector.models import ChannelAccount, ConversationAccount
+from memory_module.config import MemoryModuleConfig
+from memory_module.core.memory_module import MemoryModule, ScopedMemoryModule
 from memory_module.interfaces.base_memory_module import BaseMemoryModule
 from memory_module.interfaces.types import (
     AssistantMessageInput,
     UserMessageInput,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def build_deep_link(context: TurnContext, message_id: str):
@@ -26,25 +37,34 @@ def build_deep_link(context: TurnContext, message_id: str):
 
 
 class MemoryMiddleware(Middleware):
-    def __init__(self, memory_module: BaseMemoryModule):
-        self.memory_module = memory_module
+    def __init__(
+        self, *, config: Optional[MemoryModuleConfig] = None, memory_module: Optional[BaseMemoryModule] = None
+    ):
+        if config and memory_module:
+            logger.warning("config and memory_module are both provided, using memory_module")
+        elif config:
+            self.memory_module: BaseMemoryModule = MemoryModule(config=config)
+        elif memory_module:
+            self.memory_module = memory_module
+        else:
+            raise ValueError("Either config or memory_module must be provided")
 
-    async def add_user_message(self, context: TurnContext):
+    async def _add_user_message(self, context: TurnContext):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
         content = context.activity.text
         if not content:
-            print("content is not text, so ignoring...")
+            logger.error("content is not text, so ignoring...")
             return False
         if conversation_ref_dict is None:
-            print("conversation_ref_dict is None")
+            logger.error("conversation_ref_dict is None")
             return False
         if conversation_ref_dict.user is None:
-            print("conversation_ref_dict.user is None")
+            logger.error("conversation_ref_dict.user is None")
             return False
         if conversation_ref_dict.conversation is None:
-            print("conversation_ref_dict.conversation is None")
+            logger.error("conversation_ref_dict.conversation is None")
             return False
-        user_aad_object_id = conversation_ref_dict.user.aad_object_id
+        user_aad_object_id = cast(ChannelAccount, conversation_ref_dict.user).aad_object_id
         message_id = context.activity.id
         await self.memory_module.add_message(
             UserMessageInput(
@@ -58,18 +78,18 @@ class MemoryMiddleware(Middleware):
         )
         return True
 
-    async def add_agent_message(
+    async def _add_agent_message(
         self, context: TurnContext, activities: List[Activity], responses: List[ResourceResponse]
     ):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
         if conversation_ref_dict is None:
-            print("conversation_ref_dict is None")
+            logger.error("conversation_ref_dict is None")
             return False
         if conversation_ref_dict.bot is None:
-            print("conversation_ref_dict.bot is None")
+            logger.error("conversation_ref_dict.bot is None")
             return False
         if conversation_ref_dict.conversation is None:
-            print("conversation_ref_dict.conversation is None")
+            logger.error("conversation_ref_dict.conversation is None")
             return False
 
         tasks = []
@@ -92,9 +112,18 @@ class MemoryMiddleware(Middleware):
             await gather(*tasks)
         return True
 
+    async def _augment_context(self, context: TurnContext):
+        conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
+        users_in_conversation_scope = await self._get_roster(conversation_ref_dict, context)
+        context.set(
+            "memory_module",
+            ScopedMemoryModule(self.memory_module, users_in_conversation_scope, conversation_ref_dict.conversation.id),
+        )
+
     async def on_turn(self, context: TurnContext, logic: Callable[[], Awaitable]):
+        await self._augment_context(context)
         # Handle incoming message
-        await self.add_user_message(context)
+        await self._add_user_message(context)
 
         # Store the original send_activities method
         original_send_activities = context.send_activities
@@ -105,7 +134,7 @@ class MemoryMiddleware(Middleware):
         # https://github.com/microsoft/botbuilder-python/issues/2197
         async def wrapped_send_activities(activities: List[Activity]):
             responses = await original_send_activities(activities)
-            await self.add_agent_message(context, activities, responses)
+            await self._add_agent_message(context, activities, responses)
             return responses
 
         # Replace the send_activities method
@@ -113,3 +142,20 @@ class MemoryMiddleware(Middleware):
 
         # Run the bot's logic
         await logic()
+
+    async def _get_roster(self, conversation_ref: ConversationReference, context: TurnContext) -> List[str]:
+        if conversation_ref.conversation is None:
+            logger.error("conversation_ref.conversation is None")
+            return []
+
+        conversation_type = cast(ConversationAccount, conversation_ref.conversation).conversation_type
+        if conversation_type == "personal":
+            user = cast(ChannelAccount, conversation_ref.user)
+            user_id = user.id
+            return [user_id]
+        elif conversation_type == "groupChat":
+            roster = await TeamsInfo.get_members(context)
+            return [member.id for member in roster]
+        else:
+            logger.warning("Conversation type %s not supported", conversation_type)
+            return []
