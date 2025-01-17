@@ -139,7 +139,7 @@ class MemoryCore(BaseMemoryCore):
             for fact in extraction.facts:
                 decision = await self._get_add_memory_processing_decision(fact, author_id)
                 if decision.decision == "ignore":
-                    logger.info(f"Decision to ignore fact {fact.text}")
+                    logger.info("Decision to ignore fact: %s", fact.text)
                     continue
                 topics = [topic for topic in self.topics if topic.name in fact.topics] if fact.topics else None
                 metadata = await self._extract_metadata_from_fact(fact.text, topics)
@@ -153,7 +153,7 @@ class MemoryCore(BaseMemoryCore):
                     topics=fact.topics,
                 )
                 embed_vectors = await self._get_semantic_fact_embeddings(fact.text, metadata)
-                logger.info(f"Storing memory: {memory}")
+                logger.info("Storing memory: %s", memory)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
@@ -229,7 +229,11 @@ class MemoryCore(BaseMemoryCore):
         #     [topic for topic in self.topics if topic.name in new_memory_fact.topics] if new_memory_fact.topics else None # noqa: E501
         # )
         similar_memories = await self._retrieve_memories(user_id, new_memory_fact.text, None, None)
-        decision = await self._extract_memory_processing_decision(new_memory_fact.text, similar_memories, user_id)
+        if len(similar_memories) > 0:
+            decision = await self._extract_memory_processing_decision(new_memory_fact.text, similar_memories, user_id)
+        else:
+            decision = ProcessSemanticMemoryDecision(decision="add", reason_for_decision="No similar memories found")
+        logger.debug("Decision: %s", decision)
         return decision
 
     async def _extract_memory_processing_decision(
@@ -276,6 +280,7 @@ Here is the new memory:
         messages = [{"role": "system", "content": system_message}]
 
         decision = await self.lm.completion(messages=messages, response_model=ProcessSemanticMemoryDecision)
+        logger.debug("Decision: %s", decision)
         return decision
 
     async def _extract_metadata_from_fact(self, fact: str, topics: Optional[List[Topic]] = None) -> MessageDigest:
