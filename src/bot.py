@@ -2,23 +2,15 @@ import os
 import sys
 import traceback
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "../packages/memory_module"))
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from botbuilder.core import MemoryStorage, TurnContext
-from memory_module import (
-    LLMConfig,
-    MemoryMiddleware,
-    MemoryModule,
-    MemoryModuleConfig,
-)
+from memory_module import LLMConfig, MemoryMiddleware, MemoryModuleConfig
 from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.state import TurnState
 
 from config import Config
 from tech_assistant_agent.agent import LLMConfig as AgentLLMConfig
 from tech_assistant_agent.primary_agent import TechAssistantAgent
+from tech_assistant_agent.tools import topics
 
 config = Config()
 
@@ -49,15 +41,6 @@ agent_llm_config = AgentLLMConfig(
     api_version=memory_llm_config["api_version"],
 )
 
-memory_module = MemoryModule(
-    config=MemoryModuleConfig(
-        llm=LLMConfig(**memory_llm_config),
-        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
-        timeout_seconds=60,
-        enable_logging=True,
-    )
-)
-
 # Define storage and application
 storage = MemoryStorage()
 bot_app = Application[TurnState](
@@ -68,7 +51,16 @@ bot_app = Application[TurnState](
     )
 )
 
-bot_app.adapter.use(MemoryMiddleware(memory_module))
+memory_middleware = MemoryMiddleware(
+    config=MemoryModuleConfig(
+        llm=LLMConfig(**memory_llm_config),
+        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
+        timeout_seconds=60,
+        enable_logging=True,
+        topics=topics,
+    )
+)
+bot_app.adapter.use(memory_middleware)
 
 
 @bot_app.conversation_update("membersAdded")
@@ -79,7 +71,7 @@ async def on_members_added(context: TurnContext, state: TurnState):
 
 @bot_app.activity("message")
 async def on_message(context: TurnContext, state: TurnState):
-    tech_assistant_agent = TechAssistantAgent(agent_llm_config, memory_module)
+    tech_assistant_agent = TechAssistantAgent(agent_llm_config)
     await tech_assistant_agent.run(context)
     return True
 

@@ -49,9 +49,9 @@ class SemanticFact(BaseModel):
         ...,
         description="The text of the fact. Do not use real names (you can say 'The user' instead) and avoid pronouns.",
     )
-    message_indices: Set[int] = Field(
+    message_ids: Set[int] = Field(
         default_factory=set,
-        description="The indices of the messages that the fact was extracted from.",
+        description="The ids of the messages that the fact was extracted from.",
     )
     # TODO: Add a validator to ensure that topics are valid
     topics: Optional[List[str]] = Field(
@@ -139,11 +139,11 @@ class MemoryCore(BaseMemoryCore):
             for fact in extraction.facts:
                 decision = await self._get_add_memory_processing_decision(fact, author_id)
                 if decision.decision == "ignore":
-                    logger.info(f"Decision to ignore fact {fact.text}")
+                    logger.info("Decision to ignore fact: %s", fact.text)
                     continue
                 topics = [topic for topic in self.topics if topic.name in fact.topics] if fact.topics else None
                 metadata = await self._extract_metadata_from_fact(fact.text, topics)
-                message_ids = set(messages[idx].id for idx in fact.message_indices if idx < len(messages))
+                message_ids = set(messages[idx].id for idx in fact.message_ids if idx < len(messages))
                 memory = BaseMemoryInput(
                     content=fact.text,
                     created_at=messages[0].created_at or datetime.datetime.now(),
@@ -153,6 +153,7 @@ class MemoryCore(BaseMemoryCore):
                     topics=fact.topics,
                 )
                 embed_vectors = await self._get_semantic_fact_embeddings(fact.text, metadata)
+                logger.info("Storing memory: %s", memory)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
 
     async def process_episodic_messages(self, messages: List[Message]) -> None:
@@ -209,17 +210,17 @@ class MemoryCore(BaseMemoryCore):
         for memory in remove_memories_list:
             if not memory.message_attributions:
                 removed_memory_ids.append(memory.id)
-                logger.info("memory {} will be removed since no associated messages".format(memory.id))
+                logger.info("memory %s will be removed since no associated messages", memory.id)
                 continue
             # If all messages associated with a memory are removed, remove that memory too
             if all(item in message_ids for item in memory.message_attributions):
                 removed_memory_ids.append(memory.id)
-                logger.info("memory {} will be removed since all associated messages are removed".format(memory.id))
+                logger.info("memory %s will be removed since all associated messages are removed", memory.id)
 
         # Remove selected messages and related old memories
         await self.storage.remove_memories(removed_memory_ids)
         await self.storage.remove_messages(message_ids)
-        logger.info("messages {} are removed".format(",".join(message_ids)))
+        logger.info("messages %s are removed", ",".join(message_ids))
 
     async def _get_add_memory_processing_decision(
         self, new_memory_fact: SemanticFact, user_id: Optional[str]
@@ -228,7 +229,11 @@ class MemoryCore(BaseMemoryCore):
         #     [topic for topic in self.topics if topic.name in new_memory_fact.topics] if new_memory_fact.topics else None # noqa: E501
         # )
         similar_memories = await self._retrieve_memories(user_id, new_memory_fact.text, None, None)
-        decision = await self._extract_memory_processing_decision(new_memory_fact.text, similar_memories, user_id)
+        if len(similar_memories) > 0:
+            decision = await self._extract_memory_processing_decision(new_memory_fact.text, similar_memories, user_id)
+        else:
+            decision = ProcessSemanticMemoryDecision(decision="add", reason_for_decision="No similar memories found")
+        logger.debug("Decision: %s", decision)
         return decision
 
     async def _extract_memory_processing_decision(
@@ -275,6 +280,7 @@ Here is the new memory:
         messages = [{"role": "system", "content": system_message}]
 
         decision = await self.lm.completion(messages=messages, response_model=ProcessSemanticMemoryDecision)
+        logger.debug("Decision: %s", decision)
         return decision
 
     async def _extract_metadata_from_fact(self, fact: str, topics: Optional[List[Topic]] = None) -> MessageDigest:
@@ -342,9 +348,9 @@ Here is the new memory:
         messages_str = ""
         for idx, message in enumerate(messages):
             if message.type == "user":
-                messages_str += f"{idx}. User: {message.content}\n"
+                messages_str += f"<USER_MESSAGE id={idx}>{message.content}</USER_MESSAGE>\n"
             elif message.type == "assistant":
-                messages_str += f"{idx}. Assistant: {message.content}\n"
+                messages_str += f"<ASSISTANT_MESSAGE id={idx}>{message.content}</ASSISTANT_MESSAGE>\n"
             else:
                 # we explicitly ignore internal messages
                 continue
@@ -365,9 +371,11 @@ Here is the new memory:
 
 <TOPICS>
 {topics_str}
+</TOPICS>
 
 <EXISTING_MEMORIES>
 {existing_memories_str}
+</EXISTING_MEMORIES>
 """  # noqa: E501
         llm_messages = [
             {"role": "system", "content": system_message},
@@ -376,14 +384,13 @@ Here is the new memory:
                 "content": f"""
 <TRANSCRIPT>
 {messages_str}
+</TRANSCRIPT>
 
 <INSTRUCTIONS>
 Extract new FACTS from the user messages in the TRANSCRIPT.
 FACTS are patterns and interests that will remain relevant over time, even if the user is mentioning short-term plans or events.
 Treat FACTS independently, even if multiple facts relate to the same topic.
 Ignore FACTS found in EXISTING_MEMORIES.
-Return FACTS as markdown using the OUTPUT_FORMAT.
-Return NONE if no new FACTS are found in teh TRANSCRIPT.
 """,  # noqa: E501
             },
         ]
@@ -412,8 +419,9 @@ Return NONE if no new FACTS are found in teh TRANSCRIPT.
             facts=(List[ValidatedSemanticMemoryFact], Field(description="List of extracted facts")),  # type: ignore[valid-type]
         )
 
+        logger.debug("LLM messages: %s", llm_messages)
         res = await self.lm.completion(messages=llm_messages, response_model=ValidatedSemanticMemoryExtraction)
-        logger.info(f"Extracted semantic memory: {res}")
+        logger.info("Extracted semantic memory: %s", res)
         return res
 
     async def _extract_episodic_memory_from_messages(self, messages: List[Message]) -> EpisodicMemoryExtraction:
