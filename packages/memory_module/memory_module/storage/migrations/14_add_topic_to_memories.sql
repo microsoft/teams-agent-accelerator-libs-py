@@ -1,1 +1,0 @@
-ALTER TABLE memories ADD COLUMN topics TEXT; 
