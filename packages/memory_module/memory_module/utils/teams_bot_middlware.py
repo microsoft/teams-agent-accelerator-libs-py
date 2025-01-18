@@ -38,10 +38,15 @@ def build_deep_link(context: TurnContext, message_id: str):
 
 class MemoryMiddleware(Middleware):
     def __init__(
-        self, *, config: Optional[MemoryModuleConfig] = None, memory_module: Optional[BaseMemoryModule] = None
+        self,
+        *,
+        config: Optional[MemoryModuleConfig] = None,
+        memory_module: Optional[BaseMemoryModule] = None,
     ):
         if config and memory_module:
-            logger.warning("config and memory_module are both provided, using memory_module")
+            logger.warning(
+                "config and memory_module are both provided, using memory_module"
+            )
         elif config:
             self.memory_module: BaseMemoryModule = MemoryModule(config=config)
         elif memory_module:
@@ -64,7 +69,9 @@ class MemoryMiddleware(Middleware):
         if conversation_ref_dict.conversation is None:
             logger.error("conversation_ref_dict.conversation is None")
             return False
-        user_aad_object_id = cast(ChannelAccount, conversation_ref_dict.user).aad_object_id
+        user_aad_object_id = cast(
+            ChannelAccount, conversation_ref_dict.user
+        ).aad_object_id
         message_id = context.activity.id
         await self.memory_module.add_message(
             UserMessageInput(
@@ -72,14 +79,21 @@ class MemoryMiddleware(Middleware):
                 content=context.activity.text,
                 author_id=user_aad_object_id,
                 conversation_ref=conversation_ref_dict.conversation.id,
-                created_at=context.activity.timestamp if context.activity.timestamp else datetime.datetime.now(),
+                created_at=(
+                    context.activity.timestamp
+                    if context.activity.timestamp
+                    else datetime.datetime.now()
+                ),
                 deep_link=build_deep_link(context, context.activity.id),
             )
         )
         return True
 
     async def _add_agent_message(
-        self, context: TurnContext, activities: List[Activity], responses: List[ResourceResponse]
+        self,
+        context: TurnContext,
+        activities: List[Activity],
+        responses: List[ResourceResponse],
     ):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
         if conversation_ref_dict is None:
@@ -103,7 +117,11 @@ class MemoryMiddleware(Middleware):
                             author_id=conversation_ref_dict.bot.id,
                             conversation_ref=conversation_ref_dict.conversation.id,
                             deep_link=build_deep_link(context, response.id),
-                            created_at=activity.timestamp if activity.timestamp else datetime.datetime.now(),
+                            created_at=(
+                                activity.timestamp
+                                if activity.timestamp
+                                else datetime.datetime.now()
+                            ),
                         )
                     )
                 )
@@ -114,10 +132,16 @@ class MemoryMiddleware(Middleware):
 
     async def _augment_context(self, context: TurnContext):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
-        users_in_conversation_scope = await self._get_roster(conversation_ref_dict, context)
+        users_in_conversation_scope = await self._get_roster(
+            conversation_ref_dict, context
+        )
         context.set(
             "memory_module",
-            ScopedMemoryModule(self.memory_module, users_in_conversation_scope, conversation_ref_dict.conversation.id),
+            ScopedMemoryModule(
+                self.memory_module,
+                users_in_conversation_scope,
+                conversation_ref_dict.conversation.id,
+            ),
         )
 
     async def on_turn(self, context: TurnContext, logic: Callable[[], Awaitable]):
@@ -143,12 +167,16 @@ class MemoryMiddleware(Middleware):
         # Run the bot's logic
         await logic()
 
-    async def _get_roster(self, conversation_ref: ConversationReference, context: TurnContext) -> List[str]:
+    async def _get_roster(
+        self, conversation_ref: ConversationReference, context: TurnContext
+    ) -> List[str]:
         if conversation_ref.conversation is None:
             logger.error("conversation_ref.conversation is None")
             return []
 
-        conversation_type = cast(ConversationAccount, conversation_ref.conversation).conversation_type
+        conversation_type = cast(
+            ConversationAccount, conversation_ref.conversation
+        ).conversation_type
         if conversation_type == "personal":
             user = cast(ChannelAccount, conversation_ref.user)
             user_id = user.id

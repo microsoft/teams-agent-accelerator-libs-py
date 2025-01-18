@@ -30,12 +30,16 @@ class BaseMessageBufferStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_conversations_from_buffered_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+    async def get_conversations_from_buffered_messages(
+        self, message_ids: List[str]
+    ) -> Dict[str, List[str]]:
         """Get conversation - messages maps"""
         pass
 
     @abstractmethod
-    async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
+    async def clear_buffered_messages(
+        self, conversation_ref: str, before: Optional[datetime.datetime] = None
+    ) -> None:
         """Remove all buffered messages for a conversation. If the `before` parameter is provided,
         only messages created on or before that time will be removed.
 
@@ -54,7 +58,9 @@ class BaseMessageBufferStorage(ABC):
         """
 
     @abstractmethod
-    async def count_buffered_messages(self, conversation_refs: List[str]) -> Dict[str, int]:
+    async def count_buffered_messages(
+        self, conversation_refs: List[str]
+    ) -> Dict[str, int]:
         """Count the number of buffered messages for selected conversations.
 
         Args:

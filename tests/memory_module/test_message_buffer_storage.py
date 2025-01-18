@@ -5,7 +5,9 @@ from uuid import uuid4
 import pytest
 from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
-from memory_module.storage.sqlite_message_buffer_storage import SQLiteMessageBufferStorage
+from memory_module.storage.sqlite_message_buffer_storage import (
+    SQLiteMessageBufferStorage,
+)
 
 from tests.memory_module.utils import create_test_user_message
 
@@ -33,7 +35,9 @@ async def test_store_and_get_buffered_message(storage):
     buffer, memory_storage = storage
     await memory_storage.store_short_term_memory(message=message)
     await buffer.store_buffered_message(message=message)
-    messages = await buffer.get_buffered_messages(conversation_ref=message.conversation_ref)
+    messages = await buffer.get_buffered_messages(
+        conversation_ref=message.conversation_ref
+    )
 
     assert len(messages) == 1
     assert messages[0].id == message.id
@@ -51,7 +55,9 @@ async def test_clear_buffered_messages(storage):
 
     # Test clear the buffer
     await buffer.clear_buffered_messages(conversation_ref=message.conversation_ref)
-    messages = await buffer.get_buffered_messages(conversation_ref=message.conversation_ref)
+    messages = await buffer.get_buffered_messages(
+        conversation_ref=message.conversation_ref
+    )
 
     assert len(messages) == 0
 
@@ -68,14 +74,22 @@ async def test_clear_buffered_messages_before_time(storage):
 
     # Clear all messages before the message created time, shouldn't clear the message
     before = message.created_at - timedelta(seconds=1)
-    await buffer.clear_buffered_messages(conversation_ref=message.conversation_ref, before=before)
-    messages = await buffer.get_buffered_messages(conversation_ref=message.conversation_ref)
+    await buffer.clear_buffered_messages(
+        conversation_ref=message.conversation_ref, before=before
+    )
+    messages = await buffer.get_buffered_messages(
+        conversation_ref=message.conversation_ref
+    )
     assert len(messages) == 1
 
     # Clear all messages before the message created time + 1 second, should clear the message
     before = message.created_at + timedelta(seconds=1)
-    await buffer.clear_buffered_messages(conversation_ref=message.conversation_ref, before=before)
-    messages = await buffer.get_buffered_messages(conversation_ref=message.conversation_ref)
+    await buffer.clear_buffered_messages(
+        conversation_ref=message.conversation_ref, before=before
+    )
+    messages = await buffer.get_buffered_messages(
+        conversation_ref=message.conversation_ref
+    )
     assert len(messages) == 0
 
 
@@ -89,7 +103,9 @@ async def test_count_buffered_messages(storage):
     await memory_storage.store_short_term_memory(message=message)
     await buffer.store_buffered_message(message=message)
 
-    count_ref = await buffer.count_buffered_messages(conversation_refs=[message.conversation_ref])
+    count_ref = await buffer.count_buffered_messages(
+        conversation_refs=[message.conversation_ref]
+    )
     assert count_ref[message.conversation_ref] == 1
 
 

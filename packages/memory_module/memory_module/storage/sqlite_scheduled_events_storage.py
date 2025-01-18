@@ -5,7 +5,9 @@ from pathlib import Path
 from typing import List, Optional
 
 from memory_module.interfaces.base_scheduled_events_service import Event
-from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
+from memory_module.interfaces.base_scheduled_events_storage import (
+    BaseScheduledEventsStorage,
+)
 from memory_module.storage.sqlite_storage import SQLiteStorage
 
 logger = logging.getLogger(__name__)

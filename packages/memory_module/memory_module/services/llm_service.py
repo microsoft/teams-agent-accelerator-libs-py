@@ -48,7 +48,8 @@ class LLMService:
         self._litellm_params = {
             k: v
             for k, v in config.model_dump().items()
-            if k not in {"model", "api_key", "api_base", "api_version", "embedding_model"}
+            if k
+            not in {"model", "api_key", "api_base", "api_version", "embedding_model"}
         }
 
     async def completion(
@@ -83,7 +84,10 @@ class LLMService:
         return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)  # type: ignore
 
     async def embedding(
-        self, input: Union[str, List[str]], override_model: Optional[str] = None, **kwargs
+        self,
+        input: Union[str, List[str]],
+        override_model: Optional[str] = None,
+        **kwargs,
     ) -> EmbeddingResponse:
         """Get embeddings from the model. This method is a wrapper around litellm's `aembedding` method."""
         model = override_model or self.embedding_model

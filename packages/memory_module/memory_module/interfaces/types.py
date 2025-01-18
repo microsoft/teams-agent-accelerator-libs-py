@@ -109,7 +109,9 @@ class BaseMemoryInput(BaseModel):
 
 
 class Topic(BaseModel):
-    name: str = Field(description="A unique name of the topic that the memory module should listen to")
+    name: str = Field(
+        description="A unique name of the topic that the memory module should listen to"
+    )
     description: str = Field(description="Description of the topic")
 
 
@@ -134,7 +136,8 @@ class RetrievalConfig(BaseModel):
     """
 
     query: Optional[str] = Field(
-        default=None, description="A natural language query to search for semantically similar memories"
+        default=None,
+        description="A natural language query to search for semantically similar memories",
     )
     topic: Optional[Topic] = Field(
         default=None,

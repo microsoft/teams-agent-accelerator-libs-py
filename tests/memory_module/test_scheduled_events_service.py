@@ -73,7 +73,9 @@ async def test_callback_execution(config):
 
         assert callback_called
         assert callback_data == test_data
-        assert len(service.pending_events) == 0  # Event should be removed after execution
+        assert (
+            len(service.pending_events) == 0
+        )  # Event should be removed after execution
     finally:
         # Clean up any remaining tasks
         await service.flush()

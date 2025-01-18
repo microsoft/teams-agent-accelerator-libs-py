@@ -43,13 +43,19 @@ class MemoryModuleConfig(BaseModel):
         default_factory=lambda: Path(__file__).parent / "data" / "memory.db",
         description="Path to SQLite database file",
     )
-    buffer_size: int = Field(default=5, description="Number of messages to collect before processing")
+    buffer_size: int = Field(
+        default=5, description="Number of messages to collect before processing"
+    )
     timeout_seconds: int = Field(
         default=300,  # 5 minutes
         description="Seconds to wait before processing a conversation",
     )
     llm: LLMConfig = Field(description="LLM service configuration")
     topics: list[Topic] = Field(
-        default=DEFAULT_TOPICS, description="List of topics that the memory module should listen to", min_length=1
+        default=DEFAULT_TOPICS,
+        description="List of topics that the memory module should listen to",
+        min_length=1,
     )
-    enable_logging: bool = Field(default=False, description="Enable verbose logging for memory module")
+    enable_logging: bool = Field(
+        default=False, description="Enable verbose logging for memory module"
+    )
