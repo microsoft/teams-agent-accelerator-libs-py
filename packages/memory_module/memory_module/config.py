@@ -84,7 +84,7 @@ class MemoryModuleConfig(BaseModel):
     for extraction.
     """
     buffer_size: int = Field(
-        default=5, description="Number of messages to collect before processing"
+        default=10, description="Number of messages to collect before processing"
     )
 
     """
