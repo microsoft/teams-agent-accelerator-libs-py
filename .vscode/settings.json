@@ -13,6 +13,6 @@
   ],
   "[python]": {
     "diffEditor.ignoreTrimWhitespace": false,
-    "editor.defaultFormatter": "mikoz.black-py"
+    "editor.defaultFormatter": "ms-python.black-formatter"
   }
 }
