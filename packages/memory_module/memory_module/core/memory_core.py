@@ -101,12 +101,16 @@ class MemoryCore(BaseMemoryCore):
             storage: Optional storage implementation for memory persistence
         """
         self.lm = llm_service
-        self.storage: BaseMemoryStorage = storage or (
-            SQLiteMemoryStorage(db_path=config.db_path)
-            if config.db_path is not None
-            else InMemoryStorage()
-        )
+        self.storage: BaseMemoryStorage = storage or self._build_storage(config)
         self.topics = config.topics
+
+    def _build_storage(self, config: MemoryModuleConfig) -> BaseMemoryStorage:
+        if not config.storage or config.storage.storage_type == "in-memory":
+            return InMemoryStorage()
+        if config.storage.storage_type == "sqlite":
+            return SQLiteMemoryStorage(config.storage)
+
+        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
 
     async def process_semantic_messages(
         self,

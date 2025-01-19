@@ -1,4 +1,4 @@
-from memory_module.config import LLMConfig, MemoryModuleConfig
+from memory_module.config import LLMConfig, MemoryModuleConfig, StorageConfig
 from memory_module.core.memory_module import MemoryModule
 from memory_module.interfaces.base_memory_module import (
     BaseMemoryModule,
@@ -22,6 +22,7 @@ __all__ = [
     "BaseMemoryModule",
     "MemoryModule",
     "MemoryModuleConfig",
+    "StorageConfig",
     "LLMConfig",
     "Memory",
     "InternalMessage",

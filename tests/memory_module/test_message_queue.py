@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
-from memory_module.config import LLMConfig, MemoryModuleConfig
+from memory_module.config import LLMConfig, MemoryModuleConfig, StorageConfig
 from memory_module.core.memory_core import MemoryCore
 from memory_module.core.message_queue import MessageQueue
 from memory_module.interfaces.base_message_buffer_storage import (
@@ -19,7 +19,7 @@ from tests.memory_module.utils import (
 async def test_process_for_semantic_messages_enough_messages():
     config = MemoryModuleConfig(
         buffer_size=4,
-        db_path=None,  # use in memory storage
+        storage=StorageConfig(type="in_memory"),  # use in memory storage
         timeout_seconds=60,
         llm=Mock(spec=LLMConfig),
     )
@@ -52,7 +52,7 @@ async def test_process_for_semantic_messages_enough_messages():
 async def test_process_for_semantic_messages_less_messages():
     config = MemoryModuleConfig(
         buffer_size=5,
-        db_path=None,  # use in-memory storage
+        storage=StorageConfig(type="in_memory"),  # use in-memory storage
         timeout_seconds=60,
         llm=Mock(spec=LLMConfig),
     )

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import sqlite_vec
+from memory_module.config import StorageConfig
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import (
     BaseMemoryInput,
@@ -26,9 +27,8 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteMemoryStorage(BaseMemoryStorage):
     """SQLite implementation of memory storage."""
 
-    def __init__(self, db_path: Optional[str | Path] = None):
-        self.db_path = db_path or DEFAULT_DB_PATH
-        self.storage = SQLiteStorage(self.db_path)
+    def __init__(self, config: StorageConfig):
+        self.storage = SQLiteStorage(config.db_path or DEFAULT_DB_PATH)
 
     async def store_memory(
         self, memory: BaseMemoryInput, *, embedding_vectors: List[TextEmbedding]

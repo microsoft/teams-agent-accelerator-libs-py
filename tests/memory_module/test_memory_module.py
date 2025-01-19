@@ -10,7 +10,12 @@ import pytest_asyncio
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from memory_module.config import DEFAULT_TOPICS, MemoryModuleConfig, Topic  # noqa: I001
+from memory_module.config import (
+    DEFAULT_TOPICS,
+    MemoryModuleConfig,
+    StorageConfig,
+    Topic,
+)  # noqa: I001
 from memory_module.core.memory_core import (
     MemoryCore,
     MessageDigest,
@@ -39,7 +44,9 @@ def config(request):
     if not llm_config.api_key:
         pytest.skip("OpenAI API key not provided")
     return MemoryModuleConfig(
-        db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
+        storage=StorageConfig(
+            db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
+        ),
         buffer_size=buffer_size,
         timeout_seconds=timeout_seconds,
         llm=llm_config,
@@ -65,8 +72,8 @@ def memory_module(
 ):
     """Fixture to create a fresh MemoryModule instance for each test."""
     # Delete the db file if it exists
-    if config.db_path.exists():
-        config.db_path.unlink()
+    if config.storage.db_path.exists():
+        config.storage.db_path.unlink()
 
     memory_module = MemoryModule(config=config)
 

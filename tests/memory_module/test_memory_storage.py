@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 
 import pytest
+from memory_module.config import StorageConfig
 from memory_module.interfaces.types import (
     AssistantMessageInput,
     BaseMemoryInput,
@@ -18,10 +19,10 @@ from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 @pytest.fixture(params=["sqlite", "in_memory"])
 def memory_storage(request):
     if request.param == "sqlite":
-        name = f"memory_{uuid4().hex}.db"
-        storage = SQLiteMemoryStorage(name)
+        db_path = f"memory_{uuid4().hex}.db"
+        storage = SQLiteMemoryStorage(StorageConfig(db_path=db_path))
         yield storage
-        os.remove(storage.db_path)
+        os.remove(db_path)
 
     else:
         yield InMemoryStorage()

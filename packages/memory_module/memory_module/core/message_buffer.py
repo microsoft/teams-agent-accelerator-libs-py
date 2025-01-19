@@ -33,16 +33,20 @@ class MessageBuffer:
         self.buffer_size = config.buffer_size
         self.timeout_seconds = config.timeout_seconds
         self._process_callback = process_callback
-        self.storage = storage or (
-            SQLiteMessageBufferStorage(db_path=config.db_path)
-            if config.db_path is not None
-            else InMemoryStorage()
-        )
+        self.storage = storage or self._build_storage(config)
         self.scheduler = scheduler or ScheduledEventsService(config=config)
         self.scheduler.callback = self._handle_timeout
 
         # Track conversations being processed
         self._processing: Set[str] = set()
+
+    def _build_storage(self, config: MemoryModuleConfig) -> BaseMessageBufferStorage:
+        if not config.storage or config.storage.storage_type == "in-memory":
+            return InMemoryStorage()
+        if config.storage.storage_type == "sqlite":
+            return SQLiteMessageBufferStorage(config.storage)
+
+        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
 
     async def _process_conversation_messages(self, conversation_ref: str) -> None:
         """Process all messages for a conversation and clear its buffer.

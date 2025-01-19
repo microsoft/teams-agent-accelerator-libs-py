@@ -15,7 +15,7 @@ from memory_module.interfaces.types import (
 class BaseMemoryStorage(ABC):
     """Base class for the storage component."""
 
-    default_limit = 3
+    default_limit = 10
 
     @abstractmethod
     async def store_memory(
