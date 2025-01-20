@@ -96,11 +96,11 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
 
     @property
     @abstractmethod
-    def conversation_ref(self): ...
+    def conversation_ref(self) -> str: ...
 
     @property
     @abstractmethod
-    def users_in_conversation_scope(self): ...
+    def users_in_conversation_scope(self) -> List[str]: ...
 
     @abstractmethod
     async def retrieve_conversation_history(
