@@ -79,7 +79,7 @@ async def test_process_for_semantic_messages_less_messages():
     ]
 
     core.process_semantic_messages.return_value = None
-    core.retrieve_chat_history.return_value = messages
+    core.retrieve_conversation_history.return_value = messages
 
     async def mock_get_memories_from_message(message_id):
         return existing_memories if message_id == "user_msg" else []
@@ -95,7 +95,7 @@ async def test_process_for_semantic_messages_less_messages():
 
     assert await mq._process_for_semantic_messages(buffered_messages) is None
     assert (
-        core.retrieve_chat_history.call_count == 1
+        core.retrieve_conversation_history.call_count == 1
     )  # just once to get stored messages
     assert core.process_semantic_messages.call_count == 1
     assert (

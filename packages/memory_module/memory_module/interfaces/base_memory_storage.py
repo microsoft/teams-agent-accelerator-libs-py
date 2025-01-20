@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from memory_module.interfaces.types import (
@@ -6,7 +7,6 @@ from memory_module.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    ShortTermMemoryRetrievalConfig,
     TextEmbedding,
     Topic,
 )
@@ -53,7 +53,7 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def retrieve_memories(
+    async def search_memories(
         self,
         *,
         user_id: Optional[str],
@@ -117,8 +117,13 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def retrieve_chat_history(
-        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        conversation_ref: str,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         pass
