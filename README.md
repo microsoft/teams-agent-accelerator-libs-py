@@ -1,11 +1,10 @@
-# Teams Memory Agents - Python
+# Teams Agent Accelerator - Python
 
 ## Directory
 
-- Main repository: [Teams Memory Agents](https://github.com/microsoft/teams-memory-agents)
-- [Teams Memory Agents - Python](https://github.com/microsoft/teams-memory-agents-py) (You are here)
-- [Teams Memory Agents - JS](https://github.com/microsoft/teams-memory-agents-js)
-- [Teams Memory Agents - Dotnet](https://github.com/microsoft/teams-memory-agents-dotnet)
+- [Teams Agent Accelerator - Python](https://github.com/microsoft/teams-agent-accelerator-libs-py) (You are here)
+- [Teams Agent Accelerator - JS](https://github.com/microsoft/teams-agent-accelerator-libs-js)
+- [Teams Agent Accelerator - Dotnet](https://github.com/microsoft/teams-agent-accelerator-libs-dotnet)
 
 As the maintainer of this project, please make a few updates:
 
