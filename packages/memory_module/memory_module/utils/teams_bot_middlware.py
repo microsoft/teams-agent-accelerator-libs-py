@@ -179,11 +179,11 @@ class MemoryMiddleware(Middleware):
         ).conversation_type
         if conversation_type == "personal":
             user = cast(ChannelAccount, conversation_ref.user)
-            user_id = user.id
+            user_id = user.aad_object_id
             return [user_id]
         elif conversation_type == "groupChat":
             roster = await TeamsInfo.get_members(context)
-            return [member.id for member in roster]
+            return [member.aad_object_id for member in roster]
         else:
             logger.warning("Conversation type %s not supported", conversation_type)
             return []
