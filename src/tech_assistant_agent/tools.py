@@ -124,7 +124,7 @@ async def confirm_memorized_fields(
         memory for _, memory in user_details_with_memories if memory is not None
     ]
     messages_for_cited_memories = await memory_module.get_messages(
-        [memory for memory in cited_memories]
+        [memory.id for memory in cited_memories]
     )
     print("messages_for_cited_memories", messages_for_cited_memories)
     memory_strs = []
