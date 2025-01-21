@@ -91,12 +91,19 @@ async def confirm_memorized_fields(
     context: TurnContext,
 ) -> str:
     print("Confirming memorized fields", fields_to_confirm)
+    if not fields_to_confirm.fields_to_confirm:
+        print("No fields to confirm")
+        return "No fields to confirm"
     flattened_memory_ids = [
         memory_id
         for user_detail in fields_to_confirm.fields_to_confirm
         for memory_id in user_detail.memory_ids
     ]
+    if not flattened_memory_ids:
+        return "No memories to confirm"
     memories = await memory_module.get_memories(flattened_memory_ids)
+    if not memories:
+        return "No memories to confirm"
     # group memories by field name
     user_details_with_memories: List[tuple[UserDetail, Memory | None]] = []
     for user_detail in fields_to_confirm.fields_to_confirm:
@@ -115,7 +122,7 @@ async def confirm_memorized_fields(
         memory for _, memory in user_details_with_memories if memory is not None
     ]
     messages_for_cited_memories = await memory_module.get_messages(
-        [memory for memory in cited_memories]
+        [memory.id for memory in cited_memories]
     )
     print("messages_for_cited_memories", messages_for_cited_memories)
     memory_strs = []

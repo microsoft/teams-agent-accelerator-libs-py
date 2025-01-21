@@ -56,6 +56,7 @@ memory_middleware = MemoryMiddleware(
         llm=LLMConfig(**memory_llm_config),
         db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
         timeout_seconds=60,
+        buffer_size=20,
         enable_logging=True,
         topics=topics,
     )

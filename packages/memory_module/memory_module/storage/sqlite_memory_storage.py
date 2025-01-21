@@ -371,6 +371,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         return [build_message_from_dict(row) for row in rows][::-1]
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
+        if not memory_ids:
+            return []
+
         query = f"""
             SELECT
                 m.*,
@@ -405,6 +408,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         ]
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
+        if not memory_ids:
+            return {}
+
         query = f"""
             SELECT
                 ma.memory_id as _memory_id,
