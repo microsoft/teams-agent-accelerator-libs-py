@@ -133,9 +133,10 @@ async def test_on_turn(middleware, turn_context):
     assert "memory_module" in turn_context.set.call_args[0]
     memory_module = turn_context.set.call_args[0][1]
     assert isinstance(memory_module, ScopedMemoryModule)
+
+    # Verify the conversation id and user roster
     assert memory_module.conversation_ref == "conversation-id"
     assert memory_module.users_in_conversation_scope == ["user-aad-id"]
-    # Verify the conversation id and user rorster
 
     # Verify user message was added
     middleware.memory_module.add_message.assert_called_once()
