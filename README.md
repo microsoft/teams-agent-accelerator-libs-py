@@ -74,6 +74,14 @@ This project welcomes contributions and suggestions. Most contributions require 
 
 See [CONTRIBUTING.md](/.github/CONTRIBUTING.md) for more information.
 
+## License
+
+This repo is licensed under the MIT License. It includes tools to use APIs provided by third parties. These APIs are provided under their own separate terms. See [LICENSE.md](/.github/LICENSE.md) for more information.
+
+- OpenAI API. Use of the OpenAI API requires an API key, which can be obtained from OpenAI. By using this SDK, you agree to abide by the OpenAI API Terms of Use and Privacy Policy. You can find them at [OpenAI Terms of Use](https://openai.com/policies/terms-of-use)
+- Azure OpenAI Service. Use of the Azure OpenAI API requires an API key. By using this SDK, you agree to abide by the Azure OpenAI API terms. You can find them at [Azure OPENAI TOS](https://www.microsoft.com/licensing/terms/productoffering/MicrosoftAzure/MCA#ServiceSpecificTerms), and associated documentation at [Azure Cognitive Services](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/).
+
+
 ## Code of Conduct
 
 This repo's Code of Conduct file can be found at [CODE_OF_CONDUCT.md](/.github/CODE_OF_CONDUCT.md).

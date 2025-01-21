@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 from unittest import mock
 
 import instructor
@@ -208,7 +213,9 @@ async def test_completion_azure_openai(azure_config: EnvLLMConfig):
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip("Skip by default since api key auth is used. Comment this line to test.")
+@pytest.mark.skip(
+    "Skip by default since api key auth is used. Comment this line to test."
+)
 async def test_completion_azure_openai_managed_identity_auth(config: EnvLLMConfig):
     model = config.azure_openai_deployment
     api_base = config.azure_openai_api_base
@@ -228,7 +235,9 @@ async def test_completion_azure_openai_managed_identity_auth(config: EnvLLMConfi
         azure_ad_token_provider=azure_ad_token_provider,  # type: ignore
     )
     lm = LLMService(config=llm_config)
-    messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
+    messages = [
+        {"role": "system", "content": "Which country has a maple leaf in its flag?"}
+    ]
 
     res = await lm.completion(messages, azure_ad_token_provider=azure_ad_token_provider)
     text = res.choices[0].message.content

@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
