@@ -9,7 +9,9 @@ def configure_logging():
     handler = logging.StreamHandler()
     handler.setLevel(logging.DEBUG)
 
-    formatter = DefaultFormatter(f"%(asctime)s:{module_name.upper()}:%(levelname)s - %(message)s")
+    formatter = DefaultFormatter(
+        f"%(asctime)s:{module_name.upper()}:%(levelname)s - %(message)s"
+    )
     handler.setFormatter(formatter)
 
     logger.addHandler(handler)

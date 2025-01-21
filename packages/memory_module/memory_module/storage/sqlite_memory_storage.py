@@ -31,10 +31,13 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         self.db_path = db_path or DEFAULT_DB_PATH
         self.storage = SQLiteStorage(self.db_path)
 
-    async def store_memory(self, memory: BaseMemoryInput, *, embedding_vectors: List[TextEmbedding]) -> str:
+    async def store_memory(
+        self, memory: BaseMemoryInput, *, embedding_vectors: List[TextEmbedding]
+    ) -> str:
         """Store a memory and its message attributions."""
         serialized_embeddings = [
-            sqlite_vec.serialize_float32(embedding.embedding_vector) for embedding in embedding_vectors
+            sqlite_vec.serialize_float32(embedding.embedding_vector)
+            for embedding in embedding_vectors
         ]
 
         memory_id = str(uuid.uuid4())
@@ -42,7 +45,11 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         async with self.storage.transaction() as cursor:
             # Store the memory
             # Convert topics list to comma-separated string if it's a list
-            topics_str = ",".join(memory.topics) if isinstance(memory.topics, list) else memory.topics
+            topics_str = (
+                ",".join(memory.topics)
+                if isinstance(memory.topics, list)
+                else memory.topics
+            )
 
             await cursor.execute(
                 """INSERT INTO memories
@@ -70,7 +77,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 "INSERT INTO embeddings (memory_id, embedding, text) VALUES (?, ?, ?)",
                 [
                     (memory_id, serialized_embedding, embedding.text)
-                    for serialized_embedding, embedding in zip(serialized_embeddings, embedding_vectors, strict=False)
+                    for serialized_embedding, embedding in zip(
+                        serialized_embeddings, embedding_vectors, strict=False
+                    )
                 ],
             )
 
@@ -86,26 +95,38 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         return memory_id
 
     async def update_memory(
-        self, memory_id: str, updated_memory: str, *, embedding_vectors: List[TextEmbedding]
+        self,
+        memory_id: str,
+        updated_memory: str,
+        *,
+        embedding_vectors: List[TextEmbedding],
     ) -> None:
         """replace an existing memory with new extracted fact and embedding"""
         serialized_embeddings = [
-            sqlite_vec.serialize_float32(embedding.embedding_vector) for embedding in embedding_vectors
+            sqlite_vec.serialize_float32(embedding.embedding_vector)
+            for embedding in embedding_vectors
         ]
 
         async with self.storage.transaction() as cursor:
             # Update the memory content
-            await cursor.execute("UPDATE memories SET content = ? WHERE id = ?", (updated_memory, memory_id))
+            await cursor.execute(
+                "UPDATE memories SET content = ? WHERE id = ?",
+                (updated_memory, memory_id),
+            )
 
             # remove all the embeddings for this memory
-            await cursor.execute("DELETE FROM embeddings WHERE memory_id = ?", (memory_id,))
+            await cursor.execute(
+                "DELETE FROM embeddings WHERE memory_id = ?", (memory_id,)
+            )
 
             # Update embedding in embeddings table with text
             await cursor.executemany(
                 "INSERT INTO embeddings (memory_id, embedding, text) VALUES (?, ?, ?)",
                 [
                     (memory_id, serialized_embedding, embedding.text)
-                    for serialized_embedding, embedding in zip(serialized_embeddings, embedding_vectors, strict=False)
+                    for serialized_embedding, embedding in zip(
+                        serialized_embeddings, embedding_vectors, strict=False
+                    )
                 ],
             )
 
@@ -166,14 +187,20 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             distance_select = ", rm.distance as _distance, rm.text as _embedding_text"
             order_by = "ORDER BY rm.distance ASC"
             params.extend(
-                [sqlite_vec.serialize_float32(text_embedding.embedding_vector), limit or self.default_limit, 1.0]
+                [
+                    sqlite_vec.serialize_float32(text_embedding.embedding_vector),
+                    limit or self.default_limit,
+                    1.0,
+                ]
             )
 
         # Handle topic and user filters after embedding params
         topic_filter = ""
         if topics:
             # Create a single AND condition with multiple LIKE clauses
-            topic_filter = " AND (" + " OR ".join(["m.topics LIKE ?"] * len(topics)) + ")"
+            topic_filter = (
+                " AND (" + " OR ".join(["m.topics LIKE ?"] * len(topics)) + ")"
+            )
             params.extend(f"%{t.name}%" for t in topics)
 
         user_filter = ""
@@ -197,7 +224,10 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         )
 
         rows = await self.storage.fetch_all(query, tuple(params))
-        return [self._build_memory(row, set((row["message_attributions"] or "").split(","))) for row in rows]
+        return [
+            self._build_memory(row, set((row["message_attributions"] or "").split(",")))
+            for row in rows
+        ]
 
     async def clear_memories(self, user_id: str) -> None:
         """Clear all memories for a given user."""
@@ -227,7 +257,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         if not row:
             return None
 
-        return self._build_memory(row, set((row["message_attributions"] or "").split(",")))
+        return self._build_memory(
+            row, set((row["message_attributions"] or "").split(","))
+        )
 
     async def get_all_memories(
         self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
@@ -242,7 +274,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         """
         params: tuple = tuple()
         if message_ids is not None:
-            query += " WHERE ma.message_id IN ({})".format(",".join(["?"] * len(message_ids)))
+            query += " WHERE ma.message_id IN ({})".format(
+                ",".join(["?"] * len(message_ids))
+            )
             params += tuple(
                 message_ids,
             )
@@ -257,7 +291,10 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             params += (limit,)
 
         rows = await self.storage.fetch_all(query, params)
-        return [self._build_memory(row, set((row["message_attributions"] or "").split(","))) for row in rows]
+        return [
+            self._build_memory(row, set((row["message_attributions"] or "").split(",")))
+            for row in rows
+        ]
 
     async def store_short_term_memory(self, message: MessageInput) -> Message:
         """Store a short-term memory entry."""
@@ -311,7 +348,9 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         params: tuple = (conversation_ref,)
 
         if config.last_minutes is not None:
-            cutoff_time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=config.last_minutes)
+            cutoff_time = datetime.datetime.now(
+                datetime.timezone.utc
+            ) - datetime.timedelta(minutes=config.last_minutes)
             query += " AND created_at >= ?"
             params += (cutoff_time,)
 
@@ -339,7 +378,10 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
 
         rows = await self.storage.fetch_all(query, tuple(memory_ids))
 
-        return [self._build_memory(row, set((row["message_attributions"] or "").split(","))) for row in rows]
+        return [
+            self._build_memory(row, set((row["message_attributions"] or "").split(",")))
+            for row in rows
+        ]
 
     async def get_user_memories(self, user_id: str) -> List[Memory]:
         query = """
@@ -353,7 +395,10 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         """
 
         rows = await self.storage.fetch_all(query, (user_id,))
-        return [self._build_memory(row, set((row["message_attributions"] or "").split(","))) for row in rows]
+        return [
+            self._build_memory(row, set((row["message_attributions"] or "").split(",")))
+            for row in rows
+        ]
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         query = f"""
@@ -373,13 +418,24 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             if memory_id not in messages_dict:
                 messages_dict[memory_id] = []
             messages_dict[memory_id].append(
-                build_message_from_dict({k: v for k, v in row.items() if not k.startswith("_")})
+                build_message_from_dict(
+                    {k: v for k, v in row.items() if not k.startswith("_")}
+                )
             )
 
         return messages_dict
 
-    def _build_memory(self, memory_values: dict, message_attributions: set[str]) -> Memory:
-        memory_keys = ["id", "content", "created_at", "user_id", "memory_type", "topics"]
+    def _build_memory(
+        self, memory_values: dict, message_attributions: set[str]
+    ) -> Memory:
+        memory_keys = [
+            "id",
+            "content",
+            "created_at",
+            "user_id",
+            "memory_type",
+            "topics",
+        ]
         # Convert topics string back to list if it exists
         if memory_values.get("topics"):
             memory_values["topics"] = memory_values["topics"].split(",")
@@ -400,20 +456,29 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             await cursor.execute(
                 """DELETE FROM vec_items WHERE memory_embedding_id in (
                     SELECT id FROM embeddings WHERE memory_id in ({})
-                )""".format(",".join(["?"] * len(memory_ids))),
+                )""".format(
+                    ",".join(["?"] * len(memory_ids))
+                ),
                 tuple(memory_ids),
             )
 
             await cursor.execute(
-                "DELETE FROM embeddings WHERE memory_id in ({})".format(",".join(["?"] * len(memory_ids))),
+                "DELETE FROM embeddings WHERE memory_id in ({})".format(
+                    ",".join(["?"] * len(memory_ids))
+                ),
                 tuple(memory_ids),
             )
 
             await cursor.execute(
-                "DELETE FROM memory_attributions WHERE memory_id in ({})".format(",".join(["?"] * len(memory_ids))),
+                "DELETE FROM memory_attributions WHERE memory_id in ({})".format(
+                    ",".join(["?"] * len(memory_ids))
+                ),
                 tuple(memory_ids),
             )
 
             await cursor.execute(
-                "DELETE FROM memories WHERE id in ({})".format(",".join(["?"] * len(memory_ids))), tuple(memory_ids)
+                "DELETE FROM memories WHERE id in ({})".format(
+                    ",".join(["?"] * len(memory_ids))
+                ),
+                tuple(memory_ids),
             )

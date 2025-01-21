@@ -61,9 +61,13 @@ def sample_embedding():
 
 
 @pytest.mark.asyncio
-async def test_store_and_get_memory(memory_storage, sample_memory_input, sample_embedding):
+async def test_store_and_get_memory(
+    memory_storage, sample_memory_input, sample_embedding
+):
     # Store memory
-    memory_id = await memory_storage.store_memory(sample_memory_input, embedding_vectors=sample_embedding)
+    memory_id = await memory_storage.store_memory(
+        sample_memory_input, embedding_vectors=sample_embedding
+    )
     assert memory_id is not None
 
     # Retrieve memory
@@ -72,17 +76,23 @@ async def test_store_and_get_memory(memory_storage, sample_memory_input, sample_
     assert retrieved_memory.content == sample_memory_input.content
     assert retrieved_memory.user_id == sample_memory_input.user_id
     assert retrieved_memory.memory_type == sample_memory_input.memory_type
-    assert set(retrieved_memory.message_attributions) == set(sample_memory_input.message_attributions)
+    assert set(retrieved_memory.message_attributions) == set(
+        sample_memory_input.message_attributions
+    )
 
 
 @pytest.mark.asyncio
 async def test_update_memory(memory_storage, sample_memory_input, sample_embedding):
     # Store initial memory
-    memory_id = await memory_storage.store_memory(sample_memory_input, embedding_vectors=sample_embedding)
+    memory_id = await memory_storage.store_memory(
+        sample_memory_input, embedding_vectors=sample_embedding
+    )
 
     # Update memory
     updated_content = "Updated memory content"
-    await memory_storage.update_memory(memory_id, updated_content, embedding_vectors=sample_embedding)
+    await memory_storage.update_memory(
+        memory_id, updated_content, embedding_vectors=sample_embedding
+    )
 
     # Verify update
     updated_memory = await memory_storage.get_memory(memory_id)
@@ -92,19 +102,27 @@ async def test_update_memory(memory_storage, sample_memory_input, sample_embeddi
 @pytest.mark.asyncio
 async def test_retrieve_memories(memory_storage, sample_memory_input, sample_embedding):
     # Store memory
-    await memory_storage.store_memory(sample_memory_input, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(
+        sample_memory_input, embedding_vectors=sample_embedding
+    )
 
     # Create query embedding
-    query = TextEmbedding(text="test query", embedding_vector=sample_embedding[0].embedding_vector)
+    query = TextEmbedding(
+        text="test query", embedding_vector=sample_embedding[0].embedding_vector
+    )
 
     # Retrieve memories
-    memories = await memory_storage.retrieve_memories(user_id="test_user", text_embedding=query, limit=1)
+    memories = await memory_storage.retrieve_memories(
+        user_id="test_user", text_embedding=query, limit=1
+    )
     assert len(memories) > 0
     assert memories[0].content == sample_memory_input.content
 
 
 @pytest.mark.asyncio
-async def test_retrieve_memories_multiple_embeddings(memory_storage, sample_memory_input):
+async def test_retrieve_memories_multiple_embeddings(
+    memory_storage, sample_memory_input
+):
     # Test with multiple embeddings per memory
     # Create two normalized vectors with different distances
     vector1 = [-1.0] * 1536  # Will give distance of 2 (opposite direction)
@@ -113,8 +131,12 @@ async def test_retrieve_memories_multiple_embeddings(memory_storage, sample_memo
     magnitude2 = (sum(x * x for x in vector2)) ** 0.5
 
     embeddings = [
-        TextEmbedding(text="First embedding", embedding_vector=[x / magnitude1 for x in vector1]),  # High distance
-        TextEmbedding(text="Second embedding", embedding_vector=[x / magnitude2 for x in vector2]),  # Low distance
+        TextEmbedding(
+            text="First embedding", embedding_vector=[x / magnitude1 for x in vector1]
+        ),  # High distance
+        TextEmbedding(
+            text="Second embedding", embedding_vector=[x / magnitude2 for x in vector2]
+        ),  # Low distance
     ]
 
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=embeddings)
@@ -122,16 +144,22 @@ async def test_retrieve_memories_multiple_embeddings(memory_storage, sample_memo
     # Query with normalized vector matching second embedding (distance = 0)
     query_vector = [1.0] * 1536
     query_magnitude = (sum(x * x for x in query_vector)) ** 0.5
-    query = TextEmbedding(text="test query", embedding_vector=[x / query_magnitude for x in query_vector])
+    query = TextEmbedding(
+        text="test query", embedding_vector=[x / query_magnitude for x in query_vector]
+    )
 
-    memories = await memory_storage.retrieve_memories(user_id="test_user", text_embedding=query, limit=1)
+    memories = await memory_storage.retrieve_memories(
+        user_id="test_user", text_embedding=query, limit=1
+    )
     assert len(memories) == 1
 
 
 @pytest.mark.asyncio
 async def test_clear_memories(memory_storage, sample_memory_input, sample_embedding):
     # Store memory
-    await memory_storage.store_memory(sample_memory_input, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(
+        sample_memory_input, embedding_vectors=sample_embedding
+    )
 
     # Clear memories
     await memory_storage.clear_memories(sample_memory_input.user_id)
@@ -163,7 +191,9 @@ async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
     # Retrieve chat history with `before` parameter set to after the message's creation time
     messages = await memory_storage.retrieve_chat_history(
         sample_message.conversation_ref,
-        ShortTermMemoryRetrievalConfig(n_messages=1, before=sample_message.created_at + timedelta(seconds=1)),
+        ShortTermMemoryRetrievalConfig(
+            n_messages=1, before=sample_message.created_at + timedelta(seconds=1)
+        ),
     )
     assert len(messages) == 1
     assert messages[0].content == sample_message.content
@@ -171,7 +201,9 @@ async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
     # Retrieve chat history with `before` parameter set to before the message's creation time
     messages = await memory_storage.retrieve_chat_history(
         sample_message.conversation_ref,
-        ShortTermMemoryRetrievalConfig(n_messages=1, before=sample_message.created_at - timedelta(seconds=1)),
+        ShortTermMemoryRetrievalConfig(
+            n_messages=1, before=sample_message.created_at - timedelta(seconds=1)
+        ),
     )
     assert len(messages) == 0
 
@@ -179,7 +211,9 @@ async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
 @pytest.mark.asyncio
 async def test_get_all_memories(memory_storage, sample_memory_input, sample_embedding):
     # Store multiple memories
-    await memory_storage.store_memory(sample_memory_input, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(
+        sample_memory_input, embedding_vectors=sample_embedding
+    )
 
     second_memory = BaseMemoryInput(
         content="Second memory",
@@ -200,7 +234,9 @@ async def test_get_all_memories(memory_storage, sample_memory_input, sample_embe
 
 
 @pytest.mark.asyncio
-async def test_get_all_memories_by_message_id(memory_storage, sample_memory_input, sample_message):
+async def test_get_all_memories_by_message_id(
+    memory_storage, sample_memory_input, sample_message
+):
     # Store single memory
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
     await memory_storage.store_short_term_memory(sample_message)
@@ -213,7 +249,9 @@ async def test_get_all_memories_by_message_id(memory_storage, sample_memory_inpu
 
 
 @pytest.mark.asyncio
-async def test_get_all_memories_by_message_ids(memory_storage, sample_memory_input, sample_message):
+async def test_get_all_memories_by_message_ids(
+    memory_storage, sample_memory_input, sample_message
+):
     # Store three memories
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
     await memory_storage.store_short_term_memory(sample_message)
@@ -251,28 +289,38 @@ async def test_get_all_memories_by_message_ids(memory_storage, sample_memory_inp
     await memory_storage.store_short_term_memory(third_message)
 
     # Get memories by message ID
-    memories = await memory_storage.get_all_memories(message_ids=[sample_message.id, second_message.id])
+    memories = await memory_storage.get_all_memories(
+        message_ids=[sample_message.id, second_message.id]
+    )
 
     assert len(memories) == 2
     assert any(second_memory.content in memory.content for memory in memories)
 
 
 @pytest.mark.asyncio
-async def test_get_all_memories_by_message_id_empty(memory_storage, sample_memory_input, sample_message):
+async def test_get_all_memories_by_message_id_empty(
+    memory_storage, sample_memory_input, sample_message
+):
     # Store single memory
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
     await memory_storage.store_short_term_memory(sample_message)
 
     # Get memories by message ID
-    memories = await memory_storage.get_all_memories(message_ids=["incorrect_message_id"])
+    memories = await memory_storage.get_all_memories(
+        message_ids=["incorrect_message_id"]
+    )
 
     assert len(memories) == 0
 
 
 @pytest.mark.asyncio
-async def test_get_memories_by_ids(memory_storage, sample_memory_input, sample_embedding):
+async def test_get_memories_by_ids(
+    memory_storage, sample_memory_input, sample_embedding
+):
     # Store memory
-    memory_id = await memory_storage.store_memory(sample_memory_input, embedding_vectors=sample_embedding)
+    memory_id = await memory_storage.store_memory(
+        sample_memory_input, embedding_vectors=sample_embedding
+    )
 
     # Retrieve by ID
     memories = await memory_storage.get_memories([memory_id])
@@ -375,13 +423,17 @@ async def test_retrieve_memories_by_topic(memory_storage, sample_embedding):
 
     # Test with non-existent topic
     memories = await memory_storage.retrieve_memories(
-        user_id="test_user", topics=[Topic(name="non_existent_topic", description="")], limit=10
+        user_id="test_user",
+        topics=[Topic(name="non_existent_topic", description="")],
+        limit=10,
     )
     assert len(memories) == 0
 
 
 @pytest.mark.asyncio
-async def test_retrieve_memories_by_topic_and_embedding(memory_storage, sample_embedding):
+async def test_retrieve_memories_by_topic_and_embedding(
+    memory_storage, sample_embedding
+):
     # Store memories with different topics
     memory1 = BaseMemoryInput(
         content="Technical discussion about artificial intelligence",
@@ -407,14 +459,23 @@ async def test_retrieve_memories_by_topic_and_embedding(memory_storage, sample_e
     magnitude = (sum(x * x for x in vector)) ** 0.5
     await memory_storage.store_memory(
         memory2,
-        embedding_vectors=[TextEmbedding(text="Less relevant", embedding_vector=[x / magnitude for x in vector])],
+        embedding_vectors=[
+            TextEmbedding(
+                text="Less relevant", embedding_vector=[x / magnitude for x in vector]
+            )
+        ],
     )
 
     # Create query embedding (same as sample_embedding for low distance)
-    query = TextEmbedding(text="AI technology", embedding_vector=sample_embedding[0].embedding_vector)
+    query = TextEmbedding(
+        text="AI technology", embedding_vector=sample_embedding[0].embedding_vector
+    )
 
     memories = await memory_storage.retrieve_memories(
-        user_id="test_user", text_embedding=query, topics=[Topic(name="AI", description="")], limit=2
+        user_id="test_user",
+        text_embedding=query,
+        topics=[Topic(name="AI", description="")],
+        limit=2,
     )
 
     assert len(memories) == 1
@@ -470,7 +531,9 @@ async def test_retrieve_memories_with_multiple_topics(memory_storage, sample_emb
 
 
 @pytest.mark.asyncio
-async def test_retrieve_memories_with_multiple_topics_parameter(memory_storage, sample_embedding):
+async def test_retrieve_memories_with_multiple_topics_parameter(
+    memory_storage, sample_embedding
+):
     # Store memories with multiple topics
     memory1 = BaseMemoryInput(
         content="Memory about AI and robotics",
@@ -503,7 +566,12 @@ async def test_retrieve_memories_with_multiple_topics_parameter(memory_storage, 
 
     # Retrieve memories by multiple topics
     memories = await memory_storage.retrieve_memories(
-        user_id="test_user", topics=[Topic(name="AI", description=""), Topic(name="robotics", description="")], limit=10
+        user_id="test_user",
+        topics=[
+            Topic(name="AI", description=""),
+            Topic(name="robotics", description=""),
+        ],
+        limit=10,
     )
 
     # Should get both AI-related memories

@@ -6,7 +6,11 @@ from typing import List
 from botbuilder.core import TurnContext
 from litellm import acompletion
 from litellm.types.utils import Choices, ModelResponse
-from memory_module import BaseScopedMemoryModule, InternalMessageInput, ShortTermMemoryRetrievalConfig
+from memory_module import (
+    BaseScopedMemoryModule,
+    InternalMessageInput,
+    ShortTermMemoryRetrievalConfig,
+)
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -30,11 +34,15 @@ class TechAssistantAgent(Agent):
         super().__init__()
 
     async def run(self, context: TurnContext):
-        conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)  # noqa E501
+        conversation_ref_dict = TurnContext.get_conversation_reference(
+            context.activity
+        )  # noqa E501
         memory_module: BaseScopedMemoryModule = context.get("memory_module")
         assert conversation_ref_dict.conversation
         assert memory_module
-        messages = await memory_module.retrieve_chat_history(ShortTermMemoryRetrievalConfig(last_minutes=1))
+        messages = await memory_module.retrieve_chat_history(
+            ShortTermMemoryRetrievalConfig(last_minutes=1)
+        )
         llm_messages: List = [
             {
                 "role": "system",
@@ -105,7 +113,13 @@ class TechAssistantAgent(Agent):
                             "tool_calls": [tool_call],
                         }
                     )
-                    llm_messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": str(res)})
+                    llm_messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "content": str(res),
+                        }
+                    )
                     await self._add_internal_message(
                         context,
                         json.dumps(

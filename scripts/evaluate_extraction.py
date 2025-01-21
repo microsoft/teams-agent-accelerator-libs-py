@@ -9,11 +9,20 @@ import click
 
 sys.path.append(str(Path(__file__).parent.parent))
 sys.path.append(str(Path(__file__).parent.parent / "packages/memory_module"))
-from memory_module import AssistantMessageInput, MemoryModuleConfig, Topic, UserMessageInput
+from memory_module import (
+    AssistantMessageInput,
+    MemoryModuleConfig,
+    Topic,
+    UserMessageInput,
+)
 from memory_module.core.memory_core import MemoryCore
 from memory_module.services.llm_service import LLMService
 
-from scripts.utils.evaluation_utils import BaseEvaluator, EvaluationResult, run_evaluation
+from scripts.utils.evaluation_utils import (
+    BaseEvaluator,
+    EvaluationResult,
+    run_evaluation,
+)
 from tests.memory_module.utils import build_llm_config
 
 TEST_CASES = [
@@ -21,8 +30,12 @@ TEST_CASES = [
         "title": "Device Information",
         "input": {
             "topics": [
-                Topic(name="Device Type", description="The type of device the user has"),
-                Topic(name="Operating System", description="The user's operating system"),
+                Topic(
+                    name="Device Type", description="The type of device the user has"
+                ),
+                Topic(
+                    name="Operating System", description="The user's operating system"
+                ),
                 Topic(name="Device Year", description="The year of the user's device"),
             ],
             "messages": [
@@ -85,9 +98,18 @@ TEST_CASES = [
         "title": "Travel Preferences",
         "input": {
             "topics": [
-                Topic(name="Preferred Mode of Travel", description="How the user likes to travel"),
-                Topic(name="Destination Type", description="The type of destination the user prefers"),
-                Topic(name="Frequent Travel Companions", description="People the user often travels with"),
+                Topic(
+                    name="Preferred Mode of Travel",
+                    description="How the user likes to travel",
+                ),
+                Topic(
+                    name="Destination Type",
+                    description="The type of destination the user prefers",
+                ),
+                Topic(
+                    name="Frequent Travel Companions",
+                    description="People the user often travels with",
+                ),
             ],
             "messages": [
                 UserMessageInput(
@@ -141,9 +163,18 @@ TEST_CASES = [
         "title": "Health Habits",
         "input": {
             "topics": [
-                Topic(name="Exercise Routine", description="The user's regular exercise habits"),
-                Topic(name="Dietary Preferences", description="The type of diet the user follows"),
-                Topic(name="Health Goals", description="Goals related to health and fitness"),
+                Topic(
+                    name="Exercise Routine",
+                    description="The user's regular exercise habits",
+                ),
+                Topic(
+                    name="Dietary Preferences",
+                    description="The type of diet the user follows",
+                ),
+                Topic(
+                    name="Health Goals",
+                    description="Goals related to health and fitness",
+                ),
             ],
             "messages": [
                 UserMessageInput(
@@ -197,8 +228,14 @@ TEST_CASES = [
         "title": "Work Preferences",
         "input": {
             "topics": [
-                Topic(name="Work Environment", description="The user's preferred work environment"),
-                Topic(name="Primary Work Tool", description="The tool the user uses most for work"),
+                Topic(
+                    name="Work Environment",
+                    description="The user's preferred work environment",
+                ),
+                Topic(
+                    name="Primary Work Tool",
+                    description="The tool the user uses most for work",
+                ),
                 Topic(name="Work Hours", description="The user's working schedule"),
             ],
             "messages": [
@@ -253,9 +290,18 @@ TEST_CASES = [
         "title": "Hobbies and Interests",
         "input": {
             "topics": [
-                Topic(name="Artistic Hobby", description="Art-related activities the user enjoys"),
-                Topic(name="Outdoor Activity", description="The user's favorite outdoor activities"),
-                Topic(name="Reading Preference", description="The genres of books the user likes"),
+                Topic(
+                    name="Artistic Hobby",
+                    description="Art-related activities the user enjoys",
+                ),
+                Topic(
+                    name="Outdoor Activity",
+                    description="The user's favorite outdoor activities",
+                ),
+                Topic(
+                    name="Reading Preference",
+                    description="The genres of books the user likes",
+                ),
             ],
             "messages": [
                 UserMessageInput(
@@ -309,9 +355,18 @@ TEST_CASES = [
         "title": "Food Preferences",
         "input": {
             "topics": [
-                Topic(name="Favorite Cuisine", description="The type of cuisine the user likes"),
-                Topic(name="Diet Restrictions", description="Dietary restrictions the user follows"),
-                Topic(name="Frequent Snacks", description="The snacks the user enjoys most often"),
+                Topic(
+                    name="Favorite Cuisine",
+                    description="The type of cuisine the user likes",
+                ),
+                Topic(
+                    name="Diet Restrictions",
+                    description="Dietary restrictions the user follows",
+                ),
+                Topic(
+                    name="Frequent Snacks",
+                    description="The snacks the user enjoys most often",
+                ),
             ],
             "messages": [
                 UserMessageInput(
@@ -379,8 +434,12 @@ TEST_CASES = [
         "title": "Device Information with Topic Retrieval",
         "input": {
             "topics": [
-                Topic(name="Device Type", description="The type of device the user has"),
-                Topic(name="Operating System", description="The user's operating system"),
+                Topic(
+                    name="Device Type", description="The type of device the user has"
+                ),
+                Topic(
+                    name="Operating System", description="The user's operating system"
+                ),
                 Topic(name="Device Year", description="The year of the user's device"),
             ],
             "messages": [
@@ -444,7 +503,9 @@ class SystemPromptEvaluator(BaseEvaluator):
                 enable_logging=True,
             )
             memory_core = MemoryCore(config, self.llm_service)
-            response = await memory_core._extract_semantic_fact_from_messages(messages=test_case["input"]["messages"])
+            response = await memory_core._extract_semantic_fact_from_messages(
+                messages=test_case["input"]["messages"]
+            )
             print(f"Response: {response}")
 
             criteria = test_case["criteria"]
@@ -454,7 +515,9 @@ class SystemPromptEvaluator(BaseEvaluator):
             # Check must_contain criteria
             for phrase in criteria.get("must_contain", []):
                 # check if the phrase is in any of the extracted facts
-                if not any(phrase.lower() in fact.text.lower() for fact in response.facts):
+                if not any(
+                    phrase.lower() in fact.text.lower() for fact in response.facts
+                ):
                     success = False
                     failures.append(f"Missing required phrase: {phrase}")
 
@@ -466,14 +529,18 @@ class SystemPromptEvaluator(BaseEvaluator):
 
             for topic_match in criteria.get("topics_match", []):
                 facts_with_phrase = [
-                    fact for fact in response.facts if topic_match["phrase"].lower() in fact.text.lower()
+                    fact
+                    for fact in response.facts
+                    if topic_match["phrase"].lower() in fact.text.lower()
                 ]
                 if not facts_with_phrase:
                     success = False
                     failures.append(f"Missing topic: {topic_match['topic']}")
 
                 # topics containing phrase
-                topics_for_facts = [topic for fact in facts_with_phrase for topic in fact.topics]
+                topics_for_facts = [
+                    topic for fact in facts_with_phrase for topic in fact.topics
+                ]
                 if topic_match["topic"] not in topics_for_facts:
                     success = False
                     failures.append(f"Missing topic: {topic_match['topic']}")

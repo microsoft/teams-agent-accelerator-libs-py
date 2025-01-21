@@ -7,7 +7,9 @@ from tqdm import tqdm
 
 
 class EvaluationResult:
-    def __init__(self, success: bool, test_case: Dict, response: Any, failures: List[str]):
+    def __init__(
+        self, success: bool, test_case: Dict, response: Any, failures: List[str]
+    ):
         self.success = success
         self.test_case = test_case
         self.response = response
@@ -103,7 +105,9 @@ def print_failures(results: List[Dict]) -> None:
 def save_results(results: List[Dict], output_file: str) -> None:
     output_path = Path(output_file)
     with output_path.open("w") as f:
-        json.dump(results, f, indent=2, default=lambda v: list(v) if isinstance(v, set) else v)
+        json.dump(
+            results, f, indent=2, default=lambda v: list(v) if isinstance(v, set) else v
+        )
     print(f"\nResults saved to {output_path}")
 
 
@@ -111,7 +115,9 @@ def print_final_report(all_results: List[Dict]) -> None:
     """Print a final report summarizing results across all runs."""
     total_runs = len(all_results)
     total_test_cases = sum(len(run["results"]) for run in all_results)
-    total_successes = sum(sum(1 for result in run["results"] if result["success"]) for run in all_results)
+    total_successes = sum(
+        sum(1 for result in run["results"] if result["success"]) for run in all_results
+    )
     total_failures = total_test_cases - total_successes
 
     # Get run name
@@ -145,7 +151,11 @@ def print_final_report(all_results: List[Dict]) -> None:
                     failure_counts[test_case] = failure_counts.get(test_case, 0) + 1
 
         print("\nMost Common Failures:")
-        for test_case, count in sorted(failure_counts.items(), key=lambda x: x[1], reverse=True):
-            print(f"- {test_case}: failed {count} times ({(count / total_runs) * 100:.1f}% of runs)")
+        for test_case, count in sorted(
+            failure_counts.items(), key=lambda x: x[1], reverse=True
+        ):
+            print(
+                f"- {test_case}: failed {count} times ({(count / total_runs) * 100:.1f}% of runs)"
+            )
 
     print("\n" + "=" * 50)

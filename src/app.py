@@ -28,16 +28,22 @@ async def get_memories(request: web.Request) -> web.Response:
     # TODO: Auth
     user_id = request.query.get("userId")
     if not user_id:
-        return web.Response(status=HTTPStatus.BAD_REQUEST, text="Missing userId parameter")
+        return web.Response(
+            status=HTTPStatus.BAD_REQUEST, text="Missing userId parameter"
+        )
     print("Get_memories for user", user_id)
     memories = await memory_middleware.memory_module.get_user_memories(user_id)
-    return web.json_response([memory.model_dump(mode="json", by_alias=True) for memory in memories])
+    return web.json_response(
+        [memory.model_dump(mode="json", by_alias=True) for memory in memories]
+    )
 
 
 app = web.Application(middlewares=[aiohttp_error_middleware])
 app.add_routes(routes)
 
-app.router.add_static("/memoriesTab", os.path.join(os.path.dirname(__file__), "public/memoriesTab"))
+app.router.add_static(
+    "/memoriesTab", os.path.join(os.path.dirname(__file__), "public/memoriesTab")
+)
 
 if __name__ == "__main__":
     web.run_app(app, host="localhost", port=Config.PORT)

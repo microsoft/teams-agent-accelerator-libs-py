@@ -6,5 +6,13 @@
   "python.testing.pytestArgs": ["tests"],
   "python.analysis.typeCheckingMode": "standard",
   "python.analysis.useLibraryCodeForTypes": true,
-  "python.analysis.extraPaths": ["${workspaceFolder}", "${workspaceFolder}/packages", "${workspaceFolder}/packages/memory_module"],
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}",
+    "${workspaceFolder}/packages",
+    "${workspaceFolder}/packages/memory_module"
+  ],
+  "[python]": {
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  }
 }
