@@ -23,11 +23,6 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def process_episodic_messages(self, messages: List[Message]) -> None:
-        """Process multiple messages into episodic memories (specific events, experiences)."""
-        pass
-
-    @abstractmethod
     async def search_memories(
         self,
         *,
