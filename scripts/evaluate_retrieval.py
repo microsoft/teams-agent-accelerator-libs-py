@@ -10,7 +10,12 @@ import click
 sys.path.append(str(Path(__file__).parent.parent))
 sys.path.append(str(Path(__file__).parent.parent / "packages/memory_module"))
 
-from memory_module import MemoryModuleConfig, Topic
+from memory_module import (
+    MemoryModuleConfig,
+    RetrievalConfig,
+    StorageConfig,
+    Topic,
+)
 from memory_module.core.memory_core import MemoryCore
 from memory_module.interfaces.types import BaseMemoryInput, MemoryType
 from memory_module.services.llm_service import LLMService
@@ -322,7 +327,7 @@ class RetrievalEvaluator(BaseEvaluator):
                 / f"retrieval_test_{uuid4()}.db"
             )
             config = MemoryModuleConfig(
-                db_path=db_path,
+                storage=StorageConfig(db_path=db_path),
                 buffer_size=5,
                 timeout_seconds=60,
                 llm=self.llm_config,

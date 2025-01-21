@@ -12,6 +12,7 @@ sys.path.append(str(Path(__file__).parent.parent / "packages/memory_module"))
 from memory_module import (
     AssistantMessageInput,
     MemoryModuleConfig,
+    StorageConfig,
     Topic,
     UserMessageInput,
 )
@@ -497,7 +498,7 @@ class SystemPromptEvaluator(BaseEvaluator):
         try:
             db_path = Path(__file__).parent / "data" / "evaluation" / "memory_module.db"
             config = MemoryModuleConfig(
-                db_path=db_path,
+                storage=StorageConfig(db_path=db_path),
                 buffer_size=5,
                 timeout_seconds=60,
                 llm=self.llm_config,
