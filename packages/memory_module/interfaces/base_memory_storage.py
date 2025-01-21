@@ -79,7 +79,7 @@ class BaseMemoryStorage(ABC):
         """Clear all memories for a given conversation."""
         pass
 
-    # TODO: conslidate with get_user_memories on line 103, and get_all_memories from line 108 [confirmed]
+    # TODO: consolidate with get_user_memories on line 103, and get_all_memories from line 108 [confirmed]
     @abstractmethod
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         """Get memories based on memory ids."""
