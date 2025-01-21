@@ -9,7 +9,6 @@ from litellm.types.utils import Choices, ModelResponse
 from memory_module import (
     BaseScopedMemoryModule,
     InternalMessageInput,
-    ShortTermMemoryRetrievalConfig,
 )
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -40,9 +39,7 @@ class TechAssistantAgent(Agent):
         memory_module: BaseScopedMemoryModule = context.get("memory_module")
         assert conversation_ref_dict.conversation
         assert memory_module
-        messages = await memory_module.retrieve_chat_history(
-            ShortTermMemoryRetrievalConfig(last_minutes=1)
-        )
+        messages = await memory_module.retrieve_conversation_history(last_minutes=1)
         llm_messages: List = [
             {
                 "role": "system",

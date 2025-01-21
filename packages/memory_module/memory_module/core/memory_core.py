@@ -14,8 +14,6 @@ from memory_module.interfaces.types import (
     MemoryType,
     Message,
     MessageInput,
-    RetrievalConfig,
-    ShortTermMemoryRetrievalConfig,
     TextEmbedding,
     Topic,
 )
@@ -189,16 +187,19 @@ class MemoryCore(BaseMemoryCore):
         # TODO: Implement episodic memory processing
         await self._extract_episodic_memory_from_messages(messages)
 
-    async def retrieve_memories(
+    async def search_memories(
         self,
+        *,
         user_id: Optional[str],
-        config: RetrievalConfig,
+        query: Optional[str] = None,
+        topic: Optional[Topic] = None,
+        limit: Optional[int] = None,
     ) -> List[Memory]:
         return await self._retrieve_memories(
             user_id,
-            config.query,
-            [config.topic] if config.topic else None,
-            config.limit,
+            query,
+            [topic] if topic else None,
+            limit,
         )
 
     async def _retrieve_memories(
@@ -220,7 +221,7 @@ class MemoryCore(BaseMemoryCore):
         else:
             text_embedding = None
 
-        return await self.storage.retrieve_memories(
+        return await self.storage.search_memories(
             user_id=user_id, text_embedding=text_embedding, topics=topics, limit=limit
         )
 
@@ -534,11 +535,21 @@ Here are the incoming messages:
     async def add_short_term_memory(self, message: MessageInput) -> Message:
         return await self.storage.store_short_term_memory(message)
 
-    async def retrieve_chat_history(
-        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        conversation_ref: str,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime.datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
-        return await self.storage.retrieve_chat_history(conversation_ref, config)
+        return await self.storage.retrieve_conversation_history(
+            conversation_ref,
+            n_messages=n_messages,
+            last_minutes=last_minutes,
+            before=before,
+        )
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return await self.storage.get_memories(memory_ids)

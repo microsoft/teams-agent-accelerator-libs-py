@@ -11,7 +11,6 @@ from memory_module.interfaces.base_message_queue import BaseMessageQueue
 from memory_module.interfaces.types import (
     Memory,
     Message,
-    ShortTermMemoryRetrievalConfig,
 )
 
 
@@ -77,9 +76,8 @@ class MessageQueue(BaseMessageQueue):
     ) -> Tuple[List[Message], List[Memory]]:
         """Pull messages from short term memory for a conversation."""
         # The messages in the buffer are a subset of the messages in the chat history
-        config = ShortTermMemoryRetrievalConfig(n_messages=n_messages, before=before)
-        messages = await self.memory_core.retrieve_chat_history(
-            conversation_ref, config=config
+        messages = await self.memory_core.retrieve_conversation_history(
+            conversation_ref, n_messages=n_messages, before=before
         )
 
         all_memories = []

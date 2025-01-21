@@ -12,7 +12,6 @@ from memory_module.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    ShortTermMemoryRetrievalConfig,
     TextEmbedding,
     Topic,
 )
@@ -140,7 +139,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 (memory_id,),
             )
 
-    async def retrieve_memories(
+    async def search_memories(
         self,
         *,
         user_id: Optional[str],
@@ -340,28 +339,33 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             raise ValueError(f"Message with id {id} not found in storage")
         return build_message_from_dict(row)
 
-    async def retrieve_chat_history(
-        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        conversation_ref: str,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime.datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
         params: tuple = (conversation_ref,)
 
-        if config.last_minutes is not None:
+        if last_minutes is not None:
             cutoff_time = datetime.datetime.now(
                 datetime.timezone.utc
-            ) - datetime.timedelta(minutes=config.last_minutes)
+            ) - datetime.timedelta(minutes=last_minutes)
             query += " AND created_at >= ?"
             params += (cutoff_time,)
 
-        if config.before is not None:
+        if before is not None:
             query += " AND created_at < ?"
-            params += (config.before.astimezone(datetime.timezone.utc),)
+            params += (before.astimezone(datetime.timezone.utc),)
 
         query += " ORDER BY created_at DESC"
-        if config.n_messages is not None:
+        if n_messages is not None:
             query += " LIMIT ?"
-            params += (str(config.n_messages),)
+            params += (str(n_messages),)
 
         rows = await self.storage.fetch_all(query, params)
         return [build_message_from_dict(row) for row in rows][::-1]

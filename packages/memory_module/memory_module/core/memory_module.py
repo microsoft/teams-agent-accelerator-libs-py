@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from memory_module.config import MemoryModuleConfig
@@ -14,8 +15,7 @@ from memory_module.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    RetrievalConfig,
-    ShortTermMemoryRetrievalConfig,
+    Topic,
 )
 from memory_module.services.llm_service import LLMService
 from memory_module.utils.logging import configure_logging
@@ -65,15 +65,27 @@ class MemoryModule(BaseMemoryModule):
         await self.message_queue.enqueue(message_res)
         return message_res
 
-    async def retrieve_memories(
+    async def search_memories(
         self,
         user_id: Optional[str],
-        config: RetrievalConfig,
+        query: Optional[str] = None,
+        topic: Optional[Topic] = None,
+        limit: Optional[int] = None,
     ) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
-        logger.debug("retrieve memories from config: %s", config)
-        memories = await self.memory_core.retrieve_memories(
-            user_id=user_id, config=config
+        logger.debug(
+            "retrieve memories from config: user_id=%s, query=%s, topic=%s, limit=%s",
+            user_id,
+            query,
+            topic,
+            limit,
+        )
+
+        if query is None and topic is None:
+            raise ValueError("Either query or topic must be provided")
+
+        memories = await self.memory_core.search_memories(
+            user_id=user_id, query=query, topic=topic, limit=limit
         )
         logger.debug(f"retrieved memories: {memories}")
         return memories
@@ -108,11 +120,25 @@ class MemoryModule(BaseMemoryModule):
         logger.debug(f"removing all memories associated with user ({user_id})")
         return await self.memory_core.remove_memories(user_id)
 
-    async def retrieve_chat_history(
-        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        conversation_ref: str,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
-        return await self.memory_core.retrieve_chat_history(conversation_ref, config)
+
+        if n_messages is None and last_minutes is None:
+            raise ValueError("Either n_messages or last_minutes must be provided")
+
+        return await self.memory_core.retrieve_conversation_history(
+            conversation_ref,
+            n_messages=n_messages,
+            last_minutes=last_minutes,
+            before=before,
+        )
 
 
 class ScopedMemoryModule(BaseScopedMemoryModule):
@@ -145,17 +171,31 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
             return self.users_in_conversation_scope[0]
         return user_id
 
-    async def retrieve_memories(
-        self, config: RetrievalConfig, user_id: Optional[str] = None
+    async def search_memories(
+        self,
+        *,
+        user_id: Optional[str] = None,
+        query: Optional[str] = None,
+        topic: Optional[Topic] = None,
+        limit: Optional[int] = None,
     ) -> List[Memory]:
         validated_user_id = self._validate_user(user_id)
-        return await self.memory_module.retrieve_memories(validated_user_id, config)
+        return await self.memory_module.search_memories(
+            user_id=validated_user_id, query=query, topic=topic, limit=limit
+        )
 
-    async def retrieve_chat_history(
-        self, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime] = None,
     ) -> List[Message]:
-        return await self.memory_module.retrieve_chat_history(
-            self.conversation_ref, config
+        return await self.memory_module.retrieve_conversation_history(
+            self.conversation_ref,
+            n_messages=n_messages,
+            last_minutes=last_minutes,
+            before=before,
         )
 
     # Implement abstract methods by forwarding to memory_module
