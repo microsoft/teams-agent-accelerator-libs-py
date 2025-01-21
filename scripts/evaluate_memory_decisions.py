@@ -12,14 +12,21 @@ sys.path.append(Path(__file__).parent.parent / "packages")
 
 from memory_module import MemoryModule, MemoryModuleConfig, UserMessageInput
 
-from scripts.utils.evaluation_utils import BaseEvaluator, EvaluationResult, run_evaluation
+from scripts.utils.evaluation_utils import (
+    BaseEvaluator,
+    EvaluationResult,
+    run_evaluation,
+)
 from tests.memory_module.utils import build_llm_config
 
 TEST_CASES = [
     {
         "title": "General vs. Specific Detail",
         "input": {
-            "old_messages": ["I love outdoor activities.", "I often visit national parks."],
+            "old_messages": [
+                "I love outdoor activities.",
+                "I often visit national parks.",
+            ],
             "incoming_message": "I enjoy hiking in Yellowstone National Park.",
             "expected_decision": "ignore",
         },
@@ -28,7 +35,10 @@ TEST_CASES = [
     {
         "title": "Specific Detail vs. General",
         "input": {
-            "old_messages": ["I really enjoy hiking in Yellowstone National Park.", "I like exploring scenic trails."],
+            "old_messages": [
+                "I really enjoy hiking in Yellowstone National Park.",
+                "I like exploring scenic trails.",
+            ],
             "incoming_message": "I enjoy hiking in national parks.",
             "expected_decision": "ignore",
         },
@@ -37,7 +47,10 @@ TEST_CASES = [
     {
         "title": "Repeated Behavior Over Time",
         "input": {
-            "old_messages": ["I had coffee at 8 AM yesterday.", "I had coffee at 8 AM this morning."],
+            "old_messages": [
+                "I had coffee at 8 AM yesterday.",
+                "I had coffee at 8 AM this morning.",
+            ],
             "incoming_message": "I had coffee at 8 AM again today.",
             "expected_decision": "add",
         },
@@ -46,7 +59,10 @@ TEST_CASES = [
     {
         "title": "Updated Temporal Context",
         "input": {
-            "old_messages": ["I'm planning a trip to Japan.", "I've been looking at flights to Japan."],
+            "old_messages": [
+                "I'm planning a trip to Japan.",
+                "I've been looking at flights to Japan.",
+            ],
             "incoming_message": "I just canceled my trip to Japan.",
             "expected_decision": "add",
         },
@@ -55,7 +71,10 @@ TEST_CASES = [
     {
         "title": "Irrelevant or Unnecessary Update",
         "input": {
-            "old_messages": ["I prefer tea over coffee.", "I usually drink tea every day."],
+            "old_messages": [
+                "I prefer tea over coffee.",
+                "I usually drink tea every day.",
+            ],
             "incoming_message": "I like tea.",
             "expected_decision": "ignore",
         },
@@ -64,7 +83,10 @@ TEST_CASES = [
     {
         "title": "Redundant Memory with Different Wording",
         "input": {
-            "old_messages": ["I have an iPhone 12.", "I bought an iPhone 12 back in 2022."],
+            "old_messages": [
+                "I have an iPhone 12.",
+                "I bought an iPhone 12 back in 2022.",
+            ],
             "incoming_message": "I own an iPhone 12.",
             "expected_decision": "ignore",
         },
@@ -73,7 +95,10 @@ TEST_CASES = [
     {
         "title": "Additional Specific Information",
         "input": {
-            "old_messages": ["I like playing video games.", "I often play games on my console."],
+            "old_messages": [
+                "I like playing video games.",
+                "I often play games on my console.",
+            ],
             "incoming_message": "I love playing RPG video games like Final Fantasy.",
             "expected_decision": "add",
         },
@@ -91,7 +116,10 @@ TEST_CASES = [
     {
         "title": "New Memory Completely Unrelated",
         "input": {
-            "old_messages": ["I love reading mystery novels.", "I'm a big fan of Agatha Christie's books."],
+            "old_messages": [
+                "I love reading mystery novels.",
+                "I'm a big fan of Agatha Christie's books.",
+            ],
             "incoming_message": "I really enjoy playing soccer.",
             "expected_decision": "add",
         },
@@ -163,7 +191,11 @@ class MemoryDecisionEvaluator(BaseEvaluator):
             ]
 
             # Get the decision
-            extraction = await memory_module.memory_core._extract_semantic_fact_from_messages(new_message)
+            extraction = (
+                await memory_module.memory_core._extract_semantic_fact_from_messages(
+                    new_message
+                )
+            )
             if not (extraction.action == "add" and extraction.facts):
                 return EvaluationResult(
                     success=False,
@@ -176,10 +208,16 @@ class MemoryDecisionEvaluator(BaseEvaluator):
             success = True
 
             for fact in extraction.facts:
-                decision = await memory_module.memory_core._get_add_memory_processing_decision(fact.text, "user-123")
+                decision = (
+                    await memory_module.memory_core._get_add_memory_processing_decision(
+                        fact.text, "user-123"
+                    )
+                )
                 if decision.decision != test_case["input"]["expected_decision"]:
                     success = False
-                    failures.append(f"Expected {test_case['input']['expected_decision']}, got {decision.decision}")
+                    failures.append(
+                        f"Expected {test_case['input']['expected_decision']}, got {decision.decision}"
+                    )
 
             # Cleanup
             await memory_module.message_queue.message_buffer.scheduler.cleanup()
@@ -187,7 +225,10 @@ class MemoryDecisionEvaluator(BaseEvaluator):
             return EvaluationResult(
                 success=success,
                 test_case=test_case,
-                response={"decision": decision.decision, "reason": decision.reason_for_decision},
+                response={
+                    "decision": decision.decision,
+                    "reason": decision.reason_for_decision,
+                },
                 failures=failures,
             )
 

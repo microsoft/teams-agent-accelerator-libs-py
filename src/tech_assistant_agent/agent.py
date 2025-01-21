@@ -18,10 +18,14 @@ class Agent(ABC):
     async def run(self, context: TurnContext) -> str | None:
         pass
 
-    async def send_string_message(self, context: TurnContext, message: str) -> str | None:
+    async def send_string_message(
+        self, context: TurnContext, message: str
+    ) -> str | None:
         """Convenience function to send a string message to the user."""
         activity = Activity(
-            type="message", text=message, entities=[AIEntity(additional_type=["AIGeneratedContent"], citation=[])]
+            type="message",
+            text=message,
+            entities=[AIEntity(additional_type=["AIGeneratedContent"], citation=[])],
         )
         res = await context.send_activity(activity)
         if res:

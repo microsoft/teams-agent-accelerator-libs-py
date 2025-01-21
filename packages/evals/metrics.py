@@ -5,7 +5,9 @@ from mlflow.metrics import MetricValue, make_metric
 from mlflow.metrics.base import standard_aggregations
 
 
-def check_strings_in_retrieved_memories(expected_strings: List[str], actual_strings: Optional[List[str]]) -> bool:
+def check_strings_in_retrieved_memories(
+    expected_strings: List[str], actual_strings: Optional[List[str]]
+) -> bool:
     """Check if all expected strings are present in the retrieved memories.
 
     For example:

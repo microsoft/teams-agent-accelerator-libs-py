@@ -8,9 +8,13 @@ from memory_module.interfaces.base_scheduled_events_service import (
     BaseScheduledEventsService,
     Event,
 )
-from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
+from memory_module.interfaces.base_scheduled_events_storage import (
+    BaseScheduledEventsStorage,
+)
 from memory_module.storage.in_memory_storage import InMemoryStorage
-from memory_module.storage.sqlite_scheduled_events_storage import SQLiteScheduledEventsStorage
+from memory_module.storage.sqlite_scheduled_events_storage import (
+    SQLiteScheduledEventsStorage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +38,14 @@ class ScheduledEventsService(BaseScheduledEventsService):
             config: Memory module configuration
             storage: Optional storage implementation for event persistence
         """
-        self._callback_func: Optional[Callable[[str, Any, datetime], Awaitable[None]]] = None
+        self._callback_func: Optional[
+            Callable[[str, Any, datetime], Awaitable[None]]
+        ] = None
         self._tasks: Dict[str, TaskInfo] = {}
         self.storage = storage or (
-            SQLiteScheduledEventsStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
+            SQLiteScheduledEventsStorage(db_path=config.db_path)
+            if config.db_path is not None
+            else InMemoryStorage()
         )
 
     async def _initialize_tasks(self) -> None:
@@ -60,7 +68,11 @@ class ScheduledEventsService(BaseScheduledEventsService):
     @property
     def pending_events(self) -> List[Event]:
         """Get list of pending events from storage."""
-        return [task_info.event for task_info in self._tasks.values() if not task_info.task.done()]
+        return [
+            task_info.event
+            for task_info in self._tasks.values()
+            if not task_info.task.done()
+        ]
 
     async def add_event(self, id: str, object: Any, time: datetime) -> None:
         """Schedule a new event to be executed at the specified time."""
@@ -125,7 +137,11 @@ class ScheduledEventsService(BaseScheduledEventsService):
 
     async def cleanup(self) -> None:
         """Clean up pending events when shutting down."""
-        pending_tasks = [task_info.task for task_info in self._tasks.values() if not task_info.task.done()]
+        pending_tasks = [
+            task_info.task
+            for task_info in self._tasks.values()
+            if not task_info.task.done()
+        ]
         if pending_tasks:
             for task in pending_tasks:
                 task.cancel()

@@ -3,12 +3,18 @@ from datetime import datetime, timedelta
 from typing import Any, Awaitable, Callable, List, Optional, Set
 
 from memory_module.config import MemoryModuleConfig
-from memory_module.interfaces.base_message_buffer_storage import BaseMessageBufferStorage
-from memory_module.interfaces.base_scheduled_events_service import BaseScheduledEventsService
+from memory_module.interfaces.base_message_buffer_storage import (
+    BaseMessageBufferStorage,
+)
+from memory_module.interfaces.base_scheduled_events_service import (
+    BaseScheduledEventsService,
+)
 from memory_module.interfaces.types import Message
 from memory_module.services.scheduled_events_service import ScheduledEventsService
 from memory_module.storage.in_memory_storage import InMemoryStorage
-from memory_module.storage.sqlite_message_buffer_storage import SQLiteMessageBufferStorage
+from memory_module.storage.sqlite_message_buffer_storage import (
+    SQLiteMessageBufferStorage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +34,9 @@ class MessageBuffer:
         self.timeout_seconds = config.timeout_seconds
         self._process_callback = process_callback
         self.storage = storage or (
-            SQLiteMessageBufferStorage(db_path=config.db_path) if config.db_path is not None else InMemoryStorage()
+            SQLiteMessageBufferStorage(db_path=config.db_path)
+            if config.db_path is not None
+            else InMemoryStorage()
         )
         self.scheduler = scheduler or ScheduledEventsService(config=config)
         self.scheduler.callback = self._handle_timeout
@@ -52,7 +60,9 @@ class MessageBuffer:
             if messages:  # Only process if there are messages
                 latest = messages[-1]
                 await self._process_callback(messages)
-                await self.storage.clear_buffered_messages(conversation_ref, before=latest.created_at)
+                await self.storage.clear_buffered_messages(
+                    conversation_ref, before=latest.created_at
+                )
         finally:
             # Always remove from processing set
             self._processing.remove(conversation_ref)
@@ -74,7 +84,9 @@ class MessageBuffer:
         # but not yet removed from the buffer. This could cause the timer to not be triggered, but seems like
         # a rare edge case.
         # Check if this is the first message in the conversation
-        count = (await self.storage.count_buffered_messages([message.conversation_ref]))[message.conversation_ref]
+        count = (
+            await self.storage.count_buffered_messages([message.conversation_ref])
+        )[message.conversation_ref]
         if count == 1:
             # Start timeout for this conversation
             timeout_time = datetime.now() + timedelta(seconds=self.timeout_seconds)
@@ -96,7 +108,9 @@ class MessageBuffer:
             remaining message ids that is in progress or already processed
         """
         removed_message_ids = []
-        ref_dict = await self.storage.get_conversations_from_buffered_messages(message_ids)
+        ref_dict = await self.storage.get_conversations_from_buffered_messages(
+            message_ids
+        )
         if not ref_dict:
             logger.info("no messages in buffer that need to be removed")
             return
@@ -116,12 +130,16 @@ class MessageBuffer:
                 if count_list[key] == len(value):
                     await self.scheduler.cancel_event(key)
                     logger.info(
-                        "remove conversation {} from buffer since all related messages will be removed".format(key)
+                        "remove conversation {} from buffer since all related messages will be removed".format(
+                            key
+                        )
                     )
                 removed_message_ids += value
 
         await self.storage.remove_buffered_messages_by_id(removed_message_ids)
-        logger.info("messages {} are removed from buffer".format(",".join(removed_message_ids)))
+        logger.info(
+            "messages {} are removed from buffer".format(",".join(removed_message_ids))
+        )
         for item in removed_message_ids:
             message_ids.remove(item)
 

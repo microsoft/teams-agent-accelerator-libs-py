@@ -71,7 +71,9 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
     def users_in_conversation_scope(self): ...
 
     @abstractmethod
-    async def retrieve_chat_history(self, config: ShortTermMemoryRetrievalConfig) -> List[Message]:
+    async def retrieve_chat_history(
+        self, config: ShortTermMemoryRetrievalConfig
+    ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         pass
 

@@ -8,12 +8,15 @@ class TaskConfig(BaseModel):
 
 tasks_by_config = {
     "troubleshoot_device_issue": TaskConfig(
-        task_name="troubleshoot_device_issue", required_fields=["OS", "Device Type", "Year"]
+        task_name="troubleshoot_device_issue",
+        required_fields=["OS", "Device Type", "Year"],
     ),
     "troubleshoot_connectivity_issue": TaskConfig(
-        task_name="troubleshoot_connectivity_issue", required_fields=["OS", "Device Type"]
+        task_name="troubleshoot_connectivity_issue",
+        required_fields=["OS", "Device Type"],
     ),
     "troubleshoot_access_issue": TaskConfig(
-        task_name="troubleshoot_access_issue", required_fields=["OS", "Device Type", "Year"]
+        task_name="troubleshoot_access_issue",
+        required_fields=["OS", "Device Type", "Year"],
     ),
 }

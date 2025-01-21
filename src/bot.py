@@ -65,7 +65,9 @@ bot_app.adapter.use(memory_middleware)
 
 @bot_app.conversation_update("membersAdded")
 async def on_members_added(context: TurnContext, state: TurnState):
-    await context.send_activity("Hello! I am a tech assistant bot. How can I help you today?")
+    await context.send_activity(
+        "Hello! I am a tech assistant bot. How can I help you today?"
+    )
     return True
 
 
