@@ -18,7 +18,7 @@ class MigrationManager:
             self.__create_migrations_table(conn)
 
     def run_migrations(self):
-        logger.info("Migrations: Running migrations")
+        logger.debug("Migrations: Running migrations")
         with self.__get_connection() as conn:
             applied_migrations = set(self.__get_applied_migrations(conn))
             migrations_dir = os.path.join(os.path.dirname(__file__), "migrations")
@@ -35,7 +35,7 @@ class MigrationManager:
                         with open(os.path.join(migrations_dir, filename), "r") as f:
                             sql = f.read()
                         self.__apply_migration(conn, migration_name, sql)
-                        logger.info("Migrations: Migration applied: %s", migration_name)
+                        logger.debug("Migrations: Migration applied: %s", migration_name)
 
     # Changed to double underscore for true private methods
     @contextmanager
@@ -49,7 +49,7 @@ class MigrationManager:
                 conn.close()
 
     def __create_vector_search_table(self, conn):
-        logger.info("Creating vector search table at %s", self.db_path)
+        logger.debug("Creating vector search table at %s", self.db_path)
         conn.enable_load_extension(True)
         sqlite_vec.load(conn)
         conn.enable_load_extension(False)
