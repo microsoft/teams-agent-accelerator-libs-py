@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
-from memory_module.config import LLMConfig, MemoryModuleConfig
+from memory_module.config import LLMConfig, MemoryModuleConfig, StorageConfig
 from memory_module.services.scheduled_events_service import ScheduledEventsService
 
 
@@ -18,7 +18,9 @@ from memory_module.services.scheduled_events_service import ScheduledEventsServi
 def config():
     """Fixture that provides a MemoryModuleConfig instance."""
     return MemoryModuleConfig(
-        db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
+        storage=StorageConfig(
+            db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db"
+        ),
         timeout_seconds=1,
         llm=LLMConfig(),
     )
@@ -28,8 +30,8 @@ def config():
 def service(config):
     """Fixture that provides a ScheduledEventsService instance."""
     # Delete the db file if it exists
-    if config.db_path.exists():
-        config.db_path.unlink()
+    if config.storage.db_path.exists():
+        config.storage.db_path.unlink()
     return ScheduledEventsService(config=config)
 
 

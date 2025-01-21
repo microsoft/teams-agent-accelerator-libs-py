@@ -8,11 +8,11 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 
 import pytest
+from memory_module.config import StorageConfig
 from memory_module.interfaces.types import (
     AssistantMessageInput,
     BaseMemoryInput,
     MemoryType,
-    ShortTermMemoryRetrievalConfig,
     TextEmbedding,
     Topic,
     UserMessageInput,
@@ -24,10 +24,10 @@ from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 @pytest.fixture(params=["sqlite", "in_memory"])
 def memory_storage(request):
     if request.param == "sqlite":
-        name = f"memory_{uuid4().hex}.db"
-        storage = SQLiteMemoryStorage(name)
+        db_path = f"memory_{uuid4().hex}.db"
+        storage = SQLiteMemoryStorage(StorageConfig(db_path=db_path))
         yield storage
-        os.remove(storage.db_path)
+        os.remove(db_path)
 
     else:
         yield InMemoryStorage()
@@ -117,7 +117,7 @@ async def test_retrieve_memories(memory_storage, sample_memory_input, sample_emb
     )
 
     # Retrieve memories
-    memories = await memory_storage.retrieve_memories(
+    memories = await memory_storage.search_memories(
         user_id="test_user", text_embedding=query, limit=1
     )
     assert len(memories) > 0
@@ -153,7 +153,7 @@ async def test_retrieve_memories_multiple_embeddings(
         text="test query", embedding_vector=[x / query_magnitude for x in query_vector]
     )
 
-    memories = await memory_storage.retrieve_memories(
+    memories = await memory_storage.search_memories(
         user_id="test_user", text_embedding=query, limit=1
     )
     assert len(memories) == 1
@@ -180,35 +180,33 @@ async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
     await memory_storage.store_short_term_memory(sample_message)
 
     # Retrieve chat history with n_messages
-    messages = await memory_storage.retrieve_chat_history(
-        sample_message.conversation_ref, ShortTermMemoryRetrievalConfig(n_messages=1)
+    messages = await memory_storage.retrieve_conversation_history(
+        sample_message.conversation_ref, n_messages=1
     )
     assert len(messages) == 1
     assert messages[0].content == sample_message.content
 
     # Retrieve chat history with last_minutes
-    messages = await memory_storage.retrieve_chat_history(
-        sample_message.conversation_ref, ShortTermMemoryRetrievalConfig(last_minutes=5)
+    messages = await memory_storage.retrieve_conversation_history(
+        sample_message.conversation_ref, last_minutes=5
     )
     assert len(messages) == 1
     assert messages[0].content == sample_message.content
 
     # Retrieve chat history with `before` parameter set to after the message's creation time
-    messages = await memory_storage.retrieve_chat_history(
+    messages = await memory_storage.retrieve_conversation_history(
         sample_message.conversation_ref,
-        ShortTermMemoryRetrievalConfig(
-            n_messages=1, before=sample_message.created_at + timedelta(seconds=1)
-        ),
+        n_messages=1,
+        before=sample_message.created_at + timedelta(seconds=1),
     )
     assert len(messages) == 1
     assert messages[0].content == sample_message.content
 
     # Retrieve chat history with `before` parameter set to before the message's creation time
-    messages = await memory_storage.retrieve_chat_history(
+    messages = await memory_storage.retrieve_conversation_history(
         sample_message.conversation_ref,
-        ShortTermMemoryRetrievalConfig(
-            n_messages=1, before=sample_message.created_at - timedelta(seconds=1)
-        ),
+        n_messages=1,
+        before=sample_message.created_at - timedelta(seconds=1),
     )
     assert len(messages) == 0
 
@@ -419,7 +417,7 @@ async def test_retrieve_memories_by_topic(memory_storage, sample_embedding):
     await memory_storage.store_memory(memory2, embedding_vectors=sample_embedding)
 
     # Retrieve memories by single topic
-    memories = await memory_storage.retrieve_memories(
+    memories = await memory_storage.search_memories(
         user_id="test_user", topics=[Topic(name="AI", description="")], limit=10
     )
     assert len(memories) == 1
@@ -427,7 +425,7 @@ async def test_retrieve_memories_by_topic(memory_storage, sample_embedding):
     assert "AI" in memories[0].topics
 
     # Test with non-existent topic
-    memories = await memory_storage.retrieve_memories(
+    memories = await memory_storage.search_memories(
         user_id="test_user",
         topics=[Topic(name="non_existent_topic", description="")],
         limit=10,
@@ -476,7 +474,7 @@ async def test_retrieve_memories_by_topic_and_embedding(
         text="AI technology", embedding_vector=sample_embedding[0].embedding_vector
     )
 
-    memories = await memory_storage.retrieve_memories(
+    memories = await memory_storage.search_memories(
         user_id="test_user",
         text_embedding=query,
         topics=[Topic(name="AI", description="")],
@@ -520,14 +518,14 @@ async def test_retrieve_memories_with_multiple_topics(memory_storage, sample_emb
     await memory_storage.store_memory(memory3, embedding_vectors=sample_embedding)
 
     # Retrieve memories by AI topic (should get both AI-related memories)
-    memories = await memory_storage.retrieve_memories(
+    memories = await memory_storage.search_memories(
         user_id="test_user", topics=[Topic(name="AI", description="")], limit=10
     )
     assert len(memories) == 2
     assert all("AI" in memory.topics for memory in memories)
 
     # Retrieve memories by robotics topic (should get only the robotics memory)
-    memories = await memory_storage.retrieve_memories(
+    memories = await memory_storage.search_memories(
         user_id="test_user", topics=[Topic(name="robotics", description="")], limit=10
     )
     assert len(memories) == 1
@@ -570,7 +568,7 @@ async def test_retrieve_memories_with_multiple_topics_parameter(
     await memory_storage.store_memory(memory3, embedding_vectors=sample_embedding)
 
     # Retrieve memories by multiple topics
-    memories = await memory_storage.retrieve_memories(
+    memories = await memory_storage.search_memories(
         user_id="test_user",
         topics=[
             Topic(name="AI", description=""),

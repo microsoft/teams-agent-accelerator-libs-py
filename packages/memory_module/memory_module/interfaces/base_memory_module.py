@@ -4,14 +4,14 @@ Licensed under the MIT License.
 """
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from memory_module.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    RetrievalConfig,
-    ShortTermMemoryRetrievalConfig,
+    Topic,
 )
 
 
@@ -48,19 +48,51 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
     """Base class for the memory module interface."""
 
     @abstractmethod
-    async def retrieve_memories(
+    async def search_memories(
         self,
+        *,
         user_id: Optional[str],
-        config: RetrievalConfig,
+        query: Optional[str] = None,
+        topic: Optional[Topic] = None,
+        limit: Optional[int] = None,
     ) -> List[Memory]:
-        """Retrieve relevant memories based on a query."""
+        """Retrieve relevant memories based on search criteria.
+
+        Args:
+            user_id: Filter memories by specific user ID. If None, search across all users.
+            query: Search string to match against memory content. Required if topic is None.
+            topic: Filter memories by specific topic. Required if query is None.
+            limit: Maximum number of memories to return. If None, returns all matching memories.
+
+            One of query or topic must be provided. If both are provided, they are combined with an AND condition.
+
+        Returns:
+            List[Memory]: List of memory objects matching the search criteria, ordered by relevance.
+        """
         pass
 
     @abstractmethod
-    async def retrieve_chat_history(
-        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        conversation_ref: str,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime] = None,
     ) -> List[Message]:
-        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
+        """Retrieve conversation history based on specified time or message count criteria.
+
+        Args:
+            conversation_ref: Unique identifier for the conversation.
+            n_messages: Number of most recent messages to retrieve.
+            last_minutes: Retrieve messages from the last N minutes.
+            before: Retrieve messages before this timestamp.
+
+            Atleast one of the criteria must be provided.
+
+        Returns:
+            List[Message]: List of message objects from the conversation history, ordered chronologically.
+        """
         pass
 
 
@@ -69,25 +101,31 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
 
     @property
     @abstractmethod
-    def conversation_ref(self): ...
+    def conversation_ref(self) -> str: ...
 
     @property
     @abstractmethod
-    def users_in_conversation_scope(self): ...
+    def users_in_conversation_scope(self) -> List[str]: ...
 
     @abstractmethod
-    async def retrieve_chat_history(
-        self, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         pass
 
     @abstractmethod
-    async def retrieve_memories(
+    async def search_memories(
         self,
         *,
         user_id: Optional[str] = None,
-        config: RetrievalConfig,
+        query: Optional[str] = None,
+        topic: Optional[Topic] = None,
+        limit: Optional[int] = None,
     ) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
         pass

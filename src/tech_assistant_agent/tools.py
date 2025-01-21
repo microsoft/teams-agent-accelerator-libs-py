@@ -10,7 +10,7 @@ from typing import List, Literal
 
 from botbuilder.core import TurnContext
 from botbuilder.schema import Activity
-from memory_module import BaseScopedMemoryModule, Memory, RetrievalConfig, Topic
+from memory_module import BaseScopedMemoryModule, Memory, Topic
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
 
@@ -78,9 +78,7 @@ async def get_memorized_fields(
     empty_obj: dict = {}
     for topic in fields_to_retrieve.memory_topics:
         relevant_topic = next((t for t in topics if t.name == topic))
-        result = await memory_module.retrieve_memories(
-            config=RetrievalConfig(topic=relevant_topic, limit=None)
-        )
+        result = await memory_module.search_memories(topic=relevant_topic, limit=None)
         print("Getting memorized queries: ", topic)
         print(result)
         print("---")

@@ -26,7 +26,6 @@ from memory_module.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    ShortTermMemoryRetrievalConfig,
     TextEmbedding,
     Topic,
     UserMessage,
@@ -127,7 +126,7 @@ class InMemoryStorage(
 
         return message_obj
 
-    async def retrieve_memories(
+    async def search_memories(
         self,
         *,
         user_id: Optional[str],
@@ -359,8 +358,13 @@ class InMemoryStorage(
         """
         await self.delete_event(id)
 
-    async def retrieve_chat_history(
-        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        conversation_ref: str,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime.datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         messages = []
@@ -368,22 +372,21 @@ class InMemoryStorage(
         # Get messages for the conversation
         conversation_messages = self.storage["messages"].get(conversation_ref, [])
 
-        if config.n_messages is not None:
-            messages = conversation_messages[-config.n_messages :]
-        elif config.last_minutes is not None:
+        if n_messages is not None:
+            messages = conversation_messages[-n_messages:]
+        elif last_minutes is not None:
             current_time = datetime.datetime.now()
             messages = [
                 msg
                 for msg in conversation_messages
-                if (current_time - msg.created_at).total_seconds() / 60
-                <= config.last_minutes
+                if (current_time - msg.created_at).total_seconds() / 60 <= last_minutes
             ]
 
         # Sort messages in descending order based on created_at
         messages.sort(key=lambda msg: msg.created_at, reverse=True)
 
         # Filter messages based on before
-        if config.before is not None:
-            messages = [msg for msg in messages if msg.created_at < config.before]
+        if before is not None:
+            messages = [msg for msg in messages if msg.created_at < before]
 
         return messages

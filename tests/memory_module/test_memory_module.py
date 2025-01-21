@@ -15,9 +15,13 @@ import pytest_asyncio
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from memory_module.config import DEFAULT_TOPICS, MemoryModuleConfig, Topic  # noqa: I001
+from memory_module.config import (
+    DEFAULT_TOPICS,
+    MemoryModuleConfig,
+    StorageConfig,
+    Topic,
+)  # noqa: I001
 from memory_module.core.memory_core import (
-    EpisodicMemoryExtraction,
     MemoryCore,
     MessageDigest,
     SemanticFact,
@@ -26,8 +30,6 @@ from memory_module.core.memory_core import (
 from memory_module.core.memory_module import MemoryModule, ScopedMemoryModule
 from memory_module.interfaces.types import (
     AssistantMessageInput,
-    RetrievalConfig,
-    ShortTermMemoryRetrievalConfig,
     UserMessageInput,
 )
 
@@ -47,7 +49,9 @@ def config(request):
     if not llm_config.api_key:
         pytest.skip("OpenAI API key not provided")
     return MemoryModuleConfig(
-        db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
+        storage=StorageConfig(
+            db_path=Path(__file__).parent / "data" / "tests" / "memory_module.db",
+        ),
         buffer_size=buffer_size,
         timeout_seconds=timeout_seconds,
         llm=llm_config,
@@ -73,8 +77,8 @@ def memory_module(
 ):
     """Fixture to create a fresh MemoryModule instance for each test."""
     # Delete the db file if it exists
-    if config.db_path.exists():
-        config.db_path.unlink()
+    if config.storage.db_path.exists():
+        config.storage.db_path.unlink()
 
     memory_module = MemoryModule(config=config)
 
@@ -97,19 +101,6 @@ def memory_module(
             memory_module.memory_core,
             "_extract_semantic_fact_from_messages",
             _mock_extract_semantic_fact_from_messages,
-        )
-
-        async def _mock_episodic_memory_extraction(messages, **kwargs):
-            return EpisodicMemoryExtraction(
-                action="add",
-                reason_for_action="Mocked LLM response about pie",
-                summary="Mocked LLM response about pie",
-            )
-
-        monkeypatch.setattr(
-            memory_module.memory_core,
-            "_extract_episodic_memory_from_messages",
-            _mock_episodic_memory_extraction,
         )
 
         async def _mock_extract_metadata_from_fact(fact: SemanticFact, **kwargs):
@@ -200,12 +191,10 @@ async def test_simple_conversation(
     )
     assert all(memory.memory_type == "semantic" for memory in stored_memories)
 
-    result = await scoped_memory_module.retrieve_memories(
-        config=RetrievalConfig(query="apple pie", limit=1)
-    )
+    result = await scoped_memory_module.search_memories(query="apple pie", limit=1)
     assert len(result) == 1
     assert result[0].id == next(
-        memory.id for memory in stored_memories if "apple pie" in memory.content
+        memory.id for memory in stored_memories if "apple pie" in memory.content.lower()
     )
 
 
@@ -348,8 +337,8 @@ async def test_short_term_memory(
 
     # Check short-term memory using retrieve method
     chat_history_messages = (
-        await scoped_memory_module.memory_module.retrieve_chat_history(
-            conversation_id, ShortTermMemoryRetrievalConfig(last_minutes=1)
+        await scoped_memory_module.memory_module.retrieve_conversation_history(
+            conversation_id, last_minutes=1
         )
     )
     assert len(chat_history_messages) == 3
@@ -645,12 +634,8 @@ async def test_retrieve_memories_by_topic(
     await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
 
     # Retrieve memories by Operating System topic
-    os_memories = await scoped_memory_module.retrieve_memories(
-        config=RetrievalConfig(
-            topic=Topic(
-                name="Operating System", description="The user's operating system"
-            )
-        ),
+    os_memories = await scoped_memory_module.search_memories(
+        topic=Topic(name="Operating System", description="The user's operating system")
     )
     assert all("Operating System" in memory.topics for memory in os_memories)
     assert any("windows 11" in memory.content.lower() for memory in os_memories)
@@ -716,13 +701,9 @@ async def test_retrieve_memories_by_topic_and_query(
     assert any("windows" in memory.content.lower() for memory in stored_memories)
 
     # Retrieve memories by Operating System topic AND query about Mac
-    memories = await scoped_memory_module.retrieve_memories(
-        RetrievalConfig(
-            topic=Topic(
-                name="Operating System", description="The user's operating system"
-            ),
-            query="MacBook",
-        ),
+    memories = await scoped_memory_module.search_memories(
+        topic=Topic(name="Operating System", description="The user's operating system"),
+        query="MacBook",
     )
     assert (
         len(memories) > 0
@@ -730,13 +711,9 @@ async def test_retrieve_memories_by_topic_and_query(
     assert not any("windows" in memory.content.lower() for memory in memories)
 
     # Try another query within the same topic
-    windows_memories = await scoped_memory_module.retrieve_memories(
-        config=RetrievalConfig(
-            topic=Topic(
-                name="Operating System", description="The user's operating system"
-            ),
-            query="What operating system does the user use for their Windows PC?",
-        ),
+    windows_memories = await scoped_memory_module.search_memories(
+        topic=Topic(name="Operating System", description="The user's operating system"),
+        query="What operating system does the user use for their Windows PC?",
     )
     assert (
         len(windows_memories) > 0

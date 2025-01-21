@@ -8,7 +8,7 @@ import sys
 import traceback
 
 from botbuilder.core import MemoryStorage, TurnContext
-from memory_module import LLMConfig, MemoryMiddleware, MemoryModuleConfig
+from memory_module import LLMConfig, MemoryMiddleware, MemoryModuleConfig, StorageConfig
 from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.state import TurnState
 
@@ -59,7 +59,9 @@ bot_app = Application[TurnState](
 memory_middleware = MemoryMiddleware(
     config=MemoryModuleConfig(
         llm=LLMConfig(**memory_llm_config),
-        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
+        storage=StorageConfig(
+            db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db")
+        ),
         timeout_seconds=60,
         buffer_size=20,
         enable_logging=True,

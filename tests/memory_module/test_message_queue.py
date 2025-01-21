@@ -6,7 +6,7 @@ Licensed under the MIT License.
 from unittest.mock import Mock
 
 import pytest
-from memory_module.config import LLMConfig, MemoryModuleConfig
+from memory_module.config import LLMConfig, MemoryModuleConfig, StorageConfig
 from memory_module.core.memory_core import MemoryCore
 from memory_module.core.message_queue import MessageQueue
 from memory_module.interfaces.base_message_buffer_storage import (
@@ -24,7 +24,7 @@ from tests.memory_module.utils import (
 async def test_process_for_semantic_messages_enough_messages():
     config = MemoryModuleConfig(
         buffer_size=4,
-        db_path=None,  # use in memory storage
+        storage=StorageConfig(type="in_memory"),  # use in memory storage
         timeout_seconds=60,
         llm=Mock(spec=LLMConfig),
     )
@@ -57,7 +57,7 @@ async def test_process_for_semantic_messages_enough_messages():
 async def test_process_for_semantic_messages_less_messages():
     config = MemoryModuleConfig(
         buffer_size=5,
-        db_path=None,  # use in-memory storage
+        storage=StorageConfig(type="in_memory"),  # use in-memory storage
         timeout_seconds=60,
         llm=Mock(spec=LLMConfig),
     )
@@ -84,7 +84,7 @@ async def test_process_for_semantic_messages_less_messages():
     ]
 
     core.process_semantic_messages.return_value = None
-    core.retrieve_chat_history.return_value = messages
+    core.retrieve_conversation_history.return_value = messages
 
     async def mock_get_memories_from_message(message_id):
         return existing_memories if message_id == "user_msg" else []
@@ -100,7 +100,7 @@ async def test_process_for_semantic_messages_less_messages():
 
     assert await mq._process_for_semantic_messages(buffered_messages) is None
     assert (
-        core.retrieve_chat_history.call_count == 1
+        core.retrieve_conversation_history.call_count == 1
     )  # just once to get stored messages
     assert core.process_semantic_messages.call_count == 1
     assert (

@@ -20,11 +20,10 @@ from tqdm import tqdm
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(os.path.dirname(__file__), "../memory_module"))
 
-from memory_module.config import LLMConfig, MemoryModuleConfig
+from memory_module.config import LLMConfig, MemoryModuleConfig, StorageConfig
 from memory_module.core.memory_module import MemoryModule
 from memory_module.interfaces.types import (
     AssistantMessage,
-    RetrievalConfig,
     UserMessage,
 )
 
@@ -54,7 +53,9 @@ class MemoryModuleManager:
             api_key=os.getenv("OPENAI_API_KEY"),
         )
         config = MemoryModuleConfig(
-            db_path=self._db_path, buffer_size=self._buffer_size, llm=llm
+            storage=StorageConfig(db_path=self._db_path),
+            buffer_size=self._buffer_size,
+            llm=llm,
         )
 
         self._memory_module = MemoryModule(config=config)
@@ -113,8 +114,8 @@ def run_benchmark(
         memory_module: MemoryModule
         with MemoryModuleManager(buffer_size=len(session)) as memory_module:
             await add_messages(memory_module, messages=session)
-            memories = await memory_module.retrieve_memories(
-                None, RetrievalConfig(query=query, limit=None)
+            memories = await memory_module.search_memories(
+                user_id=None, query=query, limit=None
             )
 
         return {

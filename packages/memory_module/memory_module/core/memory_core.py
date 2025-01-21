@@ -11,6 +11,12 @@ from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field, create_model, field_validator
 
 from memory_module.config import MemoryModuleConfig
+from memory_module.core.prompts import (
+    MEMORY_PROCESSING_DECISION_PROMPT,
+    METADATA_EXTRACTION_PROMPT,
+    SEMANTIC_FACT_EXTRACTION_PROMPT,
+    SEMANTIC_FACT_USER_PROMPT,
+)
 from memory_module.interfaces.base_memory_core import BaseMemoryCore
 from memory_module.interfaces.base_memory_storage import BaseMemoryStorage
 from memory_module.interfaces.types import (
@@ -19,8 +25,6 @@ from memory_module.interfaces.types import (
     MemoryType,
     Message,
     MessageInput,
-    RetrievalConfig,
-    ShortTermMemoryRetrievalConfig,
     TextEmbedding,
     Topic,
 )
@@ -85,22 +89,6 @@ class ProcessSemanticMemoryDecision(BaseModel):
     )
 
 
-class EpisodicMemoryExtraction(BaseModel):
-    action: Literal["add", "update", "ignore"] = Field(
-        ..., description="Action to take on the extracted fact"
-    )
-    reason_for_action: Optional[str] = Field(
-        ...,
-        description="Reason for the action taken on the extracted fact or the reason it was ignored.",
-    )
-    summary: Optional[str] = Field(
-        ...,
-        description="Summary of the extracted episodic memory. In case of update,"
-        "include some details about the update including the latest state. Do not"
-        "use real names (you can say 'The user' instead) and avoid pronouns. Be concise.",
-    )
-
-
 class MemoryCore(BaseMemoryCore):
     """Implementation of the memory core component."""
 
@@ -118,12 +106,16 @@ class MemoryCore(BaseMemoryCore):
             storage: Optional storage implementation for memory persistence
         """
         self.lm = llm_service
-        self.storage: BaseMemoryStorage = storage or (
-            SQLiteMemoryStorage(db_path=config.db_path)
-            if config.db_path is not None
-            else InMemoryStorage()
-        )
+        self.storage: BaseMemoryStorage = storage or self._build_storage(config)
         self.topics = config.topics
+
+    def _build_storage(self, config: MemoryModuleConfig) -> BaseMemoryStorage:
+        if not config.storage or config.storage.storage_type == "in-memory":
+            return InMemoryStorage()
+        if config.storage.storage_type == "sqlite":
+            return SQLiteMemoryStorage(config.storage)
+
+        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
 
     async def process_semantic_messages(
         self,
@@ -189,21 +181,19 @@ class MemoryCore(BaseMemoryCore):
                 logger.info("Storing memory: %s", memory)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
 
-    async def process_episodic_messages(self, messages: List[Message]) -> None:
-        """Process multiple messages into episodic memories (specific events, experiences)."""
-        # TODO: Implement episodic memory processing
-        await self._extract_episodic_memory_from_messages(messages)
-
-    async def retrieve_memories(
+    async def search_memories(
         self,
+        *,
         user_id: Optional[str],
-        config: RetrievalConfig,
+        query: Optional[str] = None,
+        topic: Optional[Topic] = None,
+        limit: Optional[int] = None,
     ) -> List[Memory]:
         return await self._retrieve_memories(
             user_id,
-            config.query,
-            [config.topic] if config.topic else None,
-            config.limit,
+            query,
+            [topic] if topic else None,
+            limit,
         )
 
     async def _retrieve_memories(
@@ -225,7 +215,7 @@ class MemoryCore(BaseMemoryCore):
         else:
             text_embedding = None
 
-        return await self.storage.retrieve_memories(
+        return await self.storage.search_memories(
             user_id=user_id, text_embedding=text_embedding, topics=topics, limit=limit
         )
 
@@ -301,38 +291,12 @@ class MemoryCore(BaseMemoryCore):
                 for memory in old_memories
             ]
         )
-        system_message = f"""You are a semantic memory management agent. Your task is to decide whether the new memory should be added to the memory system or ignored as a duplicate.
 
-Considerations:
-1.	Context Overlap:
-If the new memory conveys information that is substantially covered by an existing memory, it should be ignored.
-If the new memory adds unique or specific information not present in any old memory, it should be added.
-2.	Granularity of Detail:
-Broader or more general memories should not replace specific ones. However, a specific detail can replace a general statement if it conveys the same underlying idea.
-For example:
-Old memory: “The user enjoys hiking in national parks.”
-New memory: “The user enjoys hiking in Yellowstone National Park.”
-Result: Ignore (The older memory already encompasses the specific case).
-3.	Repeated Patterns:
-If the new memory reinforces a pattern of behavior over time (e.g., multiple mentions of a recurring habit, preference, or routine), it should be added to reflect this trend.
-4.	Temporal Relevance:
-If the new memory reflects a significant change or update to the old memory, it should be added.
-For example:
-Old memory: “The user is planning a trip to Japan.”
-New memory: “The user has canceled their trip to Japan.”
-Result: Add (The new memory reflects a change).
-
-Process:
-	1.	Compare the specificity, unique details, and time relevance of the new memory against old memories.
-	2.	Decide whether to add or ignore based on the considerations above.
-	3.	Provide a clear and concise justification for your decision.
-
-Here are the old memories:
-{old_memory_content}
-
-Here is the new memory:
-{new_memory} created at {str(datetime.datetime.now())}
-"""  # noqa: E501
+        system_message = MEMORY_PROCESSING_DECISION_PROMPT.format(
+            old_memory_content=old_memory_content,
+            new_memory=new_memory,
+            created_at=str(datetime.datetime.now()),
+        )
         messages = [{"role": "system", "content": system_message}]
 
         decision = await self.lm.completion(
@@ -352,6 +316,7 @@ Here is the new memory:
         Returns:
             MemoryDigest containing the summary, importance, and key points from the fact.
         """
+        topics_context = ""
         if topics:
             topics_str = "\n".join(
                 [f"{topic.name}: {topic.description}" for topic in topics]
@@ -364,7 +329,9 @@ Here is the new memory:
             messages=[
                 {
                     "role": "system",
-                    "content": f"""Your role is to rephrase the text in your own words and provide a summary of the text.\n{topics_str}""",  # noqa: E501
+                    "content": METADATA_EXTRACTION_PROMPT.format(
+                        topics_context=topics_context
+                    ),
                 },
                 {"role": "user", "content": fact},
             ],
@@ -439,32 +406,15 @@ Here is the new memory:
         else:
             existing_memories_str = "NO EXISTING MEMORIES"
 
-        system_message = f"""You are a semantic memory management agent. Your goal is to extract meaningful, facts and preferences from user messages. Focus on recognizing general patterns and interests that will remain relevant over time, even if the user is mentioning short-term plans or events.
+        system_message = SEMANTIC_FACT_EXTRACTION_PROMPT.format(
+            topics_str=topics_str, existing_memories_str=existing_memories_str
+        )
 
-<TOPICS>
-{topics_str}
-</TOPICS>
+        user_message = SEMANTIC_FACT_USER_PROMPT.format(messages_str=messages_str)
 
-<EXISTING_MEMORIES>
-{existing_memories_str}
-</EXISTING_MEMORIES>
-"""  # noqa: E501
         llm_messages = [
             {"role": "system", "content": system_message},
-            {
-                "role": "user",
-                "content": f"""
-<TRANSCRIPT>
-{messages_str}
-</TRANSCRIPT>
-
-<INSTRUCTIONS>
-Extract new FACTS from the user messages in the TRANSCRIPT.
-FACTS are patterns and interests that will remain relevant over time, even if the user is mentioning short-term plans or events.
-Treat FACTS independently, even if multiple facts relate to the same topic.
-Ignore FACTS found in EXISTING_MEMORIES.
-""",  # noqa: E501
-            },
+            {"role": "user", "content": user_message},
         ]
 
         def topics_validator(cls, v):
@@ -502,48 +452,24 @@ Ignore FACTS found in EXISTING_MEMORIES.
         logger.info("Extracted semantic memory: %s", res)
         return res
 
-    async def _extract_episodic_memory_from_messages(
-        self, messages: List[Message]
-    ) -> EpisodicMemoryExtraction:
-        """Extract episodic memory from a list of messages.
-
-        Args:
-            messages: The list of messages to extract memories from
-
-        Returns:
-            EpisodicMemoryExtraction containing relevant details
-        """
-        system_message = f"""You are an episodic memory management agent. Your goal is to extract detailed memories of
-specific events or experiences from user messages. Focus on capturing key actions and important contextual details that
-the user may want to recall later.
-
-Prioritize:
-•	Key Events and Experiences: Focus on significant events or interactions the user mentions (e.g., attending an event,
-participating in an activity, or experiencing something noteworthy).
-•	Specific Details: Include relevant time markers, locations, people involved, and specific actions or outcomes if
-they seem central to the memory. However, avoid storing every minor detail unless it helps reconstruct the experience.
-•	Ignore Generalized Information: Do not focus on general interests or preferences, unless they are crucial to
-understanding the specific event.
-
-Here are the incoming messages:
-{[message.content for message in messages]}
-"""
-        # TODO: Fix the above prompt so that the messages are displayed correctly.
-        # Ex "User: I love pie!", "Assitant: I love pie!"
-        llm_messages = [{"role": "system", "content": system_message}]
-
-        return await self.lm.completion(
-            messages=llm_messages, response_model=EpisodicMemoryExtraction
-        )
-
     async def add_short_term_memory(self, message: MessageInput) -> Message:
         return await self.storage.store_short_term_memory(message)
 
-    async def retrieve_chat_history(
-        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        conversation_ref: str,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime.datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
-        return await self.storage.retrieve_chat_history(conversation_ref, config)
+        return await self.storage.retrieve_conversation_history(
+            conversation_ref,
+            n_messages=n_messages,
+            last_minutes=last_minutes,
+            before=before,
+        )
 
     async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
         return await self.storage.get_memories(memory_ids)

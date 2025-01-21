@@ -8,6 +8,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 import pytest
+from memory_module.config import StorageConfig
 from memory_module.storage.in_memory_storage import InMemoryStorage
 from memory_module.storage.sqlite_memory_storage import SQLiteMemoryStorage
 from memory_module.storage.sqlite_message_buffer_storage import (
@@ -21,8 +22,8 @@ from tests.memory_module.utils import create_test_user_message
 def storage(request):
     if request.param == "sqlite":
         db_path = f"storage_{uuid4().hex}.db"
-        buffer = SQLiteMessageBufferStorage(db_path=db_path)
-        memory_storage = SQLiteMemoryStorage(db_path=db_path)
+        buffer = SQLiteMessageBufferStorage(StorageConfig(db_path=db_path))
+        memory_storage = SQLiteMemoryStorage(StorageConfig(db_path=db_path))
         yield buffer, memory_storage
         os.remove(db_path)
     else:

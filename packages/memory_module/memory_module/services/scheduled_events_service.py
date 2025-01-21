@@ -47,11 +47,15 @@ class ScheduledEventsService(BaseScheduledEventsService):
             Callable[[str, Any, datetime], Awaitable[None]]
         ] = None
         self._tasks: Dict[str, TaskInfo] = {}
-        self.storage = storage or (
-            SQLiteScheduledEventsStorage(db_path=config.db_path)
-            if config.db_path is not None
-            else InMemoryStorage()
-        )
+        self.storage = storage or self._build_storage(config)
+
+    def _build_storage(self, config: MemoryModuleConfig) -> BaseScheduledEventsStorage:
+        if not config.storage or config.storage.storage_type == "in-memory":
+            return InMemoryStorage()
+        if config.storage.storage_type == "sqlite":
+            return SQLiteScheduledEventsStorage(config.storage)
+
+        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
 
     async def _initialize_tasks(self) -> None:
         """Asynchronously initialize tasks from storage."""

@@ -15,7 +15,12 @@ import click
 sys.path.append(Path(__file__).parent.parent)
 sys.path.append(Path(__file__).parent.parent / "packages")
 
-from memory_module import MemoryModule, MemoryModuleConfig, UserMessageInput
+from memory_module import (
+    MemoryModule,
+    MemoryModuleConfig,
+    StorageConfig,
+    UserMessageInput,
+)
 
 from scripts.utils.evaluation_utils import (
     BaseEvaluator,
@@ -162,7 +167,7 @@ class MemoryDecisionEvaluator(BaseEvaluator):
                 db_path.unlink()
 
             config = MemoryModuleConfig(
-                db_path=db_path,
+                storage=StorageConfig(db_path=db_path),
                 buffer_size=5,
                 timeout_seconds=60,
                 llm=self.llm_config,

@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from memory_module.config import StorageConfig
 from memory_module.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
 )
@@ -23,14 +24,13 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
     """SQLite implementation of message buffer storage."""
 
-    def __init__(self, db_path: Optional[str | Path] = None):
+    def __init__(self, config: StorageConfig):
         """Initialize SQLite message buffer storage.
 
         Args:
             db_path: Optional path to the SQLite database file
         """
-        self.db_path = db_path or DEFAULT_DB_PATH
-        self.storage = SQLiteStorage(self.db_path)
+        self.storage = SQLiteStorage(config.db_path or DEFAULT_DB_PATH)
 
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer."""
