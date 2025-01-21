@@ -3,6 +3,7 @@ from unittest import mock
 import instructor
 import litellm
 import pytest
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from dotenv import load_dotenv
 from memory_module.config import LLMConfig
 from memory_module.services.llm_service import LLMService
@@ -181,6 +182,35 @@ async def test_completion_azure_openai(azure_config: EnvLLMConfig):
     messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
 
     res = await lm.completion(messages)
+    text = res.choices[0].message.content
+
+    assert includes(text, "Canada")
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip("Skip by default since api key auth is used. Comment this line to test.")
+async def test_completion_azure_openai_managed_identity_auth(config: EnvLLMConfig):
+    model = config.azure_openai_deployment
+    api_base = config.azure_openai_api_base
+    api_version = config.azure_openai_api_version
+
+    if not (model and api_base and api_version):
+        pytest.skip("Azure OpenAI deployment, api base, or api version is missing")
+
+    azure_ad_token_provider = get_bearer_token_provider(
+        DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
+    )
+
+    llm_config = LLMConfig(
+        model=model,
+        api_base=api_base,
+        api_version=api_version,
+        azure_ad_token_provider=azure_ad_token_provider,  # type: ignore
+    )
+    lm = LLMService(config=llm_config)
+    messages = [{"role": "system", "content": "Which country has a maple leaf in its flag?"}]
+
+    res = await lm.completion(messages, azure_ad_token_provider=azure_ad_token_provider)
     text = res.choices[0].message.content
 
     assert includes(text, "Canada")
