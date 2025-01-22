@@ -486,7 +486,7 @@ async def test_delete_messages(
 
     delete_messages = [message1_id, message3_id]
 
-    await scoped_memory_module.memory_module.delete_messages(delete_messages)
+    await scoped_memory_module.memory_module.remove_messages(delete_messages)
 
     updated_memories = (
         await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
