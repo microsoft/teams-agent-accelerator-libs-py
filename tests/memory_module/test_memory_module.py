@@ -311,7 +311,7 @@ async def test_remove_memory(
 
 
 @pytest.mark.asyncio
-async def test_short_term_memory(
+async def test_working_memory(
     scoped_memory_module, conversation_id, user_ids_in_conversation_scope
 ):
     """Test that messages are stored in short-term memory."""

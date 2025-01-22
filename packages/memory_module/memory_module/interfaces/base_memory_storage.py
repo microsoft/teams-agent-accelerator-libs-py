@@ -44,8 +44,8 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def store_short_term_memory(self, message: MessageInput) -> Message:
-        """Store a short-term memory entry.
+    async def upsert_message(self, message: MessageInput) -> Message:
+        """Upsert a message into the storage system.
 
         Args:
             message: The Message object representing the short-term memory to store.

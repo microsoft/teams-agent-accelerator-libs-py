@@ -61,7 +61,7 @@ class MemoryModule(BaseMemoryModule):
         logger.debug(
             f"add message to memory module. {message.type}: `{message.content}`"
         )
-        message_res = await self.memory_core.add_short_term_memory(message)
+        message_res = await self.memory_core.add_message(message)
         await self.message_queue.enqueue(message_res)
         return message_res
 

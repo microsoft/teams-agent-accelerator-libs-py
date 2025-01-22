@@ -67,8 +67,8 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def add_short_term_memory(self, message: MessageInput) -> Message:
-        """Add a short-term memory entry."""
+    async def add_message(self, message: MessageInput) -> Message:
+        """Add a message to be processed into memory."""
         pass
 
     @abstractmethod

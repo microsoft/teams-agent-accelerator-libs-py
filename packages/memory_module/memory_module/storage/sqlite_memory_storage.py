@@ -295,7 +295,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             for row in rows
         ]
 
-    async def store_short_term_memory(self, message: MessageInput) -> Message:
+    async def upsert_message(self, message: MessageInput) -> Message:
         """Store a short-term memory entry."""
         if isinstance(message, InternalMessageInput):
             id = str(uuid.uuid4())

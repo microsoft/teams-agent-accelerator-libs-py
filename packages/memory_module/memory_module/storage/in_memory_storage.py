@@ -76,7 +76,7 @@ class InMemoryStorage(
             self.storage["memories"][memory_id].content = updated_memory
             self.storage["embeddings"][memory_id] = embedding_vectors
 
-    async def store_short_term_memory(self, message: MessageInput) -> Message:
+    async def upsert_message(self, message: MessageInput) -> Message:
         if isinstance(message, InternalMessageInput):
             id = str(uuid.uuid4())
         else:
@@ -117,7 +117,21 @@ class InMemoryStorage(
                 author_id=message.author_id,
             )
 
-        self.storage["messages"][message.conversation_ref].append(message_obj)
+        # Upsert the message into the storage system
+        # if message already exists, remove it
+        if not self.storage["messages"][message.conversation_ref]:
+            self.storage["messages"][message.conversation_ref] = []
+
+        self.storage["messages"][message.conversation_ref] = sorted(
+            list(
+                filter(
+                    lambda message: message.id != message_obj.id,
+                    self.storage["messages"][message.conversation_ref],
+                )
+            )
+            + [message_obj],
+            key=lambda x: x.created_at,
+        )
 
         return message_obj
 

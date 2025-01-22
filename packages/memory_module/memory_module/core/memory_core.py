@@ -447,8 +447,8 @@ class MemoryCore(BaseMemoryCore):
         logger.info("Extracted semantic memory: %s", res)
         return res
 
-    async def add_short_term_memory(self, message: MessageInput) -> Message:
-        return await self.storage.store_short_term_memory(message)
+    async def add_message(self, message: MessageInput) -> Message:
+        return await self.storage.upsert_message(message)
 
     async def retrieve_conversation_history(
         self,
