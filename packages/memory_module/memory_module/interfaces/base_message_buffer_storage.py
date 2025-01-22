@@ -13,6 +13,7 @@ from memory_module.interfaces.types import Message
 class BaseMessageBufferStorage(ABC):
     """Base class for storing buffered messages."""
 
+    # Storage Operations
     @abstractmethod
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer.
@@ -22,6 +23,7 @@ class BaseMessageBufferStorage(ABC):
         """
         pass
 
+    # Retrieval Operations
     @abstractmethod
     async def get_buffered_messages(self, conversation_ref: str) -> List[Message]:
         """Retrieve all buffered messages for a conversation.
@@ -42,6 +44,21 @@ class BaseMessageBufferStorage(ABC):
         pass
 
     @abstractmethod
+    async def count_buffered_messages(
+        self, conversation_refs: List[str]
+    ) -> Dict[str, int]:
+        """Count the number of buffered messages for selected conversations.
+
+        Args:
+            conversation_ref: The conversation reference to count messages for
+
+        Returns:
+            Number of buffered messages for the conversation
+        """
+        pass
+
+    # Cleanup Operations
+    @abstractmethod
     async def clear_buffered_messages(
         self, conversation_ref: str, before: Optional[datetime.datetime] = None
     ) -> None:
@@ -61,17 +78,3 @@ class BaseMessageBufferStorage(ABC):
         Args:
             message_ids: List of messages to be removed
         """
-
-    @abstractmethod
-    async def count_buffered_messages(
-        self, conversation_refs: List[str]
-    ) -> Dict[str, int]:
-        """Count the number of buffered messages for selected conversations.
-
-        Args:
-            conversation_ref: The conversation reference to count messages for
-
-        Returns:
-            Number of buffered messages for the conversation
-        """
-        pass

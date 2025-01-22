@@ -18,6 +18,7 @@ from memory_module.interfaces.types import (
 class BaseMemoryCore(ABC):
     """Base class for the memory core component."""
 
+    # Memory Operations
     @abstractmethod
     async def process_semantic_messages(
         self,
@@ -57,15 +58,16 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def remove_messages(self, message_ids: List[str]) -> None:
-        """Remove messages and related memories."""
-        pass
-
-    @abstractmethod
     async def remove_memories(
         self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
     ) -> None:
         """Remove memories based on user id."""
+        pass
+
+    # Message Operations
+    @abstractmethod
+    async def add_message(self, message: MessageInput) -> Message:
+        """Add a message to be processed into memory."""
         pass
 
     @abstractmethod
@@ -74,8 +76,8 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def add_message(self, message: MessageInput) -> Message:
-        """Add a message to be processed into memory."""
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        """Remove messages and related memories."""
         pass
 
     @abstractmethod

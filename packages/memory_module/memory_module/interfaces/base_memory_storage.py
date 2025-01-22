@@ -22,6 +22,7 @@ class BaseMemoryStorage(ABC):
 
     default_limit = 10
 
+    # Memory Operations
     @abstractmethod
     async def store_memory(
         self,
@@ -49,11 +50,24 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def upsert_message(self, message: MessageInput) -> Message:
-        """Upsert a message into the storage system.
+    async def get_memories(
+        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
+        pass
+
+    @abstractmethod
+    async def get_all_memories(
+        self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
+    ) -> List[Memory]:
+        """Retrieve all memories from storage.
 
         Args:
-            message: The Message object representing the short-term memory to store.
+            limit: Optional maximum number of memories to return
+            message_ids: Optional list of message_id to filter memories
+
+        Returns:
+            List of Memory objects ordered by creation date (newest first)
         """
         pass
 
@@ -79,10 +93,20 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_memories(
-        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
-    ) -> List[Memory]:
-        """Get memories based on memory ids or user id."""
+    async def delete_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        """Delete memories based on memory ids."""
+        pass
+
+    # Message Operations
+    @abstractmethod
+    async def upsert_message(self, message: MessageInput) -> Message:
+        """Upsert a message into the storage system.
+
+        Args:
+            message: The Message object representing the short-term memory to store.
+        """
         pass
 
     @abstractmethod
@@ -93,28 +117,6 @@ class BaseMemoryStorage(ABC):
     @abstractmethod
     async def delete_messages(self, message_ids: List[str]) -> None:
         """Delete messages based on message ids."""
-        pass
-
-    @abstractmethod
-    async def delete_memories(
-        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
-    ) -> None:
-        """Delete memories based on memory ids."""
-        pass
-
-    @abstractmethod
-    async def get_all_memories(
-        self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
-    ) -> List[Memory]:
-        """Retrieve all memories from storage.
-
-        Args:
-            limit: Optional maximum number of memories to return
-            message_ids: Optional list of message_id to filter memories
-
-        Returns:
-            List of Memory objects ordered by creation date (newest first)
-        """
         pass
 
     @abstractmethod
