@@ -121,10 +121,16 @@ async def confirm_memorized_fields(
     cited_memories: List[Memory] = [
         memory for _, memory in user_details_with_memories if memory is not None
     ]
-    messages_for_cited_memories = await memory_module.get_messages(
-        [memory.id for memory in cited_memories]
-    )
-    print("messages_for_cited_memories", messages_for_cited_memories)
+    # Get all message IDs from memory attributions
+    message_ids = []
+    for memory in cited_memories:
+        if memory.message_attributions:
+            message_ids.extend(memory.message_attributions)
+
+    messages = await memory_module.get_messages(message_ids)
+    # Create a lookup dict for messages by ID
+    messages_by_id = {msg.id: msg for msg in messages}
+
     memory_strs = []
     citations: List[ClientCitation] = []
     for user_detail, associated_memory in user_details_with_memories:
@@ -133,10 +139,12 @@ async def confirm_memorized_fields(
             memory_strs.append(
                 f"{user_detail.field_name}: {user_detail.field_value} [{idx}]"
             )
+            # Get first message attribution if it exists
+            first_message_id = next(
+                iter(associated_memory.message_attributions or []), None
+            )
             associated_message = (
-                messages_for_cited_memories[associated_memory.id][0]
-                if associated_memory.id in messages_for_cited_memories
-                else None
+                messages_by_id.get(first_message_id) if first_message_id else None
             )
             citations.append(
                 ClientCitation(

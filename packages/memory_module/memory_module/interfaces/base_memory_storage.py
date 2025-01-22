@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from memory_module.interfaces.types import (
     BaseMemoryInput,
@@ -86,8 +86,8 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        """Get messages based on memory ids."""
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        """Get messages based on message ids."""
         pass
 
     @abstractmethod

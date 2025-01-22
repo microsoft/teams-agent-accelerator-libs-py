@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import MemoryCore
@@ -100,8 +100,8 @@ class MemoryModule(BaseMemoryModule):
             memory_ids=memory_ids, user_id=user_id
         )
 
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        return await self.memory_core.get_messages(memory_ids)
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        return await self.memory_core.get_messages(message_ids)
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         """

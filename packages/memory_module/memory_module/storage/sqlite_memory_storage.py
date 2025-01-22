@@ -2,7 +2,7 @@ import datetime
 import logging
 import uuid
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import sqlite_vec
 from memory_module.config import StorageConfig
@@ -406,33 +406,18 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             for row in rows
         ]
 
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        if not memory_ids:
-            return {}
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        if not message_ids:
+            return []
 
         query = f"""
-            SELECT
-                ma.memory_id as _memory_id,
-                m.*
-            FROM memory_attributions ma
-            JOIN messages m ON ma.message_id = m.id
-            WHERE ma.memory_id IN ({",".join(["?"] * len(memory_ids))})
+            SELECT *
+            FROM messages
+            WHERE id IN ({",".join(["?"] * len(message_ids))})
         """
 
-        rows = await self.storage.fetch_all(query, tuple(memory_ids))
-
-        messages_dict: Dict[str, List[Message]] = {}
-        for row in rows:
-            memory_id = row["_memory_id"]
-            if memory_id not in messages_dict:
-                messages_dict[memory_id] = []
-            messages_dict[memory_id].append(
-                build_message_from_dict(
-                    {k: v for k, v in row.items() if not k.startswith("_")}
-                )
-            )
-
-        return messages_dict
+        rows = await self.storage.fetch_all(query, tuple(message_ids))
+        return [build_message_from_dict(row) for row in rows]
 
     def _build_memory(
         self, memory_values: dict, message_attributions: set[str]

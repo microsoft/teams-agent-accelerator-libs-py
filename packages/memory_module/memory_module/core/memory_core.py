@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Dict, List, Literal, Optional, Set
+from typing import List, Literal, Optional, Set
 
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field, create_model, field_validator
@@ -474,7 +474,7 @@ class MemoryCore(BaseMemoryCore):
             raise ValueError("Either memory_ids or user_id must be provided")
         return await self.storage.get_memories(memory_ids=memory_ids, user_id=user_id)
 
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
+    async def get_messages(self, memory_ids: List[str]) -> List[Message]:
         return await self.storage.get_messages(memory_ids)
 
     async def get_memories_from_message(self, message_id):

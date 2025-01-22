@@ -201,22 +201,16 @@ class InMemoryStorage(
             )
         return memories
 
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        messages_dict: Dict[str, List[Message]] = {}
-        for memory_id in memory_ids:
-            str_id = memory_id
-            if str_id in self.storage["memories"]:
-                memory = self.storage["memories"][str_id]
-                if memory.message_attributions:
-                    messages = []
-                    for msg_id in memory.message_attributions:
-                        # Search through buffered messages to find matching message
-                        for conv_messages in self.storage["messages"].values():
-                            for msg in conv_messages:
-                                if msg.id == msg_id:
-                                    messages.append(msg)
-                    messages_dict[memory_id] = messages
-        return messages_dict
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        messages = []
+        for message_id in message_ids:
+            # Search through all conversations for the message
+            for conv_messages in self.storage["messages"].values():
+                for msg in conv_messages:
+                    if msg.id == message_id:
+                        messages.append(msg)
+                        break
+        return messages
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         for message_id in message_ids:
