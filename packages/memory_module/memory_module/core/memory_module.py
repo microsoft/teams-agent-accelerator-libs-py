@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from memory_module.config import MemoryModuleConfig
 from memory_module.core.memory_core import MemoryCore
@@ -66,7 +66,7 @@ class MemoryModule(BaseMemoryModule):
         logger.debug(
             f"add message to memory module. {message.type}: `{message.content}`"
         )
-        message_res = await self.memory_core.add_short_term_memory(message)
+        message_res = await self.memory_core.add_message(message)
         await self.message_queue.enqueue(message_res)
         return message_res
 
@@ -95,14 +95,18 @@ class MemoryModule(BaseMemoryModule):
         logger.debug(f"retrieved memories: {memories}")
         return memories
 
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        return await self.memory_core.get_memories(memory_ids)
+    async def get_memories(
+        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
+        if memory_ids is None and user_id is None:
+            raise ValueError("Either memory_ids or user_id must be provided")
+        return await self.memory_core.get_memories(
+            memory_ids=memory_ids, user_id=user_id
+        )
 
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        return await self.memory_core.get_user_memories(user_id)
-
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        return await self.memory_core.get_messages(memory_ids)
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        return await self.memory_core.get_messages(message_ids)
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         """
@@ -120,10 +124,14 @@ class MemoryModule(BaseMemoryModule):
         """Update memory with new fact"""
         return await self.memory_core.update_memory(memory_id, updated_memory)
 
-    async def remove_memories(self, user_id: str) -> None:
+    async def remove_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
         """Remove memories based on user id."""
         logger.debug(f"removing all memories associated with user ({user_id})")
-        return await self.memory_core.remove_memories(user_id)
+        return await self.memory_core.remove_memories(
+            user_id=user_id, memory_ids=memory_ids
+        )
 
     async def retrieve_conversation_history(
         self,
@@ -166,6 +174,13 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         return self._conversation_ref
 
     def _validate_user(self, user_id: Optional[str]) -> str:
+        """
+        Validate user_id. If user_id is not provided, we need to ensure that there
+        is only one user in the conversation scope.
+
+        Otherwise, we require that the user_id is provided in the arguments.
+        """
+
         if user_id and user_id not in self.users_in_conversation_scope:
             raise ValueError(f"User {user_id} is not in the conversation scope")
         if not user_id:
@@ -203,18 +218,34 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
             before=before,
         )
 
+    async def get_memories(
+        self,
+        *,
+        memory_ids: Optional[List[str]] = None,
+        user_id: Optional[str] = None,
+    ):
+        validated_user_id = self._validate_user(user_id) if user_id else None
+        return await self.memory_module.get_memories(
+            memory_ids=memory_ids, user_id=validated_user_id
+        )
+
     # Implement abstract methods by forwarding to memory_module
     async def add_message(self, message):
         return await self.memory_module.add_message(message)
 
-    async def get_memories(self, *args, **kwargs):
-        return await self.memory_module.get_memories(*args, **kwargs)
-
     async def get_messages(self, *args, **kwargs):
         return await self.memory_module.get_messages(*args, **kwargs)
 
-    async def get_user_memories(self, *args, **kwargs):
-        return await self.memory_module.get_user_memories(*args, **kwargs)
-
     async def remove_messages(self, *args, **kwargs):
         return await self.memory_module.remove_messages(*args, **kwargs)
+
+    async def remove_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ):
+        # If user_id is not provided, we still need to ensure that in a scoped setting,
+        # we are only removing memories that belong to a user in this conversation scope.
+        # So we are validating the user_id here.
+        validated_user_id = self._validate_user(user_id)
+        return await self.memory_module.remove_memories(
+            user_id=validated_user_id, memory_ids=memory_ids
+        )

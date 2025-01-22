@@ -81,7 +81,7 @@ class InMemoryStorage(
             self.storage["memories"][memory_id].content = updated_memory
             self.storage["embeddings"][memory_id] = embedding_vectors
 
-    async def store_short_term_memory(self, message: MessageInput) -> Message:
+    async def upsert_message(self, message: MessageInput) -> Message:
         if isinstance(message, InternalMessageInput):
             id = str(uuid.uuid4())
         else:
@@ -122,7 +122,21 @@ class InMemoryStorage(
                 author_id=message.author_id,
             )
 
-        self.storage["messages"][message.conversation_ref].append(message_obj)
+        # Upsert the message into the storage system
+        # if message already exists, remove it
+        if not self.storage["messages"][message.conversation_ref]:
+            self.storage["messages"][message.conversation_ref] = []
+
+        self.storage["messages"][message.conversation_ref] = sorted(
+            list(
+                filter(
+                    lambda message: message.id != message_obj.id,
+                    self.storage["messages"][message.conversation_ref],
+                )
+            )
+            + [message_obj],
+            key=lambda x: x.created_at,
+        )
 
         return message_obj
 
@@ -184,45 +198,42 @@ class InMemoryStorage(
 
         return memories
 
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        return [
-            self.storage["memories"][memory_id].copy()
-            for memory_id in memory_ids
-            if memory_id in self.storage["memories"]
-        ]
+    async def get_memories(
+        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
+        if memory_ids is None and user_id is None:
+            raise ValueError("Either memory_ids or user_id must be provided")
 
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        return [
-            memory.copy()
-            for memory in self.storage["memories"].values()
-            if memory.user_id == user_id
-        ]
+        memories: List[Memory] = []
+        if memory_ids:
+            memories.extend(
+                self.storage["memories"][memory_id].copy()
+                for memory_id in memory_ids
+                if memory_id in self.storage["memories"]
+            )
+        if user_id:
+            memories.extend(
+                memory.copy()
+                for memory in self.storage["memories"].values()
+                if memory.user_id == user_id
+            )
+        return memories
 
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        messages_dict: Dict[str, List[Message]] = {}
-        for memory_id in memory_ids:
-            str_id = memory_id
-            if str_id in self.storage["memories"]:
-                memory = self.storage["memories"][str_id]
-                if memory.message_attributions:
-                    messages = []
-                    for msg_id in memory.message_attributions:
-                        # Search through buffered messages to find matching message
-                        for conv_messages in self.storage["messages"].values():
-                            for msg in conv_messages:
-                                if msg.id == msg_id:
-                                    messages.append(msg)
-                    messages_dict[memory_id] = messages
-        return messages_dict
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        messages = []
+        for message_id in message_ids:
+            # Search through all conversations for the message
+            for conv_messages in self.storage["messages"].values():
+                for msg in conv_messages:
+                    if msg.id == message_id:
+                        messages.append(msg)
+                        break
+        return messages
 
-    async def remove_messages(self, message_ids: List[str]) -> None:
+    async def delete_messages(self, message_ids: List[str]) -> None:
         for message_id in message_ids:
             self.storage["messages"].pop(message_id, None)
-
-    async def remove_memories(self, memory_ids: List[str]) -> None:
-        for memory_id in memory_ids:
-            self.storage["embeddings"].pop(memory_id, None)
-            self.storage["memories"].pop(memory_id, None)
 
     def _cosine_distance(
         self, memory_vector: List[float], query_vector: List[float]
@@ -243,14 +254,34 @@ class InMemoryStorage(
 
         return distance
 
-    async def clear_memories(self, user_id: str) -> None:
-        memory_ids_for_user = [
-            memory_id
-            for memory_id, memory in self.storage["memories"].items()
-            if memory.user_id == user_id
-        ]
-        # remove all memories for user
-        for memory_id in memory_ids_for_user:
+    async def delete_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        if user_id is None and memory_ids is None:
+            raise ValueError("Either user_id or memory_ids must be provided")
+
+        memories_to_delete: List[str] = []
+        if memory_ids:
+            # If we have memory_ids, filter by user_id if provided
+            memories_to_delete.extend(
+                memory_id
+                for memory_id in memory_ids
+                if memory_id in self.storage["memories"]
+                and (
+                    user_id is None
+                    or self.storage["memories"][memory_id].user_id == user_id
+                )
+            )
+        elif user_id:
+            # If we only have user_id, get all memories for that user
+            memories_to_delete.extend(
+                memory_id
+                for memory_id, memory in self.storage["memories"].items()
+                if memory.user_id == user_id
+            )
+
+        # Remove matching memories and their embeddings
+        for memory_id in memories_to_delete:
             self.storage["embeddings"].pop(memory_id, None)
             self.storage["memories"].pop(memory_id, None)
 

@@ -7,7 +7,7 @@ import datetime
 import logging
 import uuid
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import sqlite_vec
 from memory_module.config import StorageConfig
@@ -233,18 +233,36 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             for row in rows
         ]
 
-    async def clear_memories(self, user_id: str) -> None:
-        """Clear all memories for a given user."""
-        query = """
-            SELECT
-                m.id
+    async def delete_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        """Delete memories based on user_id and/or memory_ids."""
+        if user_id is None and memory_ids is None:
+            raise ValueError("Either user_id or memory_ids must be provided")
+
+        conditions = []
+        params = []
+
+        if memory_ids:
+            conditions.append(f"m.id IN ({','.join(['?'] * len(memory_ids))})")
+            params.extend(memory_ids)
+
+        if user_id:
+            conditions.append("m.user_id = ?")
+            params.append(user_id)
+
+        where_clause = " AND ".join(conditions)
+        query = f"""
+            SELECT m.id
             FROM memories m
-            WHERE m.user_id = ?
+            WHERE {where_clause}
         """
-        rows = await self.storage.fetch_all(query, (user_id,))
-        memory_ids = [row["id"] for row in rows]
-        # Remove memory
-        await self.remove_memories(memory_ids)
+
+        rows = await self.storage.fetch_all(query, tuple(params))
+        memories_to_delete = [row["id"] for row in rows]
+
+        if memories_to_delete:
+            await self._delete_memories(memories_to_delete)
 
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
         query = """
@@ -300,7 +318,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             for row in rows
         ]
 
-    async def store_short_term_memory(self, message: MessageInput) -> Message:
+    async def upsert_message(self, message: MessageInput) -> Message:
         """Store a short-term memory entry."""
         if isinstance(message, InternalMessageInput):
             id = str(uuid.uuid4())
@@ -375,9 +393,28 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         rows = await self.storage.fetch_all(query, params)
         return [build_message_from_dict(row) for row in rows][::-1]
 
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        if not memory_ids:
-            return []
+    async def get_memories(
+        self,
+        *,
+        memory_ids: Optional[List[str]] = None,
+        user_id: Optional[str] = None,
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
+        if memory_ids is None and user_id is None:
+            raise ValueError("Either memory_ids or user_id must be provided")
+
+        conditions = []
+        params = []
+
+        if memory_ids:
+            conditions.append(f"m.id IN ({','.join(['?'] * len(memory_ids))})")
+            params.extend(memory_ids)
+
+        if user_id:
+            conditions.append("m.user_id = ?")
+            params.append(user_id)
+
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
 
         query = f"""
             SELECT
@@ -385,60 +422,28 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 GROUP_CONCAT(ma.message_id) as message_attributions
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-            WHERE m.id IN ({",".join(["?"] * len(memory_ids))})
-        """
-
-        rows = await self.storage.fetch_all(query, tuple(memory_ids))
-
-        return [
-            self._build_memory(row, set((row["message_attributions"] or "").split(",")))
-            for row in rows
-        ]
-
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        query = """
-            SELECT
-                m.*,
-                GROUP_CONCAT(ma.message_id) as message_attributions
-            FROM memories m
-            LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-            WHERE m.user_id = ?
+            WHERE {where_clause}
             GROUP BY m.id
         """
 
-        rows = await self.storage.fetch_all(query, (user_id,))
+        rows = await self.storage.fetch_all(query, tuple(params))
         return [
             self._build_memory(row, set((row["message_attributions"] or "").split(",")))
             for row in rows
         ]
 
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        if not memory_ids:
-            return {}
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        if not message_ids:
+            return []
 
         query = f"""
-            SELECT
-                ma.memory_id as _memory_id,
-                m.*
-            FROM memory_attributions ma
-            JOIN messages m ON ma.message_id = m.id
-            WHERE ma.memory_id IN ({",".join(["?"] * len(memory_ids))})
+            SELECT *
+            FROM messages
+            WHERE id IN ({",".join(["?"] * len(message_ids))})
         """
 
-        rows = await self.storage.fetch_all(query, tuple(memory_ids))
-
-        messages_dict: Dict[str, List[Message]] = {}
-        for row in rows:
-            memory_id = row["_memory_id"]
-            if memory_id not in messages_dict:
-                messages_dict[memory_id] = []
-            messages_dict[memory_id].append(
-                build_message_from_dict(
-                    {k: v for k, v in row.items() if not k.startswith("_")}
-                )
-            )
-
-        return messages_dict
+        rows = await self.storage.fetch_all(query, tuple(message_ids))
+        return [build_message_from_dict(row) for row in rows]
 
     def _build_memory(
         self, memory_values: dict, message_attributions: set[str]
@@ -459,14 +464,14 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             message_attributions=message_attributions,
         )
 
-    async def remove_messages(self, message_ids: List[str]) -> None:
+    async def delete_messages(self, message_ids: List[str]) -> None:
         async with self.storage.transaction() as cursor:
             await cursor.execute(
                 f"DELETE FROM messages WHERE id in ({','.join(['?'] * len(message_ids))})",
                 tuple(message_ids),
             )
 
-    async def remove_memories(self, memory_ids: List[str]) -> None:
+    async def _delete_memories(self, memory_ids: List[str]) -> None:
         async with self.storage.transaction() as cursor:
             await cursor.execute(
                 """DELETE FROM vec_items WHERE memory_embedding_id in (

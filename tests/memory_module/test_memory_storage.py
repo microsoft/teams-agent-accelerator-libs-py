@@ -160,24 +160,113 @@ async def test_retrieve_memories_multiple_embeddings(
 
 
 @pytest.mark.asyncio
-async def test_clear_memories(memory_storage, sample_memory_input, sample_embedding):
-    # Store memory
-    await memory_storage.store_memory(
-        sample_memory_input, embedding_vectors=sample_embedding
+async def test_delete_memories_by_user_id(memory_storage, sample_embedding):
+    # Store memories for user
+    user_memory1 = BaseMemoryInput(
+        content="User memory 1",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    user_memory2 = BaseMemoryInput(
+        content="User memory 2",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
     )
 
-    # Clear memories
-    await memory_storage.clear_memories(sample_memory_input.user_id)
+    await memory_storage.store_memory(user_memory1, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(user_memory2, embedding_vectors=sample_embedding)
 
-    # Verify memories are cleared
-    memories = await memory_storage.get_all_memories()
+    # Delete all memories for user
+    await memory_storage.delete_memories(user_id="user1")
+
+    # Verify memories are deleted
+    memories = await memory_storage.get_memories(user_id="user1")
     assert len(memories) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_specific_memories(memory_storage, sample_embedding):
+    # Store memories
+    memory1 = BaseMemoryInput(
+        content="Memory 1",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    memory2 = BaseMemoryInput(
+        content="Memory 2",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+
+    memory1_id = await memory_storage.store_memory(
+        memory1, embedding_vectors=sample_embedding
+    )
+    memory2_id = await memory_storage.store_memory(
+        memory2, embedding_vectors=sample_embedding
+    )
+
+    # Delete specific memory
+    await memory_storage.delete_memories(memory_ids=[memory1_id])
+
+    # Verify only specified memory is deleted
+    memories = await memory_storage.get_all_memories()
+    assert len(memories) == 1
+    assert memories[0].id == memory2_id
+
+
+@pytest.mark.asyncio
+async def test_delete_memories_by_user_and_ids(memory_storage, sample_embedding):
+    # Store memories for different users
+    user1_memory = BaseMemoryInput(
+        content="User 1 memory",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    user2_memory = BaseMemoryInput(
+        content="User 2 memory",
+        created_at=datetime.now(),
+        user_id="user2",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+
+    await memory_storage.store_memory(user1_memory, embedding_vectors=sample_embedding)
+    memory2_id = await memory_storage.store_memory(
+        user2_memory, embedding_vectors=sample_embedding
+    )
+
+    # Try to delete user2's memory using user1's ID
+    await memory_storage.delete_memories(user_id="user1", memory_ids=[memory2_id])
+
+    # Verify user2's memory still exists
+    memories = await memory_storage.get_memories(user_id="user2")
+    assert len(memories) == 1
+    assert memories[0].id == memory2_id
+
+
+@pytest.mark.asyncio
+async def test_delete_memories_validation(memory_storage):
+    # Test that providing neither parameter raises error
+    with pytest.raises(
+        ValueError, match="Either user_id or memory_ids must be provided"
+    ):
+        await memory_storage.delete_memories(user_id=None, memory_ids=None)
 
 
 @pytest.mark.asyncio
 async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
     # Store message
-    await memory_storage.store_short_term_memory(sample_message)
+    await memory_storage.upsert_message(sample_message)
 
     # Retrieve chat history with n_messages
     messages = await memory_storage.retrieve_conversation_history(
@@ -242,7 +331,7 @@ async def test_get_all_memories_by_message_id(
 ):
     # Store single memory
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
-    await memory_storage.store_short_term_memory(sample_message)
+    await memory_storage.upsert_message(sample_message)
 
     # Get memories by message ID
     memories = await memory_storage.get_all_memories(message_ids=[sample_message.id])
@@ -257,7 +346,7 @@ async def test_get_all_memories_by_message_ids(
 ):
     # Store three memories
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
-    await memory_storage.store_short_term_memory(sample_message)
+    await memory_storage.upsert_message(sample_message)
     second_memory = BaseMemoryInput(
         content="Second memory",
         created_at=datetime.now(),
@@ -273,7 +362,7 @@ async def test_get_all_memories_by_message_ids(
         created_at=datetime.now(),
     )
     await memory_storage.store_memory(second_memory, embedding_vectors=[])
-    await memory_storage.store_short_term_memory(second_message)
+    await memory_storage.upsert_message(second_message)
     third_memory = BaseMemoryInput(
         content="Third memory",
         created_at=datetime.now(),
@@ -289,7 +378,7 @@ async def test_get_all_memories_by_message_ids(
         created_at=datetime.now(),
     )
     await memory_storage.store_memory(third_memory, embedding_vectors=[])
-    await memory_storage.store_short_term_memory(third_message)
+    await memory_storage.upsert_message(third_message)
 
     # Get memories by message ID
     memories = await memory_storage.get_all_memories(
@@ -306,7 +395,7 @@ async def test_get_all_memories_by_message_id_empty(
 ):
     # Store single memory
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
-    await memory_storage.store_short_term_memory(sample_message)
+    await memory_storage.upsert_message(sample_message)
 
     # Get memories by message ID
     memories = await memory_storage.get_all_memories(
@@ -326,7 +415,7 @@ async def test_get_memories_by_ids(
     )
 
     # Retrieve by ID
-    memories = await memory_storage.get_memories([memory_id])
+    memories = await memory_storage.get_memories(memory_ids=[memory_id])
     assert len(memories) == 1
     assert memories[0].content == sample_memory_input.content
 
@@ -355,42 +444,17 @@ async def test_get_messages(memory_storage):
 
     # Store test messages
     for message in test_messages:
-        await memory_storage.store_short_term_memory(message)
-
-    # Create memory attributions
-    memory_id_1 = await memory_storage.store_memory(
-        BaseMemoryInput(
-            content="Memory 1",
-            created_at=datetime.now(),
-            user_id="user1",
-            memory_type=MemoryType.SEMANTIC,
-            message_attributions={"msg1", "msg2"},
-        ),
-        embedding_vectors=[],
-    )
-    memory_id_2 = await memory_storage.store_memory(
-        BaseMemoryInput(
-            content="Memory 2",
-            created_at=datetime.now(),
-            user_id="user1",
-            memory_type=MemoryType.SEMANTIC,
-            message_attributions={"msg2"},
-        ),
-        embedding_vectors=[],
-    )
+        await memory_storage.upsert_message(message)
 
     # Test retrieving messages
-    result = await memory_storage.get_messages([memory_id_1, memory_id_2])
+    result = await memory_storage.get_messages(["msg1", "msg2"])
 
     # Assertions
     assert len(result) == 2
-    assert len(result[memory_id_1]) == 2  # Memory 1 should have 2 messages
-    assert len(result[memory_id_2]) == 1  # Memory 2 should have 1 message
 
     # Verify message content
-    message_ids = {msg.id for msg in result[memory_id_1]}
+    message_ids = {msg.id for msg in result}
     assert message_ids == {"msg1", "msg2"}
-    assert result[memory_id_2][0].id == "msg2"
 
 
 @pytest.mark.asyncio
@@ -581,3 +645,60 @@ async def test_retrieve_memories_with_multiple_topics_parameter(
     assert len(memories) == 2
     assert any("robotics" in memory.topics for memory in memories)
     assert all("AI" in memory.topics for memory in memories)
+
+
+@pytest.mark.asyncio
+async def test_get_memories_by_user_id(
+    memory_storage, sample_memory_input, sample_embedding
+):
+    # Store memories for different users
+    user1_memory = BaseMemoryInput(
+        content="User 1 memory",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    user2_memory = BaseMemoryInput(
+        content="User 2 memory",
+        created_at=datetime.now(),
+        user_id="user2",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    user1_memory2 = BaseMemoryInput(
+        content="User 1 second memory",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+
+    await memory_storage.store_memory(user1_memory, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(user2_memory, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(user1_memory2, embedding_vectors=sample_embedding)
+
+    # Get memories for user1
+    memories = await memory_storage.get_memories(user_id="user1")
+    assert len(memories) == 2
+    assert all(memory.user_id == "user1" for memory in memories)
+    assert {memory.content for memory in memories} == {
+        "User 1 memory",
+        "User 1 second memory",
+    }
+
+    # Get memories for user2
+    memories = await memory_storage.get_memories(user_id="user2")
+    assert len(memories) == 1
+    assert memories[0].user_id == "user2"
+    assert memories[0].content == "User 2 memory"
+
+    # Get memories for non-existent user
+    memories = await memory_storage.get_memories(user_id="user3")
+    assert len(memories) == 0
+
+    # Test that providing neither parameter raises error
+    with pytest.raises(
+        ValueError, match="Either memory_ids or user_id must be provided"
+    ):
+        await memory_storage.get_memories()
