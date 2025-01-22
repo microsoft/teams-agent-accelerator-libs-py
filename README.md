@@ -1,11 +1,6 @@
-# Teams Memory Agents - Python
+# Teams Tech Support Agent (Memory) Accelerator Template - Python
 
 ## Directory
-
-- Main repository: [Teams Memory Agents](https://github.com/microsoft/teams-memory-agents)
-- [Teams Memory Agents - Python](https://github.com/microsoft/teams-memory-agents-py) (You are here)
-- [Teams Memory Agents - JS](https://github.com/microsoft/teams-memory-agents-js)
-- [Teams Memory Agents - Dotnet](https://github.com/microsoft/teams-memory-agents-dotnet)
 
 As the maintainer of this project, please make a few updates:
 
@@ -19,9 +14,8 @@ As the maintainer of this project, please make a few updates:
 ## Getting Started
 
 ### Prerequisites
-
+Note: Ensure uv version is >= 0.4.27
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
-
 ### Installing
 
 1. `uv sync` - it installs the virtual env and dependencies
@@ -50,11 +44,8 @@ AZURE_OPENAI_API_BASE=https://<domain name>.openai.azure.com
 AZURE_OPENAI_API_VERSION=<version name>
 ```
 
-#### Start debugging on selected test case
-
-**Remove overrided model string**:  
-In `test_memory_core.py`, `LLMService` initiator, remove `model="gpt-4o-mini",` in param.  
-In `test_memory_module.py`, `build_llm_config` initiator, remove `{"model": "gpt-4o-mini"}` in param.
+#### Run all test cases
+`pytest`
 
 **Debug selected test**:  
 For test cases marked with `@pytest.mark.asyncio`, find the play icon left to it. Right click and choose `Debug test`.
