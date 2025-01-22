@@ -74,11 +74,6 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def clear_memories(self, user_id: str) -> None:
-        """Clear all memories for a given conversation."""
-        pass
-
-    @abstractmethod
     async def get_memories(
         self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
     ) -> List[Memory]:
@@ -95,7 +90,10 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def remove_memories(self, memory_ids: List[str]) -> None:
+    async def delete_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        """Delete memories based on memory ids."""
         pass
 
     @abstractmethod

@@ -155,18 +155,107 @@ async def test_retrieve_memories_multiple_embeddings(
 
 
 @pytest.mark.asyncio
-async def test_clear_memories(memory_storage, sample_memory_input, sample_embedding):
-    # Store memory
-    await memory_storage.store_memory(
-        sample_memory_input, embedding_vectors=sample_embedding
+async def test_delete_memories_by_user_id(memory_storage, sample_embedding):
+    # Store memories for user
+    user_memory1 = BaseMemoryInput(
+        content="User memory 1",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    user_memory2 = BaseMemoryInput(
+        content="User memory 2",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
     )
 
-    # Clear memories
-    await memory_storage.clear_memories(sample_memory_input.user_id)
+    await memory_storage.store_memory(user_memory1, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(user_memory2, embedding_vectors=sample_embedding)
 
-    # Verify memories are cleared
-    memories = await memory_storage.get_all_memories()
+    # Delete all memories for user
+    await memory_storage.delete_memories(user_id="user1")
+
+    # Verify memories are deleted
+    memories = await memory_storage.get_memories(user_id="user1")
     assert len(memories) == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_specific_memories(memory_storage, sample_embedding):
+    # Store memories
+    memory1 = BaseMemoryInput(
+        content="Memory 1",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    memory2 = BaseMemoryInput(
+        content="Memory 2",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+
+    memory1_id = await memory_storage.store_memory(
+        memory1, embedding_vectors=sample_embedding
+    )
+    memory2_id = await memory_storage.store_memory(
+        memory2, embedding_vectors=sample_embedding
+    )
+
+    # Delete specific memory
+    await memory_storage.delete_memories(memory_ids=[memory1_id])
+
+    # Verify only specified memory is deleted
+    memories = await memory_storage.get_all_memories()
+    assert len(memories) == 1
+    assert memories[0].id == memory2_id
+
+
+@pytest.mark.asyncio
+async def test_delete_memories_by_user_and_ids(memory_storage, sample_embedding):
+    # Store memories for different users
+    user1_memory = BaseMemoryInput(
+        content="User 1 memory",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    user2_memory = BaseMemoryInput(
+        content="User 2 memory",
+        created_at=datetime.now(),
+        user_id="user2",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+
+    await memory_storage.store_memory(user1_memory, embedding_vectors=sample_embedding)
+    memory2_id = await memory_storage.store_memory(
+        user2_memory, embedding_vectors=sample_embedding
+    )
+
+    # Try to delete user2's memory using user1's ID
+    await memory_storage.delete_memories(user_id="user1", memory_ids=[memory2_id])
+
+    # Verify user2's memory still exists
+    memories = await memory_storage.get_memories(user_id="user2")
+    assert len(memories) == 1
+    assert memories[0].id == memory2_id
+
+
+@pytest.mark.asyncio
+async def test_delete_memories_validation(memory_storage):
+    # Test that providing neither parameter raises error
+    with pytest.raises(
+        ValueError, match="Either user_id or memory_ids must be provided"
+    ):
+        await memory_storage.delete_memories(user_id=None, memory_ids=None)
 
 
 @pytest.mark.asyncio

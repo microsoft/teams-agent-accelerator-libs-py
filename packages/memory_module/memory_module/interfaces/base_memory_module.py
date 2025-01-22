@@ -35,6 +35,13 @@ class _CommonBaseMemoryModule(ABC):
         """Remove messages and related memories"""
         pass
 
+    @abstractmethod
+    async def remove_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        """Remove memories and related messages"""
+        pass
+
 
 class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
     """Base class for the memory module interface."""

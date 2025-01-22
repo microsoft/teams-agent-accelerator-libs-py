@@ -301,7 +301,7 @@ async def test_remove_memory(
     assert len(stored_messages) >= 0
 
     await scoped_memory_module.memory_module.remove_memories(
-        user_ids_in_conversation_scope[0]
+        user_id=user_ids_in_conversation_scope[0]
     )
 
     stored_messages = (

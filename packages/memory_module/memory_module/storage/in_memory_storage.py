@@ -230,11 +230,6 @@ class InMemoryStorage(
         for message_id in message_ids:
             self.storage["messages"].pop(message_id, None)
 
-    async def remove_memories(self, memory_ids: List[str]) -> None:
-        for memory_id in memory_ids:
-            self.storage["embeddings"].pop(memory_id, None)
-            self.storage["memories"].pop(memory_id, None)
-
     def _cosine_distance(
         self, memory_vector: List[float], query_vector: List[float]
     ) -> float:
@@ -254,14 +249,34 @@ class InMemoryStorage(
 
         return distance
 
-    async def clear_memories(self, user_id: str) -> None:
-        memory_ids_for_user = [
-            memory_id
-            for memory_id, memory in self.storage["memories"].items()
-            if memory.user_id == user_id
-        ]
-        # remove all memories for user
-        for memory_id in memory_ids_for_user:
+    async def delete_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        if user_id is None and memory_ids is None:
+            raise ValueError("Either user_id or memory_ids must be provided")
+
+        memories_to_delete: List[str] = []
+        if memory_ids:
+            # If we have memory_ids, filter by user_id if provided
+            memories_to_delete.extend(
+                memory_id
+                for memory_id in memory_ids
+                if memory_id in self.storage["memories"]
+                and (
+                    user_id is None
+                    or self.storage["memories"][memory_id].user_id == user_id
+                )
+            )
+        elif user_id:
+            # If we only have user_id, get all memories for that user
+            memories_to_delete.extend(
+                memory_id
+                for memory_id, memory in self.storage["memories"].items()
+                if memory.user_id == user_id
+            )
+
+        # Remove matching memories and their embeddings
+        for memory_id in memories_to_delete:
             self.storage["embeddings"].pop(memory_id, None)
             self.storage["memories"].pop(memory_id, None)
 

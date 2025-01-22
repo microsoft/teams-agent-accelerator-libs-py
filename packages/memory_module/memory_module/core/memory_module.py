@@ -119,10 +119,14 @@ class MemoryModule(BaseMemoryModule):
         """Update memory with new fact"""
         return await self.memory_core.update_memory(memory_id, updated_memory)
 
-    async def remove_memories(self, user_id: str) -> None:
+    async def remove_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
         """Remove memories based on user id."""
         logger.debug(f"removing all memories associated with user ({user_id})")
-        return await self.memory_core.remove_memories(user_id)
+        return await self.memory_core.remove_memories(
+            user_id=user_id, memory_ids=memory_ids
+        )
 
     async def retrieve_conversation_history(
         self,
@@ -219,3 +223,13 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
 
     async def remove_messages(self, *args, **kwargs):
         return await self.memory_module.remove_messages(*args, **kwargs)
+
+    async def remove_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ):
+        # intentionally sending user_id even if nothing is provided because
+        # we don't want to remove memories not belonging to a user in this scope
+        validated_user_id = self._validate_user(user_id)
+        return await self.memory_module.remove_memories(
+            user_id=validated_user_id, memory_ids=memory_ids
+        )

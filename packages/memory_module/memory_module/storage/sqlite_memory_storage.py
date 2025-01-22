@@ -228,18 +228,36 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             for row in rows
         ]
 
-    async def clear_memories(self, user_id: str) -> None:
-        """Clear all memories for a given user."""
-        query = """
-            SELECT
-                m.id
+    async def delete_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        """Delete memories based on user_id and/or memory_ids."""
+        if user_id is None and memory_ids is None:
+            raise ValueError("Either user_id or memory_ids must be provided")
+
+        conditions = []
+        params = []
+
+        if memory_ids:
+            conditions.append(f"m.id IN ({','.join(['?'] * len(memory_ids))})")
+            params.extend(memory_ids)
+
+        if user_id:
+            conditions.append("m.user_id = ?")
+            params.append(user_id)
+
+        where_clause = " AND ".join(conditions)
+        query = f"""
+            SELECT m.id
             FROM memories m
-            WHERE m.user_id = ?
+            WHERE {where_clause}
         """
-        rows = await self.storage.fetch_all(query, (user_id,))
-        memory_ids = [row["id"] for row in rows]
-        # Remove memory
-        await self.remove_memories(memory_ids)
+
+        rows = await self.storage.fetch_all(query, tuple(params))
+        memories_to_delete = [row["id"] for row in rows]
+
+        if memories_to_delete:
+            await self._delete_memories(memories_to_delete)
 
     async def get_memory(self, memory_id: int) -> Optional[Memory]:
         query = """
@@ -445,7 +463,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 tuple(message_ids),
             )
 
-    async def remove_memories(self, memory_ids: List[str]) -> None:
+    async def _delete_memories(self, memory_ids: List[str]) -> None:
         async with self.storage.transaction() as cursor:
             await cursor.execute(
                 """DELETE FROM vec_items WHERE memory_embedding_id in (

@@ -223,8 +223,10 @@ class MemoryCore(BaseMemoryCore):
             memory_id, updated_memory, embedding_vectors=embed_vectors
         )
 
-    async def remove_memories(self, user_id: str) -> None:
-        await self.storage.clear_memories(user_id)
+    async def remove_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        await self.storage.delete_memories(user_id=user_id, memory_ids=memory_ids)
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         # Get list of memories that need to be updated/removed with removed messages
@@ -250,7 +252,7 @@ class MemoryCore(BaseMemoryCore):
                 )
 
         # Remove selected messages and related old memories
-        await self.storage.remove_memories(removed_memory_ids)
+        await self.storage.delete_memories(memory_ids=removed_memory_ids)
         await self.storage.remove_messages(message_ids)
         logger.info("messages %s are removed", ",".join(message_ids))
 

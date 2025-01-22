@@ -57,7 +57,9 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def remove_memories(self, user_id: str) -> None:
+    async def remove_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
         """Remove memories based on user id."""
         pass
 
