@@ -179,19 +179,27 @@ class InMemoryStorage(
 
         return memories
 
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        return [
-            self.storage["memories"][memory_id].copy()
-            for memory_id in memory_ids
-            if memory_id in self.storage["memories"]
-        ]
+    async def get_memories(
+        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
+        if memory_ids is None and user_id is None:
+            raise ValueError("Either memory_ids or user_id must be provided")
 
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        return [
-            memory.copy()
-            for memory in self.storage["memories"].values()
-            if memory.user_id == user_id
-        ]
+        memories: List[Memory] = []
+        if memory_ids:
+            memories.extend(
+                self.storage["memories"][memory_id].copy()
+                for memory_id in memory_ids
+                if memory_id in self.storage["memories"]
+            )
+        if user_id:
+            memories.extend(
+                memory.copy()
+                for memory in self.storage["memories"].values()
+                if memory.user_id == user_id
+            )
+        return memories
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         messages_dict: Dict[str, List[Message]] = {}

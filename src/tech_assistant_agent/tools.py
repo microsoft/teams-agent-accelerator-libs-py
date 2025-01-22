@@ -101,7 +101,7 @@ async def confirm_memorized_fields(
     ]
     if not flattened_memory_ids:
         return "No memories to confirm"
-    memories = await memory_module.get_memories(flattened_memory_ids)
+    memories = await memory_module.get_memories(memory_ids=flattened_memory_ids)
     if not memories:
         return "No memories to confirm"
     # group memories by field name

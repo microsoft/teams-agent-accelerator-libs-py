@@ -321,7 +321,7 @@ async def test_get_memories_by_ids(
     )
 
     # Retrieve by ID
-    memories = await memory_storage.get_memories([memory_id])
+    memories = await memory_storage.get_memories(memory_ids=[memory_id])
     assert len(memories) == 1
     assert memories[0].content == sample_memory_input.content
 
@@ -576,3 +576,60 @@ async def test_retrieve_memories_with_multiple_topics_parameter(
     assert len(memories) == 2
     assert any("robotics" in memory.topics for memory in memories)
     assert all("AI" in memory.topics for memory in memories)
+
+
+@pytest.mark.asyncio
+async def test_get_memories_by_user_id(
+    memory_storage, sample_memory_input, sample_embedding
+):
+    # Store memories for different users
+    user1_memory = BaseMemoryInput(
+        content="User 1 memory",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    user2_memory = BaseMemoryInput(
+        content="User 2 memory",
+        created_at=datetime.now(),
+        user_id="user2",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+    user1_memory2 = BaseMemoryInput(
+        content="User 1 second memory",
+        created_at=datetime.now(),
+        user_id="user1",
+        memory_type=MemoryType.SEMANTIC,
+        message_attributions=set(),
+    )
+
+    await memory_storage.store_memory(user1_memory, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(user2_memory, embedding_vectors=sample_embedding)
+    await memory_storage.store_memory(user1_memory2, embedding_vectors=sample_embedding)
+
+    # Get memories for user1
+    memories = await memory_storage.get_memories(user_id="user1")
+    assert len(memories) == 2
+    assert all(memory.user_id == "user1" for memory in memories)
+    assert {memory.content for memory in memories} == {
+        "User 1 memory",
+        "User 1 second memory",
+    }
+
+    # Get memories for user2
+    memories = await memory_storage.get_memories(user_id="user2")
+    assert len(memories) == 1
+    assert memories[0].user_id == "user2"
+    assert memories[0].content == "User 2 memory"
+
+    # Get memories for non-existent user
+    memories = await memory_storage.get_memories(user_id="user3")
+    assert len(memories) == 0
+
+    # Test that providing neither parameter raises error
+    with pytest.raises(
+        ValueError, match="Either memory_ids or user_id must be provided"
+    ):
+        await memory_storage.get_memories()

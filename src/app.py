@@ -32,7 +32,7 @@ async def get_memories(request: web.Request) -> web.Response:
             status=HTTPStatus.BAD_REQUEST, text="Missing userId parameter"
         )
     print("Get_memories for user", user_id)
-    memories = await memory_middleware.memory_module.get_user_memories(user_id)
+    memories = await memory_middleware.memory_module.get_memories(user_id=user_id)
     return web.json_response(
         [memory.model_dump(mode="json", by_alias=True) for memory in memories]
     )

@@ -288,7 +288,9 @@ class MemoryCore(BaseMemoryCore):
         )
 
         system_message = MEMORY_PROCESSING_DECISION_PROMPT.format(
-            old_memory_content=old_memory_content, new_memory=new_memory, created_at=str(datetime.datetime.now())
+            old_memory_content=old_memory_content,
+            new_memory=new_memory,
+            created_at=str(datetime.datetime.now()),
         )
         messages = [{"role": "system", "content": system_message}]
 
@@ -322,7 +324,9 @@ class MemoryCore(BaseMemoryCore):
             messages=[
                 {
                     "role": "system",
-                    "content": METADATA_EXTRACTION_PROMPT.format(topics_context=topics_context),
+                    "content": METADATA_EXTRACTION_PROMPT.format(
+                        topics_context=topics_context
+                    ),
                 },
                 {"role": "user", "content": fact},
             ],
@@ -462,11 +466,13 @@ class MemoryCore(BaseMemoryCore):
             before=before,
         )
 
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        return await self.storage.get_memories(memory_ids)
-
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        return await self.storage.get_user_memories(user_id)
+    async def get_memories(
+        self, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
+        if memory_ids is None and user_id is None:
+            raise ValueError("Either memory_ids or user_id must be provided")
+        return await self.storage.get_memories(memory_ids=memory_ids, user_id=user_id)
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         return await self.storage.get_messages(memory_ids)

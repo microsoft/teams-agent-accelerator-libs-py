@@ -19,13 +19,10 @@ class _CommonBaseMemoryModule(ABC):
         pass
 
     @abstractmethod
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        """Get memories based on memory ids."""
-        pass
-
-    @abstractmethod
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        """Get memories based on user id."""
+    async def get_memories(
+        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id. At least one parameter must be provided."""
         pass
 
     @abstractmethod

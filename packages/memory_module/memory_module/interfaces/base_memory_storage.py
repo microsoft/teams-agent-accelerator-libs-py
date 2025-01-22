@@ -79,8 +79,10 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        """Get memories based on memory ids."""
+    async def get_memories(
+        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
         pass
 
     @abstractmethod
@@ -94,11 +96,6 @@ class BaseMemoryStorage(ABC):
 
     @abstractmethod
     async def remove_memories(self, memory_ids: List[str]) -> None:
-        pass
-
-    @abstractmethod
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        """Get memories based on user id."""
         pass
 
     @abstractmethod

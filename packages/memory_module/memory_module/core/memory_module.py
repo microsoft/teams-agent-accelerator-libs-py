@@ -90,11 +90,15 @@ class MemoryModule(BaseMemoryModule):
         logger.debug(f"retrieved memories: {memories}")
         return memories
 
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        return await self.memory_core.get_memories(memory_ids)
-
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        return await self.memory_core.get_user_memories(user_id)
+    async def get_memories(
+        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
+        if memory_ids is None and user_id is None:
+            raise ValueError("Either memory_ids or user_id must be provided")
+        return await self.memory_core.get_memories(
+            memory_ids=memory_ids, user_id=user_id
+        )
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         return await self.memory_core.get_messages(memory_ids)
@@ -198,18 +202,20 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
             before=before,
         )
 
+    async def get_memories(
+        self, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ):
+        validated_user_id = self._validate_user(user_id) if user_id else None
+        return await self.memory_module.get_memories(
+            memory_ids=memory_ids, user_id=validated_user_id
+        )
+
     # Implement abstract methods by forwarding to memory_module
     async def add_message(self, message):
         return await self.memory_module.add_message(message)
 
-    async def get_memories(self, *args, **kwargs):
-        return await self.memory_module.get_memories(*args, **kwargs)
-
     async def get_messages(self, *args, **kwargs):
         return await self.memory_module.get_messages(*args, **kwargs)
-
-    async def get_user_memories(self, *args, **kwargs):
-        return await self.memory_module.get_user_memories(*args, **kwargs)
 
     async def remove_messages(self, *args, **kwargs):
         return await self.memory_module.remove_messages(*args, **kwargs)

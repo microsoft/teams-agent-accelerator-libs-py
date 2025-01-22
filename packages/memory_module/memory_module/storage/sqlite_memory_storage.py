@@ -370,9 +370,25 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         rows = await self.storage.fetch_all(query, params)
         return [build_message_from_dict(row) for row in rows][::-1]
 
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        if not memory_ids:
-            return []
+    async def get_memories(
+        self, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
+        if memory_ids is None and user_id is None:
+            raise ValueError("Either memory_ids or user_id must be provided")
+
+        conditions = []
+        params = []
+
+        if memory_ids:
+            conditions.append(f"m.id IN ({','.join(['?'] * len(memory_ids))})")
+            params.extend(memory_ids)
+
+        if user_id:
+            conditions.append("m.user_id = ?")
+            params.append(user_id)
+
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
 
         query = f"""
             SELECT
@@ -380,28 +396,11 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 GROUP_CONCAT(ma.message_id) as message_attributions
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-            WHERE m.id IN ({",".join(["?"] * len(memory_ids))})
-        """
-
-        rows = await self.storage.fetch_all(query, tuple(memory_ids))
-
-        return [
-            self._build_memory(row, set((row["message_attributions"] or "").split(",")))
-            for row in rows
-        ]
-
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        query = """
-            SELECT
-                m.*,
-                GROUP_CONCAT(ma.message_id) as message_attributions
-            FROM memories m
-            LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-            WHERE m.user_id = ?
+            WHERE {where_clause}
             GROUP BY m.id
         """
 
-        rows = await self.storage.fetch_all(query, (user_id,))
+        rows = await self.storage.fetch_all(query, tuple(params))
         return [
             self._build_memory(row, set((row["message_attributions"] or "").split(",")))
             for row in rows
