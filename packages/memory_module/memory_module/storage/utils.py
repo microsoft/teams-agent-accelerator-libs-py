@@ -1,6 +1,11 @@
 from typing import Dict
 
-from memory_module.interfaces.types import AssistantMessage, InternalMessage, Message, UserMessage
+from memory_module.interfaces.types import (
+    AssistantMessage,
+    InternalMessage,
+    Message,
+    UserMessage,
+)
 
 
 def build_message_from_dict(row: Dict) -> Message:
@@ -13,4 +18,6 @@ def build_message_from_dict(row: Dict) -> Message:
     elif row["type"] == "assistant":
         return AssistantMessage(**row)
     else:
-        raise ValueError(f"Invalid message type: {row['type']}. Expected one of: 'internal', 'user', 'assistant'")
+        raise ValueError(
+            f"Invalid message type: {row['type']}. Expected one of: 'internal', 'user', 'assistant'"
+        )

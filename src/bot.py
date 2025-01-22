@@ -3,7 +3,7 @@ import sys
 import traceback
 
 from botbuilder.core import MemoryStorage, TurnContext
-from memory_module import LLMConfig, MemoryMiddleware, MemoryModuleConfig
+from memory_module import LLMConfig, MemoryMiddleware, MemoryModuleConfig, StorageConfig
 from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.state import TurnState
 
@@ -54,8 +54,11 @@ bot_app = Application[TurnState](
 memory_middleware = MemoryMiddleware(
     config=MemoryModuleConfig(
         llm=LLMConfig(**memory_llm_config),
-        db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db"),
+        storage=StorageConfig(
+            db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db")
+        ),
         timeout_seconds=60,
+        buffer_size=20,
         enable_logging=True,
         topics=topics,
     )
@@ -65,7 +68,9 @@ bot_app.adapter.use(memory_middleware)
 
 @bot_app.conversation_update("membersAdded")
 async def on_members_added(context: TurnContext, state: TurnState):
-    await context.send_activity("Hello! I am a tech assistant bot. How can I help you today?")
+    await context.send_activity(
+        "Hello! I am a tech assistant bot. How can I help you today?"
+    )
     return True
 
 

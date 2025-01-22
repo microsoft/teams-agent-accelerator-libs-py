@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from memory_module.config import StorageConfig
 from memory_module.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
 )
@@ -18,14 +19,13 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
     """SQLite implementation of message buffer storage."""
 
-    def __init__(self, db_path: Optional[str | Path] = None):
+    def __init__(self, config: StorageConfig):
         """Initialize SQLite message buffer storage.
 
         Args:
             db_path: Optional path to the SQLite database file
         """
-        self.db_path = db_path or DEFAULT_DB_PATH
-        self.storage = SQLiteStorage(self.db_path)
+        self.storage = SQLiteStorage(config.db_path or DEFAULT_DB_PATH)
 
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer."""
@@ -56,14 +56,18 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         results = await self.storage.fetch_all(query, (conversation_ref,))
         return [build_message_from_dict(row) for row in results]
 
-    async def get_conversations_from_buffered_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+    async def get_conversations_from_buffered_messages(
+        self, message_ids: List[str]
+    ) -> Dict[str, List[str]]:
         """Get conversation - buffered messages map based on message ids"""
         query = """
             SELECT
                 message_id, conversation_ref
             FROM buffered_messages
             WHERE message_id IN ({})
-        """.format(",".join(["?"] * len(message_ids)))
+        """.format(
+            ",".join(["?"] * len(message_ids))
+        )
         results = await self.storage.fetch_all(query, tuple(message_ids))
 
         ref_dict: Dict[str, List[str]] = {}
@@ -76,7 +80,9 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
 
         return ref_dict
 
-    async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
+    async def clear_buffered_messages(
+        self, conversation_ref: str, before: Optional[datetime.datetime] = None
+    ) -> None:
         """Remove all buffered messages for a conversation. If the before parameter is provided,
         only messages created on or before that time will be removed."""
         query = """
@@ -95,17 +101,23 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
             DELETE
             FROM buffered_messages
             WHERE message_id IN ({})
-        """.format(",".join(["?"] * len(message_ids)))
+        """.format(
+            ",".join(["?"] * len(message_ids))
+        )
         await self.storage.execute(query, tuple(message_ids))
 
-    async def count_buffered_messages(self, conversation_refs: List[str]) -> Dict[str, int]:
+    async def count_buffered_messages(
+        self, conversation_refs: List[str]
+    ) -> Dict[str, int]:
         """Count the number of buffered messages for a conversation."""
         query = """
             SELECT conversation_ref, COUNT(*) as count
             FROM buffered_messages
             WHERE conversation_ref IN ({})
             GROUP BY conversation_ref
-        """.format(",".join(["?"] * len(conversation_refs)))
+        """.format(
+            ",".join(["?"] * len(conversation_refs))
+        )
         results = await self.storage.fetch_all(query, tuple(conversation_refs))
 
         count_dict: Dict[str, int] = {}

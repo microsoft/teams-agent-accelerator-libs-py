@@ -10,12 +10,21 @@ import click
 sys.path.append(str(Path(__file__).parent.parent))
 sys.path.append(str(Path(__file__).parent.parent / "packages/memory_module"))
 
-from memory_module import MemoryModuleConfig, RetrievalConfig, Topic
+from memory_module import (
+    MemoryModuleConfig,
+    RetrievalConfig,
+    StorageConfig,
+    Topic,
+)
 from memory_module.core.memory_core import MemoryCore
 from memory_module.interfaces.types import BaseMemoryInput, MemoryType
 from memory_module.services.llm_service import LLMService
 
-from scripts.utils.evaluation_utils import BaseEvaluator, EvaluationResult, run_evaluation
+from scripts.utils.evaluation_utils import (
+    BaseEvaluator,
+    EvaluationResult,
+    run_evaluation,
+)
 from tests.memory_module.utils import build_llm_config
 
 TEST_CASES = [
@@ -37,8 +46,14 @@ TEST_CASES = [
                 },
             ],
             "topics": [
-                Topic(name="Outdoor Activity", description="Outdoor activities the user enjoys"),
-                Topic(name="Work Environment", description="Where the user prefers to work"),
+                Topic(
+                    name="Outdoor Activity",
+                    description="Outdoor activities the user enjoys",
+                ),
+                Topic(
+                    name="Work Environment",
+                    description="Where the user prefers to work",
+                ),
                 Topic(name="Health", description="Health-related information"),
             ],
         },
@@ -79,8 +94,13 @@ TEST_CASES = [
             ],
             "topics": [
                 Topic(name="Exercise Routine", description="User's exercise habits"),
-                Topic(name="Reading Preferences", description="What the user likes to read"),
-                Topic(name="Education", description="Learning activities and preferences"),
+                Topic(
+                    name="Reading Preferences",
+                    description="What the user likes to read",
+                ),
+                Topic(
+                    name="Education", description="Learning activities and preferences"
+                ),
             ],
         },
         "queries": [
@@ -119,8 +139,12 @@ TEST_CASES = [
                 },
             ],
             "topics": [
-                Topic(name="Operating System", description="The user's operating system"),
-                Topic(name="Device Type", description="The type of device the user has"),
+                Topic(
+                    name="Operating System", description="The user's operating system"
+                ),
+                Topic(
+                    name="Device Type", description="The type of device the user has"
+                ),
                 Topic(name="Device year", description="The year of the user's device"),
             ],
         },
@@ -212,7 +236,9 @@ TEST_CASES = [
             "topics": [
                 Topic(name="Preferences", description="User's general preferences"),
                 Topic(name="Family Routine", description="Regular family activities"),
-                Topic(name="Food Preferences", description="Food and drink preferences"),
+                Topic(
+                    name="Food Preferences", description="Food and drink preferences"
+                ),
             ],
         },
         "queries": [
@@ -251,7 +277,10 @@ TEST_CASES = [
                 },
             ],
             "topics": [
-                Topic(name="Career", description="Professional experience and work history"),
+                Topic(
+                    name="Career",
+                    description="Professional experience and work history",
+                ),
                 Topic(name="Education", description="Educational background"),
                 Topic(name="Volunteering", description="Volunteer activities"),
             ],
@@ -291,9 +320,14 @@ class RetrievalEvaluator(BaseEvaluator):
     async def evaluate_single(self, test_case: Dict) -> EvaluationResult:
         try:
             # Setup memory core with test configuration
-            db_path = Path(__file__).parent / "data" / "evaluation" / f"retrieval_test_{uuid4()}.db"
+            db_path = (
+                Path(__file__).parent
+                / "data"
+                / "evaluation"
+                / f"retrieval_test_{uuid4()}.db"
+            )
             config = MemoryModuleConfig(
-                db_path=db_path,
+                storage=StorageConfig(db_path=db_path),
                 buffer_size=5,
                 timeout_seconds=60,
                 llm=self.llm_config,
@@ -313,29 +347,40 @@ class RetrievalEvaluator(BaseEvaluator):
                 )
                 metadata = await memory_core._extract_metadata_from_fact(
                     memory["content"],
-                    [topic for topic in config.topics if topic.name in memory["topics"]],
+                    [
+                        topic
+                        for topic in config.topics
+                        if topic.name in memory["topics"]
+                    ],
                 )
-                embed_vectors = await memory_core._get_semantic_fact_embeddings(memory["content"], metadata)
-                await memory_core.storage.store_memory(memory_input, embedding_vectors=embed_vectors)
+                embed_vectors = await memory_core._get_semantic_fact_embeddings(
+                    memory["content"], metadata
+                )
+                await memory_core.storage.store_memory(
+                    memory_input, embedding_vectors=embed_vectors
+                )
 
             # Test retrieval for each query
             success = True
             failures = []
 
             for query_test in test_case["queries"]:
-                topic = next((t for t in config.topics if t.name == query_test["topic"]), None)
-                retrieved_memories = await memory_core.retrieve_memories(
+                topic = next(
+                    (t for t in config.topics if t.name == query_test["topic"]), None
+                )
+                retrieved_memories = await memory_core.search_memories(
                     user_id=user_id,
-                    config=RetrievalConfig(
-                        query=query_test["query"],
-                        topic=topic,
-                        limit=5,
-                    ),
+                    query=query_test["query"],
+                    topic=topic,
+                    limit=5,
                 )
 
                 # Check if expected memories are found in retrieved results
                 for expected in query_test["expected_memories"]:
-                    if not any(expected.lower() in memory.content.lower() for memory in retrieved_memories):
+                    if not any(
+                        expected.lower() in memory.content.lower()
+                        for memory in retrieved_memories
+                    ):
                         success = False
                         failures.append(
                             f"Query '{query_test['query']}' failed to retrieve memory containing '{expected}'"  # noqa E501
@@ -343,18 +388,19 @@ class RetrievalEvaluator(BaseEvaluator):
 
             # test queries without passing in topic
             for query_test in test_case["queries"]:
-                retrieved_memories = await memory_core.retrieve_memories(
+                retrieved_memories = await memory_core.search_memories(
                     user_id=user_id,
-                    config=RetrievalConfig(
-                        query=query_test["query"],
-                        topic=None,
-                        limit=5,
-                    ),
+                    query=query_test["query"],
+                    topic=None,
+                    limit=5,
                 )
 
                 # Check if expected memories are found in retrieved results
                 for expected in query_test["expected_memories"]:
-                    if not any(expected.lower() in memory.content.lower() for memory in retrieved_memories):
+                    if not any(
+                        expected.lower() in memory.content.lower()
+                        for memory in retrieved_memories
+                    ):
                         success = False
                         failures.append(
                             f"Query '{query_test['query']}' (without topic filtering) failed to retrieve memory containing '{expected}'"  # noqa E501
@@ -363,7 +409,9 @@ class RetrievalEvaluator(BaseEvaluator):
             return EvaluationResult(
                 success=success,
                 test_case=test_case,
-                response={"retrieved_memories": [m.content for m in retrieved_memories]},
+                response={
+                    "retrieved_memories": [m.content for m in retrieved_memories]
+                },
                 failures=failures,
             )
 

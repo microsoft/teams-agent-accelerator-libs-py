@@ -9,7 +9,9 @@ from memory_module.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
 )
 from memory_module.interfaces.base_scheduled_events_service import Event
-from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
+from memory_module.interfaces.base_scheduled_events_storage import (
+    BaseScheduledEventsStorage,
+)
 from memory_module.interfaces.types import (
     AssistantMessage,
     AssistantMessageInput,
@@ -19,7 +21,6 @@ from memory_module.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    ShortTermMemoryRetrievalConfig,
     TextEmbedding,
     Topic,
     UserMessage,
@@ -40,7 +41,9 @@ class _MemorySimilarity(NamedTuple):
     similarity: float
 
 
-class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage):
+class InMemoryStorage(
+    BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage
+):
     def __init__(self):
         self.storage: InMemoryInternalStore = {
             "embeddings": {},
@@ -63,7 +66,11 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         return memory_id
 
     async def update_memory(
-        self, memory_id: str, updated_memory: str, *, embedding_vectors: List[TextEmbedding]
+        self,
+        memory_id: str,
+        updated_memory: str,
+        *,
+        embedding_vectors: List[TextEmbedding],
     ) -> None:
         if memory_id in self.storage["memories"]:
             self.storage["memories"][memory_id].content = updated_memory
@@ -114,7 +121,7 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
 
         return message_obj
 
-    async def retrieve_memories(
+    async def search_memories(
         self,
         *,
         user_id: Optional[str],
@@ -131,7 +138,9 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             filtered_memories = [m for m in filtered_memories if m.user_id == user_id]
         if topics:
             filtered_memories = [
-                m for m in filtered_memories if m.topics and any(topic.name in m.topics for topic in topics)
+                m
+                for m in filtered_memories
+                if m.topics and any(topic.name in m.topics for topic in topics)
             ]
 
         # If we have text_embedding, calculate similarities and sort
@@ -146,7 +155,9 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                 # Find the embedding with lowest distance
                 best_distance = float("inf")
                 for embedding in embeddings:
-                    distance = self._cosine_distance(text_embedding.embedding_vector, embedding.embedding_vector)
+                    distance = self._cosine_distance(
+                        text_embedding.embedding_vector, embedding.embedding_vector
+                    )
                     best_distance = min(best_distance, distance)
 
                 # Filter based on distance threshold
@@ -157,10 +168,14 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
 
             # Sort by distance (ascending)
             sorted_memories.sort(key=lambda x: x.similarity)
-            memories = [Memory(**item.memory.__dict__) for item in sorted_memories[:limit]]
+            memories = [
+                Memory(**item.memory.__dict__) for item in sorted_memories[:limit]
+            ]
         else:
             # If no embedding, sort by created_at
-            memories = sorted(filtered_memories, key=lambda x: x.created_at, reverse=True)[:limit]
+            memories = sorted(
+                filtered_memories, key=lambda x: x.created_at, reverse=True
+            )[:limit]
 
         return memories
 
@@ -172,7 +187,11 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         ]
 
     async def get_user_memories(self, user_id: str) -> List[Memory]:
-        return [memory.copy() for memory in self.storage["memories"].values() if memory.user_id == user_id]
+        return [
+            memory.copy()
+            for memory in self.storage["memories"].values()
+            if memory.user_id == user_id
+        ]
 
     async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
         messages_dict: Dict[str, List[Message]] = {}
@@ -200,7 +219,9 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
             self.storage["embeddings"].pop(memory_id, None)
             self.storage["memories"].pop(memory_id, None)
 
-    def _cosine_distance(self, memory_vector: List[float], query_vector: List[float]) -> float:
+    def _cosine_distance(
+        self, memory_vector: List[float], query_vector: List[float]
+    ) -> float:
         memory_array = np.array(memory_vector)
         query_array = np.array(query_vector)
 
@@ -219,7 +240,9 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
 
     async def clear_memories(self, user_id: str) -> None:
         memory_ids_for_user = [
-            memory_id for memory_id, memory in self.storage["memories"].items() if memory.user_id == user_id
+            memory_id
+            for memory_id, memory in self.storage["memories"].items()
+            if memory.user_id == user_id
         ]
         # remove all memories for user
         for memory_id in memory_ids_for_user:
@@ -242,7 +265,13 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
                 memory
                 for memory in memories
                 if memory.message_attributions is not None
-                and len(np.intersect1d(np.array(message_ids), np.array(list(memory.message_attributions))).tolist()) > 0
+                and len(
+                    np.intersect1d(
+                        np.array(message_ids),
+                        np.array(list(memory.message_attributions)),
+                    ).tolist()
+                )
+                > 0
             ]
 
         return memories
@@ -255,7 +284,9 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         """Retrieve all buffered messages for a conversation."""
         return self.storage["buffered_messages"][conversation_ref]
 
-    async def get_conversations_from_buffered_messages(self, message_ids: List[str]) -> Dict[str, List[str]]:
+    async def get_conversations_from_buffered_messages(
+        self, message_ids: List[str]
+    ) -> Dict[str, List[str]]:
         ref_dict: Dict[str, List[str]] = {}
         for key, value in self.storage["buffered_messages"].items():
             stored_message_ids = [item.id for item in value]
@@ -265,21 +296,29 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
 
         return ref_dict
 
-    async def clear_buffered_messages(self, conversation_ref: str, before: Optional[datetime.datetime] = None) -> None:
+    async def clear_buffered_messages(
+        self, conversation_ref: str, before: Optional[datetime.datetime] = None
+    ) -> None:
         """Remove all buffered messages for a conversation. If the before parameter is provided,
         only messages created on or before that time will be removed."""
         messages = self.storage["buffered_messages"][conversation_ref]
         if before:
-            self.storage["buffered_messages"][conversation_ref] = [msg for msg in messages if msg.created_at > before]
+            self.storage["buffered_messages"][conversation_ref] = [
+                msg for msg in messages if msg.created_at > before
+            ]
         else:
             self.storage["buffered_messages"][conversation_ref] = []
 
     async def remove_buffered_messages_by_id(self, message_ids: List[str]) -> None:
         """Remove list of messages in buffered storage"""
         for key, value in self.storage["buffered_messages"].items():
-            self.storage["buffered_messages"][key] = [item for item in value if item.id not in message_ids]
+            self.storage["buffered_messages"][key] = [
+                item for item in value if item.id not in message_ids
+            ]
 
-    async def count_buffered_messages(self, conversation_refs: List[str]) -> Dict[str, int]:
+    async def count_buffered_messages(
+        self, conversation_refs: List[str]
+    ) -> Dict[str, int]:
         """Count the number of buffered messages for a conversation."""
         count_dict: Dict[str, int] = {}
         for ref in conversation_refs:
@@ -314,8 +353,13 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         """
         await self.delete_event(id)
 
-    async def retrieve_chat_history(
-        self, conversation_ref: str, config: ShortTermMemoryRetrievalConfig
+    async def retrieve_conversation_history(
+        self,
+        conversation_ref: str,
+        *,
+        n_messages: Optional[int] = None,
+        last_minutes: Optional[float] = None,
+        before: Optional[datetime.datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         messages = []
@@ -323,21 +367,21 @@ class InMemoryStorage(BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduled
         # Get messages for the conversation
         conversation_messages = self.storage["messages"].get(conversation_ref, [])
 
-        if config.n_messages is not None:
-            messages = conversation_messages[-config.n_messages :]
-        elif config.last_minutes is not None:
+        if n_messages is not None:
+            messages = conversation_messages[-n_messages:]
+        elif last_minutes is not None:
             current_time = datetime.datetime.now()
             messages = [
                 msg
                 for msg in conversation_messages
-                if (current_time - msg.created_at).total_seconds() / 60 <= config.last_minutes
+                if (current_time - msg.created_at).total_seconds() / 60 <= last_minutes
             ]
 
         # Sort messages in descending order based on created_at
         messages.sort(key=lambda msg: msg.created_at, reverse=True)
 
         # Filter messages based on before
-        if config.before is not None:
-            messages = [msg for msg in messages if msg.created_at < config.before]
+        if before is not None:
+            messages = [msg for msg in messages if msg.created_at < before]
 
         return messages

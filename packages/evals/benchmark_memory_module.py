@@ -15,11 +15,20 @@ from tqdm import tqdm
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(os.path.dirname(__file__), "../memory_module"))
 
-from memory_module.config import LLMConfig, MemoryModuleConfig
+from memory_module.config import LLMConfig, MemoryModuleConfig, StorageConfig
 from memory_module.core.memory_module import MemoryModule
-from memory_module.interfaces.types import AssistantMessage, RetrievalConfig, UserMessage
+from memory_module.interfaces.types import (
+    AssistantMessage,
+    UserMessage,
+)
 
-from evals.helpers import Dataset, DatasetItem, SessionMessage, load_dataset, setup_mlflow
+from evals.helpers import (
+    Dataset,
+    DatasetItem,
+    SessionMessage,
+    load_dataset,
+    setup_mlflow,
+)
 from evals.metrics import string_check_metric
 
 setup_mlflow(experiment_name="memory_module")
@@ -38,7 +47,11 @@ class MemoryModuleManager:
             embedding_model="text-embedding-3-small",
             api_key=os.getenv("OPENAI_API_KEY"),
         )
-        config = MemoryModuleConfig(db_path=self._db_path, buffer_size=self._buffer_size, llm=llm)
+        config = MemoryModuleConfig(
+            storage=StorageConfig(db_path=self._db_path),
+            buffer_size=self._buffer_size,
+            llm=llm,
+        )
 
         self._memory_module = MemoryModule(config=config)
         return self._memory_module
@@ -96,7 +109,9 @@ def run_benchmark(
         memory_module: MemoryModule
         with MemoryModuleManager(buffer_size=len(session)) as memory_module:
             await add_messages(memory_module, messages=session)
-            memories = await memory_module.retrieve_memories(None, RetrievalConfig(query=query, limit=None))
+            memories = await memory_module.search_memories(
+                user_id=None, query=query, limit=None
+            )
 
         return {
             "input": {
@@ -104,7 +119,11 @@ def run_benchmark(
                 "query": query,
                 "expected_strings_in_memories": expected_strings_in_memories,
             },
-            "output": "No memories" if len(memories) == 0 else [memory.content for memory in memories],
+            "output": (
+                "No memories"
+                if len(memories) == 0
+                else [memory.content for memory in memories]
+            ),
         }
 
     # iterate over benchmark cases
@@ -123,7 +142,9 @@ def run_benchmark(
     mlflow_metric = string_check_metric()
     with mlflow.start_run(run_name=name):
         mlflow.log_params({"dataset": dataset_name})
-        mlflow.evaluate(iterate_benchmark_cases, pd_dataset, extra_metrics=[mlflow_metric])
+        mlflow.evaluate(
+            iterate_benchmark_cases, pd_dataset, extra_metrics=[mlflow_metric]
+        )
 
 
 @click.command()

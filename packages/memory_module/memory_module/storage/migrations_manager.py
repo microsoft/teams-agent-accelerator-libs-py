@@ -18,7 +18,7 @@ class MigrationManager:
             self.__create_migrations_table(conn)
 
     def run_migrations(self):
-        logger.info("Migrations: Running migrations")
+        logger.debug("Migrations: Running migrations")
         with self.__get_connection() as conn:
             applied_migrations = set(self.__get_applied_migrations(conn))
             migrations_dir = os.path.join(os.path.dirname(__file__), "migrations")
@@ -29,11 +29,13 @@ class MigrationManager:
                 if filename.endswith(".sql"):
                     migration_name = os.path.splitext(filename)[0]
                     if migration_name not in applied_migrations:
-                        logger.info("Migrations: Applying migration: %s", migration_name)
+                        logger.info(
+                            "Migrations: Applying migration: %s", migration_name
+                        )
                         with open(os.path.join(migrations_dir, filename), "r") as f:
                             sql = f.read()
                         self.__apply_migration(conn, migration_name, sql)
-                        logger.info("Migrations: Migration applied: %s", migration_name)
+                        logger.debug("Migrations: Migration applied: %s", migration_name)
 
     # Changed to double underscore for true private methods
     @contextmanager
@@ -47,26 +49,30 @@ class MigrationManager:
                 conn.close()
 
     def __create_vector_search_table(self, conn):
-        logger.info("Creating vector search table at %s", self.db_path)
+        logger.debug("Creating vector search table at %s", self.db_path)
         conn.enable_load_extension(True)
         sqlite_vec.load(conn)
         conn.enable_load_extension(False)
-        conn.execute("""
+        conn.execute(
+            """
             CREATE VIRTUAL TABLE IF NOT EXISTS vec_items
             USING vec0(
                 memory_embedding_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 embedding float[1536] distance_metric=cosine
             );
-        """)
+        """
+        )
 
     def __create_migrations_table(self, conn):
-        conn.execute("""
+        conn.execute(
+            """
                 CREATE TABLE IF NOT EXISTS migrations (
                     id INTEGER PRIMARY KEY,
                     migration_name TEXT NOT NULL UNIQUE,
                     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+        )
 
     def __get_applied_migrations(self, conn) -> List[str]:
         cursor = conn.execute("SELECT migration_name FROM migrations ORDER BY id")
@@ -74,11 +80,15 @@ class MigrationManager:
 
     def __apply_migration(self, conn, migration_name: str, sql: str):
         conn.executescript(sql)
-        conn.execute("INSERT INTO migrations (migration_name) VALUES (?)", (migration_name,))
+        conn.execute(
+            "INSERT INTO migrations (migration_name) VALUES (?)", (migration_name,)
+        )
 
     def get_last_applied_migration(self) -> Tuple[int, str]:
         with self.__get_connection() as conn:
-            cursor = conn.execute("SELECT id, migration_name FROM migrations ORDER BY id DESC LIMIT 1")
+            cursor = conn.execute(
+                "SELECT id, migration_name FROM migrations ORDER BY id DESC LIMIT 1"
+            )
             result = cursor.fetchone()
             return result if result else (0, "No migrations applied")
 

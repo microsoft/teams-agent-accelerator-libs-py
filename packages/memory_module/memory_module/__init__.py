@@ -1,6 +1,9 @@
-from memory_module.config import LLMConfig, MemoryModuleConfig
+from memory_module.config import LLMConfig, MemoryModuleConfig, StorageConfig
 from memory_module.core.memory_module import MemoryModule
-from memory_module.interfaces.base_memory_module import BaseMemoryModule, BaseScopedMemoryModule
+from memory_module.interfaces.base_memory_module import (
+    BaseMemoryModule,
+    BaseScopedMemoryModule,
+)
 from memory_module.interfaces.types import (
     AssistantMessage,
     AssistantMessageInput,
@@ -9,8 +12,6 @@ from memory_module.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    RetrievalConfig,
-    ShortTermMemoryRetrievalConfig,
     Topic,
     UserMessage,
     UserMessageInput,
@@ -21,6 +22,7 @@ __all__ = [
     "BaseMemoryModule",
     "MemoryModule",
     "MemoryModuleConfig",
+    "StorageConfig",
     "LLMConfig",
     "Memory",
     "InternalMessage",
@@ -31,8 +33,6 @@ __all__ = [
     "MessageInput",
     "AssistantMessage",
     "AssistantMessageInput",
-    "RetrievalConfig",
-    "ShortTermMemoryRetrievalConfig",
     "MemoryMiddleware",
     "Topic",
     "BaseScopedMemoryModule",

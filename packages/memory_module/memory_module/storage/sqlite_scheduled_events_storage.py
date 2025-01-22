@@ -4,8 +4,11 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
+from memory_module.config import StorageConfig
 from memory_module.interfaces.base_scheduled_events_service import Event
-from memory_module.interfaces.base_scheduled_events_storage import BaseScheduledEventsStorage
+from memory_module.interfaces.base_scheduled_events_storage import (
+    BaseScheduledEventsStorage,
+)
 from memory_module.storage.sqlite_storage import SQLiteStorage
 
 logger = logging.getLogger(__name__)
@@ -16,14 +19,13 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteScheduledEventsStorage(BaseScheduledEventsStorage):
     """SQLite implementation of scheduled events storage."""
 
-    def __init__(self, db_path: Optional[str | Path] = None):
+    def __init__(self, config: StorageConfig):
         """Initialize SQLite scheduled events storage.
 
         Args:
             db_path: Optional path to the SQLite database file
         """
-        self.db_path = db_path or DEFAULT_DB_PATH
-        self.storage = SQLiteStorage(self.db_path)
+        self.storage = SQLiteStorage(config.db_path or DEFAULT_DB_PATH)
 
     async def store_event(self, event: Event) -> None:
         """Store a scheduled event."""

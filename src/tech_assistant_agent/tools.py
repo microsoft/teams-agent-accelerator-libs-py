@@ -5,7 +5,7 @@ from typing import List, Literal
 
 from botbuilder.core import TurnContext
 from botbuilder.schema import Activity
-from memory_module import BaseScopedMemoryModule, Memory, RetrievalConfig, Topic
+from memory_module import BaseScopedMemoryModule, Memory, Topic
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
 
@@ -15,7 +15,10 @@ from tech_assistant_agent.supported_tech_tasks import tasks_by_config
 
 topics = [
     Topic(name="Device Type", description="The type of device the user has"),
-    Topic(name="Operating System", description="The operating system for the user's device"),
+    Topic(
+        name="Operating System",
+        description="The operating system for the user's device",
+    ),
     Topic(name="Device year", description="The year of the user's device"),
 ]
 
@@ -23,13 +26,19 @@ topics = [
 class GetCandidateTasks(BaseModel):
     model_config = {"json_schema_extra": {"additionalProperties": False}}
     user_query: str = Field(description="A succinct description of the user's issue")
-    candidate_task: Literal["troubleshoot_device_issue", "troubleshoot_connectivity_issue", "troubleshoot_access_issue"]
+    candidate_task: Literal[
+        "troubleshoot_device_issue",
+        "troubleshoot_connectivity_issue",
+        "troubleshoot_access_issue",
+    ]
 
 
 class GetMemorizedFields(BaseModel):
     model_config = {"json_schema_extra": {"additionalProperties": False}}
-    memory_topics: List[Literal["Device Type", "Operating System", "Device year"]] = Field(
-        description="Topics for memories that the user may have revealed previously."
+    memory_topics: List[Literal["Device Type", "Operating System", "Device year"]] = (
+        Field(
+            description="Topics for memories that the user may have revealed previously."
+        )
     )
 
 
@@ -43,7 +52,9 @@ class UserDetail(BaseModel):
 class ExecuteTask(BaseModel):
     model_config = {"json_schema_extra": {"additionalProperties": False}}
     succint_summary_of_issue: str
-    user_details: List[UserDetail] = Field(description="A key value pair of the user's details")
+    user_details: List[UserDetail] = Field(
+        description="A key value pair of the user's details"
+    )
 
 
 class ConfirmMemorizedFields(BaseModel):
@@ -56,11 +67,13 @@ async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
     return candidate_task.model_dump_json()
 
 
-async def get_memorized_fields(memory_module: BaseScopedMemoryModule, fields_to_retrieve: GetMemorizedFields) -> str:
+async def get_memorized_fields(
+    memory_module: BaseScopedMemoryModule, fields_to_retrieve: GetMemorizedFields
+) -> str:
     empty_obj: dict = {}
     for topic in fields_to_retrieve.memory_topics:
         relevant_topic = next((t for t in topics if t.name == topic))
-        result = await memory_module.retrieve_memories(config=RetrievalConfig(topic=relevant_topic, limit=None))
+        result = await memory_module.search_memories(topic=relevant_topic, limit=None)
         print("Getting memorized queries: ", topic)
         print(result)
         print("---")
@@ -73,31 +86,53 @@ async def get_memorized_fields(memory_module: BaseScopedMemoryModule, fields_to_
 
 
 async def confirm_memorized_fields(
-    memory_module: BaseScopedMemoryModule, fields_to_confirm: ConfirmMemorizedFields, context: TurnContext
+    memory_module: BaseScopedMemoryModule,
+    fields_to_confirm: ConfirmMemorizedFields,
+    context: TurnContext,
 ) -> str:
     print("Confirming memorized fields", fields_to_confirm)
+    if not fields_to_confirm.fields_to_confirm:
+        print("No fields to confirm")
+        return "No fields to confirm"
     flattened_memory_ids = [
-        memory_id for user_detail in fields_to_confirm.fields_to_confirm for memory_id in user_detail.memory_ids
+        memory_id
+        for user_detail in fields_to_confirm.fields_to_confirm
+        for memory_id in user_detail.memory_ids
     ]
+    if not flattened_memory_ids:
+        return "No memories to confirm"
     memories = await memory_module.get_memories(flattened_memory_ids)
+    if not memories:
+        return "No memories to confirm"
     # group memories by field name
     user_details_with_memories: List[tuple[UserDetail, Memory | None]] = []
     for user_detail in fields_to_confirm.fields_to_confirm:
-        memories_for_user_detail = [memory for memory in memories if memory.id in user_detail.memory_ids]
+        memories_for_user_detail = [
+            memory for memory in memories if memory.id in user_detail.memory_ids
+        ]
         # just take the first one into account for citation (for now)
         user_details_with_memories.append(
-            (user_detail, memories_for_user_detail[0] if memories_for_user_detail else None)
+            (
+                user_detail,
+                memories_for_user_detail[0] if memories_for_user_detail else None,
+            )
         )
 
-    cited_memories: List[Memory] = [memory for _, memory in user_details_with_memories if memory is not None]
-    messages_for_cited_memories = await memory_module.get_messages([memory for memory in cited_memories])
+    cited_memories: List[Memory] = [
+        memory for _, memory in user_details_with_memories if memory is not None
+    ]
+    messages_for_cited_memories = await memory_module.get_messages(
+        [memory.id for memory in cited_memories]
+    )
     print("messages_for_cited_memories", messages_for_cited_memories)
     memory_strs = []
     citations: List[ClientCitation] = []
     for user_detail, associated_memory in user_details_with_memories:
         idx = len(citations) + 1
         if associated_memory:
-            memory_strs.append(f"{user_detail.field_name}: {user_detail.field_value} [{idx}]")
+            memory_strs.append(
+                f"{user_detail.field_name}: {user_detail.field_value} [{idx}]"
+            )
             associated_message = (
                 messages_for_cited_memories[associated_memory.id][0]
                 if associated_memory.id in messages_for_cited_memories
@@ -109,7 +144,9 @@ async def confirm_memorized_fields(
                     Appearance(
                         name=user_detail.field_name,
                         abstract=associated_memory.content,
-                        url=associated_message.deep_link if associated_message else None,
+                        url=(
+                            associated_message.deep_link if associated_message else None
+                        ),
                     ),
                 )
             )
