@@ -169,6 +169,13 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         return self._conversation_ref
 
     def _validate_user(self, user_id: Optional[str]) -> str:
+        """
+        Validate user_id. If user_id is not provided, we need to ensure that there
+        is only one user in the conversation scope.
+
+        Otherwise, we require that the user_id is provided in the arguments.
+        """
+
         if user_id and user_id not in self.users_in_conversation_scope:
             raise ValueError(f"User {user_id} is not in the conversation scope")
         if not user_id:
@@ -227,8 +234,9 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
     async def remove_memories(
         self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
     ):
-        # intentionally sending user_id even if nothing is provided because
-        # we don't want to remove memories not belonging to a user in this scope
+        # If user_id is not provided, we still need to ensure that in a scoped setting,
+        # we are only removing memories that belong to a user in this conversation scope.
+        # So we are validating the user_id here.
         validated_user_id = self._validate_user(user_id)
         return await self.memory_module.remove_memories(
             user_id=validated_user_id, memory_ids=memory_ids

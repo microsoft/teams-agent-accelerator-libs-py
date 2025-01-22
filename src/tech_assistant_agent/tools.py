@@ -140,8 +140,10 @@ async def confirm_memorized_fields(
                 f"{user_detail.field_name}: {user_detail.field_value} [{idx}]"
             )
             # Get first message attribution if it exists
-            first_message_id = next(
-                iter(associated_memory.message_attributions or []), None
+            first_message_id = (
+                associated_memory.message_attributions[0]
+                if associated_memory.message_attributions
+                else None
             )
             associated_message = (
                 messages_by_id.get(first_message_id) if first_message_id else None
