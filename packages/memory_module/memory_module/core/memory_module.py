@@ -214,7 +214,10 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         )
 
     async def get_memories(
-        self, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+        self,
+        *,
+        memory_ids: Optional[List[str]] = None,
+        user_id: Optional[str] = None,
     ):
         validated_user_id = self._validate_user(user_id) if user_id else None
         return await self.memory_module.get_memories(

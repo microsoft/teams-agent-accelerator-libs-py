@@ -389,7 +389,10 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         return [build_message_from_dict(row) for row in rows][::-1]
 
     async def get_memories(
-        self, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+        self,
+        *,
+        memory_ids: Optional[List[str]] = None,
+        user_id: Optional[str] = None,
     ) -> List[Memory]:
         """Get memories based on memory ids or user id."""
         if memory_ids is None and user_id is None:
