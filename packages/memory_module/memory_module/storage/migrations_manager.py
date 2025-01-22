@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import logging
 import os
 import sqlite3
@@ -35,7 +40,9 @@ class MigrationManager:
                         with open(os.path.join(migrations_dir, filename), "r") as f:
                             sql = f.read()
                         self.__apply_migration(conn, migration_name, sql)
-                        logger.debug("Migrations: Migration applied: %s", migration_name)
+                        logger.debug(
+                            "Migrations: Migration applied: %s", migration_name
+                        )
 
     # Changed to double underscore for true private methods
     @contextmanager
