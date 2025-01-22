@@ -18,7 +18,6 @@ from memory_module.interfaces.types import (
 class _CommonBaseMemoryModule(ABC):
     """Common Internal Base class for the memory module interface."""
 
-    # Memory Operations
     @abstractmethod
     async def get_memories(
         self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
@@ -33,7 +32,6 @@ class _CommonBaseMemoryModule(ABC):
         """Remove memories and related messages"""
         pass
 
-    # Message Operations
     @abstractmethod
     async def add_message(self, message: MessageInput) -> Message:
         """Add a message to be processed into memory."""
@@ -53,7 +51,6 @@ class _CommonBaseMemoryModule(ABC):
 class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
     """Base class for the memory module interface."""
 
-    # Search Operations
     @abstractmethod
     async def search_memories(
         self,
@@ -78,7 +75,6 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
         """
         pass
 
-    # Conversation Operations
     @abstractmethod
     async def retrieve_conversation_history(
         self,
@@ -107,7 +103,6 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
 class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
     """Base class for the memory module interface that is scoped to a conversation and a list of users"""
 
-    # Properties
     @property
     @abstractmethod
     def conversation_ref(self) -> str: ...
@@ -116,7 +111,6 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
     @abstractmethod
     def users_in_conversation_scope(self) -> List[str]: ...
 
-    # Conversation Operations
     @abstractmethod
     async def retrieve_conversation_history(
         self,
@@ -128,7 +122,6 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         pass
 
-    # Search Operations
     @abstractmethod
     async def search_memories(
         self,

@@ -22,7 +22,6 @@ class BaseMemoryStorage(ABC):
 
     default_limit = 10
 
-    # Memory Operations
     @abstractmethod
     async def store_memory(
         self,
@@ -99,7 +98,6 @@ class BaseMemoryStorage(ABC):
         """Delete memories based on memory ids."""
         pass
 
-    # Message Operations
     @abstractmethod
     async def upsert_message(self, message: MessageInput) -> Message:
         """Upsert a message into the storage system.

@@ -13,7 +13,6 @@ from memory_module.interfaces.types import Message
 class BaseMessageBufferStorage(ABC):
     """Base class for storing buffered messages."""
 
-    # Storage Operations
     @abstractmethod
     async def store_buffered_message(self, message: Message) -> None:
         """Store a message in the buffer.
@@ -23,7 +22,6 @@ class BaseMessageBufferStorage(ABC):
         """
         pass
 
-    # Retrieval Operations
     @abstractmethod
     async def get_buffered_messages(self, conversation_ref: str) -> List[Message]:
         """Retrieve all buffered messages for a conversation.
@@ -57,7 +55,6 @@ class BaseMessageBufferStorage(ABC):
         """
         pass
 
-    # Cleanup Operations
     @abstractmethod
     async def clear_buffered_messages(
         self, conversation_ref: str, before: Optional[datetime.datetime] = None
