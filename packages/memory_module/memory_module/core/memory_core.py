@@ -253,7 +253,7 @@ class MemoryCore(BaseMemoryCore):
 
         # Remove selected messages and related old memories
         await self.storage.delete_memories(memory_ids=removed_memory_ids)
-        await self.storage.remove_messages(message_ids)
+        await self.storage.delete_messages(message_ids)
         logger.info("messages %s are removed", ",".join(message_ids))
 
     async def _get_add_memory_processing_decision(

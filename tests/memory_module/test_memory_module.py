@@ -426,7 +426,7 @@ async def test_add_memory_processing_decision(
 
 
 @pytest.mark.asyncio
-async def test_remove_messages(
+async def test_delete_messages(
     scoped_memory_module, conversation_id, user_ids_in_conversation_scope
 ):
     conversation2_id = str(uuid4())
@@ -484,9 +484,9 @@ async def test_remove_messages(
     )
     assert len(list(stored_buffer.keys())) == 2
 
-    remove_messages = [message1_id, message3_id]
+    delete_messages = [message1_id, message3_id]
 
-    await scoped_memory_module.memory_module.remove_messages(remove_messages)
+    await scoped_memory_module.memory_module.delete_messages(delete_messages)
 
     updated_memories = (
         await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()

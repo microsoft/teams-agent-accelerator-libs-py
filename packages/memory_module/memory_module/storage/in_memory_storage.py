@@ -226,7 +226,7 @@ class InMemoryStorage(
                         break
         return messages
 
-    async def remove_messages(self, message_ids: List[str]) -> None:
+    async def delete_messages(self, message_ids: List[str]) -> None:
         for message_id in message_ids:
             self.storage["messages"].pop(message_id, None)
 
