@@ -1,6 +1,11 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from memory_module.interfaces.types import (
     Memory,
@@ -40,8 +45,10 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        """Get memories based on memory ids."""
+    async def get_memories(
+        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
         pass
 
     @abstractmethod
@@ -50,28 +57,25 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        """Get memories based on user id."""
-        pass
-
-    @abstractmethod
     async def remove_messages(self, message_ids: List[str]) -> None:
         """Remove messages and related memories."""
         pass
 
     @abstractmethod
-    async def remove_memories(self, user_id: str) -> None:
+    async def remove_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
         """Remove memories based on user id."""
         pass
 
     @abstractmethod
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        """Get messages based on memory ids."""
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        """Get messages based on message ids."""
         pass
 
     @abstractmethod
-    async def add_short_term_memory(self, message: MessageInput) -> Message:
-        """Add a short-term memory entry."""
+    async def add_message(self, message: MessageInput) -> Message:
+        """Add a message to be processed into memory."""
         pass
 
     @abstractmethod

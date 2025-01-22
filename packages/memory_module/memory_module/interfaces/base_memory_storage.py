@@ -1,6 +1,11 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from memory_module.interfaces.types import (
     BaseMemoryInput,
@@ -44,8 +49,8 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def store_short_term_memory(self, message: MessageInput) -> Message:
-        """Store a short-term memory entry.
+    async def upsert_message(self, message: MessageInput) -> Message:
+        """Upsert a message into the storage system.
 
         Args:
             message: The Message object representing the short-term memory to store.
@@ -74,31 +79,27 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def clear_memories(self, user_id: str) -> None:
-        """Clear all memories for a given conversation."""
+    async def get_memories(
+        self, *, memory_ids: Optional[List[str]] = None, user_id: Optional[str] = None
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
         pass
 
     @abstractmethod
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        """Get memories based on memory ids."""
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        """Get messages based on message ids."""
         pass
 
     @abstractmethod
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
-        """Get messages based on memory ids."""
+    async def delete_messages(self, message_ids: List[str]) -> None:
+        """Delete messages based on message ids."""
         pass
 
     @abstractmethod
-    async def remove_messages(self, message_ids: List[str]) -> None:
-        pass
-
-    @abstractmethod
-    async def remove_memories(self, memory_ids: List[str]) -> None:
-        pass
-
-    @abstractmethod
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        """Get memories based on user id."""
+    async def delete_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        """Delete memories based on memory ids."""
         pass
 
     @abstractmethod

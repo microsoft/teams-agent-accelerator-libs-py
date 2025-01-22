@@ -1,6 +1,11 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import datetime
 import logging
-from typing import Dict, List, Literal, Optional, Set
+from typing import List, Literal, Optional, Set
 
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field, create_model, field_validator
@@ -223,8 +228,10 @@ class MemoryCore(BaseMemoryCore):
             memory_id, updated_memory, embedding_vectors=embed_vectors
         )
 
-    async def remove_memories(self, user_id: str) -> None:
-        await self.storage.clear_memories(user_id)
+    async def remove_memories(
+        self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
+    ) -> None:
+        await self.storage.delete_memories(user_id=user_id, memory_ids=memory_ids)
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         # Get list of memories that need to be updated/removed with removed messages
@@ -250,8 +257,8 @@ class MemoryCore(BaseMemoryCore):
                 )
 
         # Remove selected messages and related old memories
-        await self.storage.remove_memories(removed_memory_ids)
-        await self.storage.remove_messages(message_ids)
+        await self.storage.delete_memories(memory_ids=removed_memory_ids)
+        await self.storage.delete_messages(message_ids)
         logger.info("messages %s are removed", ",".join(message_ids))
 
     async def _get_add_memory_processing_decision(
@@ -288,7 +295,9 @@ class MemoryCore(BaseMemoryCore):
         )
 
         system_message = MEMORY_PROCESSING_DECISION_PROMPT.format(
-            old_memory_content=old_memory_content, new_memory=new_memory, created_at=str(datetime.datetime.now())
+            old_memory_content=old_memory_content,
+            new_memory=new_memory,
+            created_at=str(datetime.datetime.now()),
         )
         messages = [{"role": "system", "content": system_message}]
 
@@ -322,7 +331,9 @@ class MemoryCore(BaseMemoryCore):
             messages=[
                 {
                     "role": "system",
-                    "content": METADATA_EXTRACTION_PROMPT.format(topics_context=topics_context),
+                    "content": METADATA_EXTRACTION_PROMPT.format(
+                        topics_context=topics_context
+                    ),
                 },
                 {"role": "user", "content": fact},
             ],
@@ -443,8 +454,8 @@ class MemoryCore(BaseMemoryCore):
         logger.info("Extracted semantic memory: %s", res)
         return res
 
-    async def add_short_term_memory(self, message: MessageInput) -> Message:
-        return await self.storage.store_short_term_memory(message)
+    async def add_message(self, message: MessageInput) -> Message:
+        return await self.storage.upsert_message(message)
 
     async def retrieve_conversation_history(
         self,
@@ -462,13 +473,18 @@ class MemoryCore(BaseMemoryCore):
             before=before,
         )
 
-    async def get_memories(self, memory_ids: List[str]) -> List[Memory]:
-        return await self.storage.get_memories(memory_ids)
+    async def get_memories(
+        self,
+        *,
+        memory_ids: Optional[List[str]] = None,
+        user_id: Optional[str] = None,
+    ) -> List[Memory]:
+        """Get memories based on memory ids or user id."""
+        if memory_ids is None and user_id is None:
+            raise ValueError("Either memory_ids or user_id must be provided")
+        return await self.storage.get_memories(memory_ids=memory_ids, user_id=user_id)
 
-    async def get_user_memories(self, user_id: str) -> List[Memory]:
-        return await self.storage.get_user_memories(user_id)
-
-    async def get_messages(self, memory_ids: List[str]) -> Dict[str, List[Message]]:
+    async def get_messages(self, memory_ids: List[str]) -> List[Message]:
         return await self.storage.get_messages(memory_ids)
 
     async def get_memories_from_message(self, message_id):

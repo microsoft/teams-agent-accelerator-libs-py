@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import os
 from datetime import timedelta
 from uuid import uuid4
@@ -34,7 +39,7 @@ async def test_store_and_get_buffered_message(storage):
     message.conversation_ref = "conv1"
 
     buffer, memory_storage = storage
-    await memory_storage.store_short_term_memory(message=message)
+    await memory_storage.upsert_message(message=message)
     await buffer.store_buffered_message(message=message)
     messages = await buffer.get_buffered_messages(
         conversation_ref=message.conversation_ref
@@ -51,7 +56,7 @@ async def test_clear_buffered_messages(storage):
     message.conversation_ref = "conv1"
 
     buffer, memory_storage = storage
-    await memory_storage.store_short_term_memory(message=message)
+    await memory_storage.upsert_message(message=message)
     await buffer.store_buffered_message(message=message)
 
     # Test clear the buffer
@@ -70,7 +75,7 @@ async def test_clear_buffered_messages_before_time(storage):
     message.conversation_ref = "conv1"
 
     buffer, memory_storage = storage
-    await memory_storage.store_short_term_memory(message=message)
+    await memory_storage.upsert_message(message=message)
     await buffer.store_buffered_message(message=message)
 
     # Clear all messages before the message created time, shouldn't clear the message
@@ -101,7 +106,7 @@ async def test_count_buffered_messages(storage):
     message.conversation_ref = "conv1"
 
     buffer, memory_storage = storage
-    await memory_storage.store_short_term_memory(message=message)
+    await memory_storage.upsert_message(message=message)
     await buffer.store_buffered_message(message=message)
 
     count_ref = await buffer.count_buffered_messages(
@@ -117,7 +122,7 @@ async def test_get_conversations_from_buffered_messages(storage):
     message1.conversation_ref = "conv1"
 
     buffer, memory_storage = storage
-    await memory_storage.store_short_term_memory(message=message1)
+    await memory_storage.upsert_message(message=message1)
     await buffer.store_buffered_message(message=message1)
 
     conversation_refs = await buffer.get_conversations_from_buffered_messages(["msg1"])

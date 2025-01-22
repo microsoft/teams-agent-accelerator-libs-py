@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import os
 import sys
 from datetime import datetime, timedelta
@@ -301,7 +306,7 @@ async def test_remove_memory(
     assert len(stored_messages) >= 0
 
     await scoped_memory_module.memory_module.remove_memories(
-        user_ids_in_conversation_scope[0]
+        user_id=user_ids_in_conversation_scope[0]
     )
 
     stored_messages = (
@@ -311,7 +316,7 @@ async def test_remove_memory(
 
 
 @pytest.mark.asyncio
-async def test_short_term_memory(
+async def test_working_memory(
     scoped_memory_module, conversation_id, user_ids_in_conversation_scope
 ):
     """Test that messages are stored in short-term memory."""
@@ -426,7 +431,7 @@ async def test_add_memory_processing_decision(
 
 
 @pytest.mark.asyncio
-async def test_remove_messages(
+async def test_delete_messages(
     scoped_memory_module, conversation_id, user_ids_in_conversation_scope
 ):
     conversation2_id = str(uuid4())
@@ -484,9 +489,9 @@ async def test_remove_messages(
     )
     assert len(list(stored_buffer.keys())) == 2
 
-    remove_messages = [message1_id, message3_id]
+    delete_messages = [message1_id, message3_id]
 
-    await scoped_memory_module.memory_module.remove_messages(remove_messages)
+    await scoped_memory_module.memory_module.remove_messages(delete_messages)
 
     updated_memories = (
         await scoped_memory_module.memory_module.memory_core.storage.get_all_memories()
