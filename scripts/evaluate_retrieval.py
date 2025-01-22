@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import asyncio
 import sys
 from datetime import datetime
@@ -12,7 +17,6 @@ sys.path.append(str(Path(__file__).parent.parent / "packages/memory_module"))
 
 from memory_module import (
     MemoryModuleConfig,
-    RetrievalConfig,
     StorageConfig,
     Topic,
 )

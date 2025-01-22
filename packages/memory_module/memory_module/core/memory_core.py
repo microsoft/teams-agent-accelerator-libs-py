@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import datetime
 import logging
 from typing import Dict, List, Literal, Optional, Set
@@ -288,7 +293,9 @@ class MemoryCore(BaseMemoryCore):
         )
 
         system_message = MEMORY_PROCESSING_DECISION_PROMPT.format(
-            old_memory_content=old_memory_content, new_memory=new_memory, created_at=str(datetime.datetime.now())
+            old_memory_content=old_memory_content,
+            new_memory=new_memory,
+            created_at=str(datetime.datetime.now()),
         )
         messages = [{"role": "system", "content": system_message}]
 
@@ -322,7 +329,9 @@ class MemoryCore(BaseMemoryCore):
             messages=[
                 {
                     "role": "system",
-                    "content": METADATA_EXTRACTION_PROMPT.format(topics_context=topics_context),
+                    "content": METADATA_EXTRACTION_PROMPT.format(
+                        topics_context=topics_context
+                    ),
                 },
                 {"role": "user", "content": fact},
             ],
