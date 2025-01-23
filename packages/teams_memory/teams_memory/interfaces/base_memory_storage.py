@@ -93,7 +93,7 @@ class BaseMemoryStorage(ABC):
         """Retrieve all memories from storage with optional filtering.
 
         Args:
-            limit: Maximum number of memories to return. Defaults to default_limit if None
+            limit: Maximum number of memories to return. If None, defaults to default_limit
             message_ids: Optional list of message IDs to filter memories by source
 
         Returns:
