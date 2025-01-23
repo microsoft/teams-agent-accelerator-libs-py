@@ -8,6 +8,7 @@
 
 ### Prerequisites
 
+Note: Ensure uv version is >= 0.4.27
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### Installing
@@ -19,9 +20,15 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - Mac: `source .venv/bin/activate`
 - Windows: `.venv\Scripts\Activate`
 
+> **Note:** After initial setup, you'll need to activate the virtual environment each time you start a new terminal session
+
 3. Install pre-commit hooks
 
-- `pre-commit install`
+First install pre-commit & set up hooks:
+```bash
+pip install pre-commit
+pre-commit install
+```
 
 ### Debug with test cases
 
@@ -38,11 +45,10 @@ AZURE_OPENAI_API_BASE=https://<domain name>.openai.azure.com
 AZURE_OPENAI_API_VERSION=<version name>
 ```
 
-#### Start debugging on selected test case
+#### Run all test cases
 
 **Remove overrided model string**:  
-In `test_memory_core.py`, `LLMService` initiator, remove `model="gpt-4o-mini",` in param.  
-In `test_memory_module.py`, `build_llm_config` initiator, remove `{"model": "gpt-4o-mini"}` in param.
+`pytest`
 
 **Debug selected test**:  
 For test cases marked with `@pytest.mark.asyncio`, find the play icon left to it. Right click and choose `Debug test`.
