@@ -18,6 +18,7 @@ jobs:
   build-lint-test:
     name: Build, Lint & Test
     runs-on: ubuntu-latest
+    environment: test
 
     permissions:
       actions: read
