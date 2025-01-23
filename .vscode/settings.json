@@ -9,7 +9,8 @@
   "python.analysis.extraPaths": [
     "${workspaceFolder}",
     "${workspaceFolder}/packages",
-    "${workspaceFolder}/packages/memory_module"
+    "${workspaceFolder}/packages/teams_memory",
+    "./packages/teams_memory"
   ],
   "[python]": {
     "diffEditor.ignoreTrimWhitespace": false,

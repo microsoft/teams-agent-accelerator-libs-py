@@ -10,9 +10,9 @@ from typing import List, Literal
 
 from botbuilder.core import TurnContext
 from botbuilder.schema import Activity
-from memory_module import BaseScopedMemoryModule, Memory, Topic
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
+from teams_memory import BaseScopedMemoryModule, Memory, Topic
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 

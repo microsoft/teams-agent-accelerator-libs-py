@@ -15,7 +15,7 @@ import click
 sys.path.append(Path(__file__).parent.parent)
 sys.path.append(Path(__file__).parent.parent / "packages")
 
-from memory_module import (
+from teams_memory import (
     MemoryModule,
     MemoryModuleConfig,
     StorageConfig,
@@ -27,7 +27,7 @@ from scripts.utils.evaluation_utils import (
     EvaluationResult,
     run_evaluation,
 )
-from tests.memory_module.utils import build_llm_config
+from tests.teams_memory.utils import build_llm_config
 
 TEST_CASES = [
     {
@@ -159,7 +159,7 @@ class MemoryDecisionEvaluator(BaseEvaluator):
 
     async def evaluate_single(self, test_case: Dict) -> EvaluationResult:
         try:
-            db_path = Path(__file__).parent / "data" / "evaluation" / "memory_module.db"
+            db_path = Path(__file__).parent / "data" / "evaluation" / "teams_memory.db"
             db_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Delete existing db if it exists
