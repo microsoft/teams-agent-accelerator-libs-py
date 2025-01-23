@@ -20,7 +20,7 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - Mac: `source .venv/bin/activate`
 - Windows: `.venv\Scripts\Activate`
 
-> **Note:** After initial setup, you'll need to activate the virtual environment each time you start a new terminal session
+> **Note:** After the initial setup, you need to activate the virtual environment each time you start a new terminal session
 
 3. Install pre-commit hooks
 
