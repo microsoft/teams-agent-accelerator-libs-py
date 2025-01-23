@@ -1,5 +1,8 @@
 # Memory Module
 
+> [!IMPORTANT]
+> _`teams_memory` is in alpha, we are still internally validating and testing!_
+
 ## Logging
 
 You can enable logging when setting up the memory module in the config.

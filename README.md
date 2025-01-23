@@ -2,18 +2,7 @@
 
 ## Directory
 
-- [Teams Agent Accelerator - Python](https://github.com/microsoft/teams-agent-accelerator-libs-py) (You are here)
-- [Teams Agent Accelerator - JS](https://github.com/microsoft/teams-agent-accelerator-libs-js)
-- [Teams Agent Accelerator - Dotnet](https://github.com/microsoft/teams-agent-accelerator-libs-dotnet)
-
-As the maintainer of this project, please make a few updates:
-
-## TODO
-
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+- [Teams Agent Accelerator - Python](https://github.com/microsoft/teams-agent-accelerator-libs-py)
 
 ## Getting Started
 
