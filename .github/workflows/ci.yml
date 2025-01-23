@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
 name: "Build, Lint & Test"
 
 on:
@@ -45,7 +47,10 @@ jobs:
 
       - name: Install uv
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "9be24dbaafca4cec3b2e103f89bfb69db7aadd0cfa6195cf8e62eebefb00d3c3 install.sh" | sha256sum --check
+          chmod +x install.sh
+          ./install.sh
+          uv --version
 
       - name: Install dependencies
         run: |
@@ -63,8 +68,8 @@ jobs:
 
       - name: Type Check (MyPy)
         run: |
-          source .venv/bin/activate
-          mypy
+          . .venv/bin/activate  # Execute script in current shell to use virtual environment
+          mypy --config-file mypy.ini packages/
 
       - name: Run tests
         env:
@@ -74,5 +79,5 @@ jobs:
           AZURE_OPENAI_API_BASE: ${{ secrets.AZURE_OPENAI_API_BASE }}
           AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
         run: |
-          source .venv/bin/activate
+          . .venv/bin/activate  # Execute script in current shell to use virtual environment
           pytest tests/ -v
