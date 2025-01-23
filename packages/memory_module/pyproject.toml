@@ -1,7 +1,7 @@
 [project]
 name = "memory_module"
 version = "0.1.0"
-authors = ["Microsoft <teams@microsoft.com>"]
+authors = [{ name="Microsoft", email="teams@microsoft.com" }]
 description = "Memory module for creating intelligent agents within Microsoft Teams"
 readme = "README.md"
 repository = "https://github.com/microsoft/teams-agent-accelerator-libs-py"
