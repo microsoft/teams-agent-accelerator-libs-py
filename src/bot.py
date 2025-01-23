@@ -8,9 +8,9 @@ import sys
 import traceback
 
 from botbuilder.core import MemoryStorage, TurnContext
-from memory_module import LLMConfig, MemoryMiddleware, MemoryModuleConfig, StorageConfig
 from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.state import TurnState
+from teams_memory import LLMConfig, MemoryMiddleware, MemoryModuleConfig, StorageConfig
 
 from config import Config
 from tech_assistant_agent.agent import LLMConfig as AgentLLMConfig

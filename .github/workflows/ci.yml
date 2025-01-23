@@ -3,11 +3,11 @@ name: "Build, Lint & Test"
 on:
   pull_request:
     paths:
-      - packages/memory_module/**
+      - packages/teams_memory/**
   push:
     branches: ["main"]
     paths:
-      - packages/memory_module/**
+      - packages/teams_memory/**
 
 # Declare default permissions as read only.
 permissions: read-all

@@ -1,0 +1,31 @@
+[project]
+name = "teams_memory"
+version = "0.1.0-alpha"
+authors = [{ name="Microsoft", email="teams@microsoft.com" }]
+description = "Memory module for creating intelligent agents within Microsoft Teams"
+readme = "README.md"
+repository = "https://github.com/microsoft/teams-agent-accelerator-libs-py"
+keywords = ["microsoft", "teams", "ai", "bot", "agents", "memory", "accelerator"] 
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    "aiosqlite>=0.20.0",
+    "instructor>=1.6.4",
+    "pydantic>=2.10.1",
+    "python-dotenv>=1.0.1",
+    "numpy",
+    "sqlite-vec>=0.1.6",
+    "litellm==1.54.1",
+    "botbuilder>=0.0.1",
+    "botframework-connector>=4.16.2",
+]
+
+[dependency-groups]
+dev = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["teams_memory"]

@@ -15,21 +15,21 @@ import click
 sys.path.append(str(Path(__file__).parent.parent))
 sys.path.append(str(Path(__file__).parent.parent / "packages"))
 
-from memory_module import (
+from teams_memory import (
     MemoryModuleConfig,
     StorageConfig,
     Topic,
     UserMessageInput,
 )
-from memory_module.core.memory_core import MemoryCore
-from memory_module.services.llm_service import LLMService
+from teams_memory.core.memory_core import MemoryCore
+from teams_memory.services.llm_service import LLMService
 
 from scripts.utils.evaluation_utils import (
     BaseEvaluator,
     EvaluationResult,
     run_evaluation,
 )
-from tests.memory_module.utils import build_llm_config
+from tests.teams_memory.utils import build_llm_config
 
 TEST_CASES = [
     {
@@ -452,7 +452,7 @@ class SystemPromptEvaluator(BaseEvaluator):
 
     async def evaluate_single(self, test_case: Dict) -> EvaluationResult:
         try:
-            db_path = Path(__file__).parent / "data" / "evaluation" / "memory_module.db"
+            db_path = Path(__file__).parent / "data" / "evaluation" / "teams_memory.db"
             config = MemoryModuleConfig(
                 storage=StorageConfig(db_path=db_path),
                 buffer_size=5,
