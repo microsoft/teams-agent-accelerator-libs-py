@@ -88,11 +88,10 @@ def memory_module(
         async def _mock_extract_semantic_fact_from_messages(messages, **kwargs):
             return SemanticMemoryExtraction(
                 action="add",
-                reason_for_action="Mocked LLM response about pie",
                 facts=[
                     SemanticFact(
                         text="Mocked LLM response about pie",
-                        message_indices={0, 1},
+                        message_ids={0, 1},
                     )
                 ],
             )

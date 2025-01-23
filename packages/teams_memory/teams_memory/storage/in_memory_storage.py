@@ -208,13 +208,13 @@ class InMemoryStorage(
         memories: List[Memory] = []
         if memory_ids:
             memories.extend(
-                self.storage["memories"][memory_id].copy()
+                self.storage["memories"][memory_id].model_copy()
                 for memory_id in memory_ids
                 if memory_id in self.storage["memories"]
             )
         if user_id:
             memories.extend(
-                memory.copy()
+                memory.model_copy()
                 for memory in self.storage["memories"].values()
                 if memory.user_id == user_id
             )
