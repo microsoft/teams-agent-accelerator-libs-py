@@ -13,7 +13,7 @@ from teams_memory.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
 )
 from teams_memory.interfaces.base_message_queue import BaseMessageQueue
-from teams_memory.interfaces.types import (
+from teams_memory.interfaces.interface_types import (
     Memory,
     Message,
 )
