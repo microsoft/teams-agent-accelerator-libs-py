@@ -7,12 +7,12 @@ import datetime
 import logging
 import uuid
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import sqlite_vec
 from teams_memory.config import StorageConfig
 from teams_memory.interfaces.base_memory_storage import BaseMemoryStorage
-from teams_memory.interfaces.types import (
+from teams_memory.interfaces.interface_types import (
     BaseMemoryInput,
     InternalMessageInput,
     Memory,
@@ -167,7 +167,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             {limit_clause}
         """
 
-        params = []
+        params: tuple[Any, ...] = ()
 
         # Handle embedding search first since its params come first in the query
         embedding_join = ""
@@ -189,12 +189,10 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             """
             distance_select = ", rm.distance as _distance, rm.text as _embedding_text"
             order_by = "ORDER BY rm.distance ASC"
-            params.extend(
-                [
-                    sqlite_vec.serialize_float32(text_embedding.embedding_vector),
-                    limit or self.default_limit,
-                    1.0,
-                ]
+            params = params + (
+                sqlite_vec.serialize_float32(text_embedding.embedding_vector),
+                limit or self.default_limit,
+                1.0,
             )
 
         # Handle topic and user filters after embedding params
@@ -209,13 +207,13 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         user_filter = ""
         if user_id:
             user_filter = "AND m.user_id = ?"
-            params.append(user_id)
+            params = params + (user_id,)
 
         # Handle limit last
         limit_clause = ""
         if limit and not text_embedding:  # Only add LIMIT if not using vector search
             limit_clause = "LIMIT ?"
-            params.append(limit or self.default_limit)
+            params = params + (limit or self.default_limit,)
 
         query = base_query.format(
             distance_select=distance_select,
@@ -226,7 +224,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             limit_clause=limit_clause,
         )
 
-        rows = await self.storage.fetch_all(query, tuple(params))
+        rows = await self.storage.fetch_all(query, params)
         return [
             self._build_memory(row, set((row["message_attributions"] or "").split(",")))
             for row in rows
@@ -240,15 +238,15 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             raise ValueError("Either user_id or memory_ids must be provided")
 
         conditions = []
-        params = []
+        params: tuple[Any, ...] = ()
 
         if memory_ids:
             conditions.append(f"m.id IN ({','.join(['?'] * len(memory_ids))})")
-            params.extend(memory_ids)
+            params = params + tuple(memory_ids)
 
         if user_id:
             conditions.append("m.user_id = ?")
-            params.append(user_id)
+            params = params + (user_id,)
 
         where_clause = " AND ".join(conditions)
         query = f"""
@@ -257,7 +255,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             WHERE {where_clause}
         """
 
-        rows = await self.storage.fetch_all(query, tuple(params))
+        rows = await self.storage.fetch_all(query, params)
         memories_to_delete = [row["id"] for row in rows]
 
         if memories_to_delete:
@@ -358,23 +356,23 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
-        params: tuple = (conversation_ref,)
+        params: tuple[Any, ...] = (conversation_ref,)
 
         if last_minutes is not None:
             cutoff_time = datetime.datetime.now(
                 datetime.timezone.utc
             ) - datetime.timedelta(minutes=last_minutes)
             query += " AND created_at >= ?"
-            params += (cutoff_time,)
+            params = params + (cutoff_time,)
 
         if before is not None:
             query += " AND created_at < ?"
-            params += (before.astimezone(datetime.timezone.utc),)
+            params = params + (before.astimezone(datetime.timezone.utc),)
 
         query += " ORDER BY created_at DESC"
         if n_messages is not None:
             query += " LIMIT ?"
-            params += (str(n_messages),)
+            params = params + (str(n_messages),)
 
         rows = await self.storage.fetch_all(query, params)
         return [build_message_from_dict(row) for row in rows][::-1]
@@ -390,15 +388,15 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             raise ValueError("Either memory_ids or user_id must be provided")
 
         conditions = []
-        params = []
+        params: tuple[Any, ...] = ()
 
         if memory_ids:
             conditions.append(f"m.id IN ({','.join(['?'] * len(memory_ids))})")
-            params.extend(memory_ids)
+            params = params + tuple(memory_ids)
 
         if user_id:
             conditions.append("m.user_id = ?")
-            params.append(user_id)
+            params = params + (user_id,)
 
         where_clause = " AND ".join(conditions) if conditions else "1=1"
 
@@ -412,7 +410,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             GROUP BY m.id
         """
 
-        rows = await self.storage.fetch_all(query, tuple(params))
+        rows = await self.storage.fetch_all(query, params)
         return [
             self._build_memory(row, set((row["message_attributions"] or "").split(",")))
             for row in rows
@@ -432,7 +430,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         return [build_message_from_dict(row) for row in rows]
 
     def _build_memory(
-        self, memory_values: dict, message_attributions: set[str]
+        self, memory_values: dict[str, Any], message_attributions: set[str]
     ) -> Memory:
         memory_keys = [
             "id",

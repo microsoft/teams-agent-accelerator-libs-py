@@ -4,11 +4,11 @@ Licensed under the MIT License.
 """
 
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from teams_memory.interfaces.types import Topic
+from teams_memory.interfaces.interface_types import Topic
 
 
 class LLMConfig(BaseModel):
@@ -41,7 +41,7 @@ class StorageConfig(BaseModel):
     )
 
     @model_validator(mode="before")
-    def set_storage_type(cls, values):
+    def set_storage_type(cls, values: dict[str, Any]) -> dict[str, Any]:
         if isinstance(values, dict):
             if values.get("db_path") and "storage_type" not in values:
                 values["storage_type"] = "sqlite"
@@ -126,3 +126,20 @@ class MemoryModuleConfig(BaseModel):
     enable_logging: bool = Field(
         default=False, description="Enable verbose logging for memory module"
     )
+
+    def model_dump(
+        self,
+        *,
+        mode: str = "python",
+        include: Any = None,
+        exclude: Any = None,
+        by_alias: bool = False,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        round_trip: bool = False,
+        warnings: bool | str = True,
+        serialize_as_any: bool = False,
+        context: Any = None,
+    ) -> dict[str, Any]:
+        return self.__dict__

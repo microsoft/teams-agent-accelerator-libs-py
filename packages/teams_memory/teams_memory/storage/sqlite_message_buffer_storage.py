@@ -6,14 +6,14 @@ Licensed under the MIT License.
 import datetime
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from teams_memory.config import StorageConfig
 from teams_memory.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
     BufferedMessage,
 )
-from teams_memory.interfaces.types import Message
+from teams_memory.interfaces.interface_types import Message
 from teams_memory.storage.sqlite_storage import SQLiteStorage
 from teams_memory.storage.utils import build_message_from_dict
 
@@ -95,7 +95,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
             DELETE FROM buffered_messages
             WHERE conversation_ref = ?
         """
-        params: tuple = (conversation_ref,)
+        params: tuple[Any, ...] = (conversation_ref,)
         if before:
             query += " AND created_at <= ?"
             params += (before.astimezone(datetime.timezone.utc),)

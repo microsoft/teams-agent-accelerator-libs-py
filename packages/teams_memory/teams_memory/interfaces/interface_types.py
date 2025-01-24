@@ -85,8 +85,8 @@ class AssistantMessage(AssistantMessageInput):
     model_config = ConfigDict(from_attributes=True)
 
 
-type MessageInput = InternalMessageInput | UserMessageInput | AssistantMessageInput
-type Message = InternalMessage | UserMessage | AssistantMessage
+MessageInput = InternalMessageInput | UserMessageInput | AssistantMessageInput
+Message = InternalMessage | UserMessage | AssistantMessage
 
 
 class MemoryAttribution(BaseModel):

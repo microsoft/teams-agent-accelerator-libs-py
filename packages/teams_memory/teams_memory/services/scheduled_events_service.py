@@ -5,6 +5,7 @@ Licensed under the MIT License.
 
 import asyncio
 import logging
+from asyncio import Task
 from datetime import datetime
 from typing import Any, Awaitable, Callable, Dict, List, NamedTuple, Optional
 
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class TaskInfo(NamedTuple):
     event: Event
-    task: asyncio.Task
+    task: Task[None]
 
 
 class ScheduledEventsService(BaseScheduledEventsService):

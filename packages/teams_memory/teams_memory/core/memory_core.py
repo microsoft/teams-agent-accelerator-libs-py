@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 import datetime
 import logging
-from typing import List, Literal, Optional, Set
+from typing import Any, List, Literal, Optional, Set
 
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field, create_model, field_validator
@@ -309,7 +309,7 @@ class MemoryCore(BaseMemoryCore):
         )
         messages = [{"role": "system", "content": system_message}]
 
-        decision = await self.lm.completion(
+        decision: ProcessSemanticMemoryDecision = await self.lm.completion(
             messages=messages, response_model=ProcessSemanticMemoryDecision
         )
         logger.debug("Decision: %s", decision)
@@ -335,7 +335,7 @@ class MemoryCore(BaseMemoryCore):
         else:
             topics_str = ""
 
-        return await self.lm.completion(
+        result: MessageDigest = await self.lm.completion(
             messages=[
                 {
                     "role": "system",
@@ -347,6 +347,7 @@ class MemoryCore(BaseMemoryCore):
             ],
             response_model=MessageDigest,
         )
+        return result
 
     async def _get_query_embedding(self, query: str) -> TextEmbedding:
         """Create embedding for memory content."""
@@ -427,8 +428,8 @@ class MemoryCore(BaseMemoryCore):
             {"role": "user", "content": user_message},
         ]
 
-        def topics_validator(cls, v):
-            # Fix the casing if that's the only issue
+        def topics_validator(cls: Any, v: List[str]) -> List[str]:
+            """Validate topics against configured topics."""
             validated_topics = []
             for topic in v:
                 config_topic = next(
@@ -456,11 +457,11 @@ class MemoryCore(BaseMemoryCore):
         )
 
         logger.debug("LLM messages: %s", llm_messages)
-        res = await self.lm.completion(
+        result: SemanticMemoryExtraction = await self.lm.completion(
             messages=llm_messages, response_model=ValidatedSemanticMemoryExtraction
         )
-        logger.info("Extracted semantic memory: %s", res)
-        return res
+        logger.info("Extracted semantic memory: %s", result)
+        return result
 
     async def add_message(self, message: MessageInput) -> Message:
         return await self.storage.upsert_message(message)

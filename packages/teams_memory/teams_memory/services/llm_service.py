@@ -3,12 +3,12 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
-import instructor
 import litellm
-from litellm import BaseModel
+from litellm.router import Router
 from litellm.types.utils import EmbeddingResponse
+from pydantic import BaseModel
 
 from teams_memory.config import LLMConfig
 
@@ -59,47 +59,46 @@ class LLMService:
 
     async def completion(
         self,
-        messages: List,
+        messages: List[Dict[str, str]],
         response_model: Optional[type[BaseModel]] = None,
         override_model: Optional[str] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> Any:
         """Generate completion from the model."""
         model = override_model or self.model
         if not model:
             raise ValueError("No LM model provided.")
 
-        client = instructor.patch(
-            litellm.Router(
-                model_list=[
-                    {
-                        "model_name": model,
-                        "litellm_params": {
-                            "model": model,
-                            "api_key": self.api_key,
-                            "api_base": self.api_base,
-                            "api_version": self.api_version,
-                            **self._litellm_params,
-                        },
-                    }
-                ]
-            )  # type: ignore
+        router = Router(
+            model_list=[
+                {
+                    "model_name": model,
+                    "litellm_params": {
+                        "model": model,
+                        "api_key": self.api_key,
+                        "api_base": self.api_base,
+                        "api_version": self.api_version,
+                        **self._litellm_params,
+                    },
+                }
+            ]
         )
-
-        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)  # type: ignore
+        return await router.acompletion(
+            messages=messages, model=model, response_model=response_model, **kwargs
+        )
 
     async def embedding(
         self,
         input: Union[str, List[str]],
         override_model: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> EmbeddingResponse:
         """Get embeddings from the model. This method is a wrapper around litellm's `aembedding` method."""
         model = override_model or self.embedding_model
         if not model:
             raise ValueError("No embedding model provided.")
 
-        return await litellm.aembedding(
+        result: EmbeddingResponse = await litellm.aembedding(
             model=model,
             input=input,
             api_key=self.api_key,
@@ -108,3 +107,4 @@ class LLMService:
             **self._litellm_params,
             **kwargs,
         )
+        return result

@@ -18,7 +18,7 @@ from teams_memory.interfaces.base_scheduled_events_service import Event
 from teams_memory.interfaces.base_scheduled_events_storage import (
     BaseScheduledEventsStorage,
 )
-from teams_memory.interfaces.types import (
+from teams_memory.interfaces.interface_types import (
     AssistantMessage,
     AssistantMessageInput,
     BaseMemoryInput,
@@ -49,7 +49,7 @@ class _MemorySimilarity(NamedTuple):
 class InMemoryStorage(
     BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage
 ):
-    def __init__(self):
+    def __init__(self) -> None:
         self.storage: InMemoryInternalStore = {
             "embeddings": {},
             "buffered_messages": defaultdict(list),
@@ -250,7 +250,7 @@ class InMemoryStorage(
         # 1 (most similar) -> 0 (closest distance)
         # -1 (least similar) -> 2 (furthest distance)
         similarity = dot_product / (norm_a * norm_b)
-        distance = 1 - similarity  # Convert to distance [0, 2]
+        distance = float(1 - similarity)  # Convert to distance [0, 2]
 
         return distance
 
@@ -318,7 +318,12 @@ class InMemoryStorage(
         ref_dict: Dict[str, List[str]] = {}
         for key, value in self.storage["buffered_messages"].items():
             stored_message_ids = [item.id for item in value]
-            common_message_ids: List[str] = np.intersect1d(np.array(message_ids), np.array(stored_message_ids)).tolist()  # type: ignore
+            common_message_ids = [
+                str(x)
+                for x in np.intersect1d(
+                    np.array(message_ids), np.array(stored_message_ids)
+                )
+            ]
             if len(common_message_ids) > 0:
                 ref_dict[key] = common_message_ids
 

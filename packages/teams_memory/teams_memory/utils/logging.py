@@ -33,7 +33,7 @@ class DefaultFormatter(logging.Formatter):
     }
     RESET = "\033[0m"
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         log_color = self.COLORS.get(record.levelname, self.RESET)
         record.msg = f"{log_color}{record.msg}{self.RESET}"
         return super().format(record)

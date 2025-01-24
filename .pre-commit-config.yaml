@@ -20,5 +20,9 @@ repos:
     rev: v1.13.0
     hooks:
       - id: mypy
-        pass_filenames: false
         args: [--ignore-missing-imports, --show-traceback]
+        files: ^packages/.+\.py$
+        additional_dependencies:
+          - pydantic>=2.0.0   # Include Pydantic itself instead of types-pydantic
+          - numpy            # Used in in_memory_storage.py for vector operations
+          - click>=8.0.0    # Add click with type stubs

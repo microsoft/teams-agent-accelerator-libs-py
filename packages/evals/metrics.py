@@ -3,7 +3,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import pandas as pd
 from mlflow.metrics import MetricValue, make_metric
@@ -43,16 +43,18 @@ def check_strings_in_retrieved_memories(
     return True
 
 
-def string_check_metric():
+def string_check_metric() -> Any:
     def ml_metric(
-        predictions: pd.Series,
-        inputs: pd.Series,
+        predictions: pd.Series[Any],
+        inputs: pd.Series[Any],
         metrics: dict[str, MetricValue],
     ) -> MetricValue:
-        scores: list[int] = []
+        scores: list[float] = []
         memories = predictions.apply(lambda x: x["memories"])
         for expected, actual in zip(inputs, memories, strict=False):
-            score = 1 if check_strings_in_retrieved_memories(expected, actual) else 0
+            score = (
+                1.0 if check_strings_in_retrieved_memories(expected, actual) else 0.0
+            )
             scores.append(score)
 
         aggregated_results = standard_aggregations(scores)
