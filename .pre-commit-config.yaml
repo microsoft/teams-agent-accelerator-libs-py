@@ -20,7 +20,11 @@ repos:
     rev: v1.13.0
     hooks:
       - id: mypy
-        args: [--ignore-missing-imports, --show-traceback]
+        args: [
+          --ignore-missing-imports,
+          --show-traceback,
+          --disable-error-code=import-untyped,
+        ]
         files: ^packages/.+\.py$
         additional_dependencies:
           - pydantic>=2.0.0
