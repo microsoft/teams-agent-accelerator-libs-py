@@ -735,3 +735,12 @@ async def test_retrieve_memories_by_topic_and_query(
         len(windows_memories) > 0
     ), f"No memories found for Windows, check out stored memories: {stored_memories}"
     assert any("windows" in memory.content.lower() for memory in windows_memories)
+
+
+@pytest.mark.asyncio
+async def test_retrieve_memories_by_topic_not_in_config(
+    scoped_memory_module, conversation_id, user_ids_in_conversation_scope
+):
+    """Test retrieving memories by topic not in the config."""
+    with pytest.raises(ValueError, match="not in the config"):
+        await scoped_memory_module.search_memories(topic="Non-existent Topic")

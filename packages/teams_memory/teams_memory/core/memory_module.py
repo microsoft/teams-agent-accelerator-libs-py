@@ -69,6 +69,12 @@ class MemoryModule(BaseMemoryModule):
         await self.message_queue.enqueue(message_res)
         return message_res
 
+    def _validate_topic(self, topic: Optional[str]) -> bool:
+        """Validate topic. If topic is None, return None. Otherwise, return topic."""
+        if topic is None:
+            return True
+        return any(topic in t.name for t in self.config.topics)
+
     async def search_memories(
         self,
         user_id: Optional[str],
@@ -87,6 +93,9 @@ class MemoryModule(BaseMemoryModule):
 
         if query is None and topic is None:
             raise ValueError("Either query or topic must be provided")
+
+        if not self._validate_topic(topic):
+            raise ValueError(f"Topic {topic} is not in the config")
 
         memories = await self.memory_core.search_memories(
             user_id=user_id, query=query, topic=topic, limit=limit
