@@ -28,7 +28,7 @@ from teams_memory.core.memory_core import (
     SemanticMemoryExtraction,
 )
 from teams_memory.core.memory_module import MemoryModule, ScopedMemoryModule
-from teams_memory.interfaces.types import (
+from teams_memory.interfaces.interface_types import (
     AssistantMessageInput,
     UserMessageInput,
 )

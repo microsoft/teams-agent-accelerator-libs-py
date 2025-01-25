@@ -8,7 +8,7 @@ from unittest import mock
 import pytest
 from teams_memory.config import LLMConfig, MemoryModuleConfig
 from teams_memory.core.memory_core import MemoryCore
-from teams_memory.interfaces.types import TextEmbedding
+from teams_memory.interfaces.interface_types import TextEmbedding
 from teams_memory.services.llm_service import LLMService
 
 from tests.teams_memory.utils import (
