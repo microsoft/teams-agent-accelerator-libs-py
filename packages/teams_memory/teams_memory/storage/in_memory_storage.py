@@ -288,27 +288,19 @@ class InMemoryStorage(
     async def get_memory(self, memory_id: str) -> Optional[Memory]:
         return self.storage["memories"].get(memory_id)
 
-    async def get_all_memories(
-        self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
-    ) -> List[Memory]:
-        memories = [value for key, value in self.storage["memories"].items()]
-
-        if limit is not None:
-            memories = memories[:limit]
-
-        if message_ids is not None:
-            memories = [
-                memory
-                for memory in memories
-                if memory.message_attributions is not None
-                and len(
-                    np.intersect1d(
-                        np.array(message_ids),
-                        np.array(list(memory.message_attributions)),
-                    ).tolist()
-                )
-                > 0
-            ]
+    async def get_attributed_memories(self, message_ids: List[str]) -> List[Memory]:
+        memories = [
+            memory
+            for memory in self.storage["memories"].values()
+            if memory.message_attributions is not None
+            and len(
+                np.intersect1d(
+                    np.array(message_ids),
+                    np.array(list(memory.message_attributions)),
+                ).tolist()
+            )
+            > 0
+        ]
 
         return memories
 

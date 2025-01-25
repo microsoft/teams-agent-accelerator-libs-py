@@ -217,7 +217,7 @@ async def test_delete_specific_memories(memory_storage, sample_embedding):
     await memory_storage.delete_memories(memory_ids=[memory1_id])
 
     # Verify only specified memory is deleted
-    memories = await memory_storage.get_all_memories()
+    memories = await memory_storage.get_memories(user_id="user1")
     assert len(memories) == 1
     assert memories[0].id == memory2_id
 
@@ -301,32 +301,7 @@ async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
 
 
 @pytest.mark.asyncio
-async def test_get_all_memories(memory_storage, sample_memory_input, sample_embedding):
-    # Store multiple memories
-    await memory_storage.store_memory(
-        sample_memory_input, embedding_vectors=sample_embedding
-    )
-
-    second_memory = BaseMemoryInput(
-        content="Second memory",
-        created_at=datetime.now(),
-        user_id="test_user",
-        memory_type=MemoryType.SEMANTIC,
-        message_attributions=set(),
-    )
-    await memory_storage.store_memory(second_memory, embedding_vectors=sample_embedding)
-
-    # Test without limit
-    memories = await memory_storage.get_all_memories()
-    assert len(memories) == 2
-
-    # Test with limit
-    memories = await memory_storage.get_all_memories(limit=1)
-    assert len(memories) == 1
-
-
-@pytest.mark.asyncio
-async def test_get_all_memories_by_message_id(
+async def test_get_attributed_memories_by_message_id(
     memory_storage, sample_memory_input, sample_message
 ):
     # Store single memory
@@ -334,14 +309,16 @@ async def test_get_all_memories_by_message_id(
     await memory_storage.upsert_message(sample_message)
 
     # Get memories by message ID
-    memories = await memory_storage.get_all_memories(message_ids=[sample_message.id])
+    memories = await memory_storage.get_attributed_memories(
+        message_ids=[sample_message.id]
+    )
 
     assert len(memories) == 1
     assert memories[0].content == sample_memory_input.content
 
 
 @pytest.mark.asyncio
-async def test_get_all_memories_by_message_ids(
+async def test_get_attributed_memories_by_message_ids(
     memory_storage, sample_memory_input, sample_message
 ):
     # Store three memories
@@ -381,7 +358,7 @@ async def test_get_all_memories_by_message_ids(
     await memory_storage.upsert_message(third_message)
 
     # Get memories by message ID
-    memories = await memory_storage.get_all_memories(
+    memories = await memory_storage.get_attributed_memories(
         message_ids=[sample_message.id, second_message.id]
     )
 
@@ -390,7 +367,7 @@ async def test_get_all_memories_by_message_ids(
 
 
 @pytest.mark.asyncio
-async def test_get_all_memories_by_message_id_empty(
+async def test_get_attributed_memories_by_message_id_empty(
     memory_storage, sample_memory_input, sample_message
 ):
     # Store single memory
@@ -398,7 +375,7 @@ async def test_get_all_memories_by_message_id_empty(
     await memory_storage.upsert_message(sample_message)
 
     # Get memories by message ID
-    memories = await memory_storage.get_all_memories(
+    memories = await memory_storage.get_attributed_memories(
         message_ids=["incorrect_message_id"]
     )
 

@@ -235,7 +235,7 @@ class MemoryCore(BaseMemoryCore):
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         # Get list of memories that need to be updated/removed with removed messages
-        remove_memories_list = await self.storage.get_all_memories(
+        remove_memories_list = await self.storage.get_attributed_memories(
             message_ids=message_ids
         )
 
@@ -488,4 +488,4 @@ class MemoryCore(BaseMemoryCore):
         return await self.storage.get_messages(memory_ids)
 
     async def get_memories_from_message(self, message_id):
-        return await self.storage.get_all_memories(message_ids=[message_id])
+        return await self.storage.get_attributed_memories(message_ids=[message_id])

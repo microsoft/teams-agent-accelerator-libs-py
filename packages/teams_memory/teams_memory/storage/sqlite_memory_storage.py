@@ -283,36 +283,23 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             row, set((row["message_attributions"] or "").split(","))
         )
 
-    async def get_all_memories(
-        self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
-    ) -> List[Memory]:
+    async def get_attributed_memories(self, message_ids: List[str]) -> List[Memory]:
         """Retrieve all memories with their message attributions."""
-        query = """
+        if not message_ids:
+            return []
+
+        query = f"""
             SELECT
                 m.*,
                 GROUP_CONCAT(ma.message_id) as message_attributions
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-        """
-        params: tuple = tuple()
-        if message_ids is not None:
-            query += " WHERE ma.message_id IN ({})".format(
-                ",".join(["?"] * len(message_ids))
-            )
-            params += tuple(
-                message_ids,
-            )
-
-        query += """
-        GROUP BY m.id
-        ORDER BY m.created_at DESC
+            WHERE ma.message_id IN ({','.join(['?'] * len(message_ids))})
+            GROUP BY m.id
+            ORDER BY m.created_at DESC
         """
 
-        if limit is not None:
-            query += " LIMIT ?"
-            params += (limit,)
-
-        rows = await self.storage.fetch_all(query, params)
+        rows = await self.storage.fetch_all(query, tuple(message_ids))
         return [
             self._build_memory(row, set((row["message_attributions"] or "").split(",")))
             for row in rows

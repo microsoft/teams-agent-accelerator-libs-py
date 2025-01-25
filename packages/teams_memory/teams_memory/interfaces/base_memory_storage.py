@@ -87,14 +87,11 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
-    async def get_all_memories(
-        self, limit: Optional[int] = None, message_ids: Optional[List[str]] = None
-    ) -> List[Memory]:
-        """Retrieve all memories from storage with optional filtering.
+    async def get_attributed_memories(self, message_ids: List[str]) -> List[Memory]:
+        """Retrieve all memories from storage that are attributed to the provided message IDs.
 
         Args:
-            limit: Maximum number of memories to return. If None, defaults to default_limit
-            message_ids: Optional list of message IDs to filter memories by source
+            message_ids: List of message IDs to filter memories by source
 
         Returns:
             List[Memory]: List of memory objects ordered by creation date (newest first)
