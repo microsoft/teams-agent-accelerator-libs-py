@@ -52,6 +52,19 @@ async def _return_arguments(**kwargs):
 def mock_completion(monkeypatch):
     client = mock.Mock()
     router = mock.Mock()
+
+    # Create a mock Router instance that returns a proper response
+    mock_response = {"choices": [{"message": {"content": "test response"}}]}
+
+    async def mock_acompletion(*args, **kwargs):
+        return mock_response
+
+    router_instance = mock.Mock()
+    router_instance.acompletion = mock_acompletion
+    router_instance.model_list = []
+    router_instance.api_key = "mock-key"
+    router.return_value = router_instance
+
     monkeypatch.setattr(instructor, "patch", client)
     monkeypatch.setattr(litellm, "Router", router)
 
@@ -69,10 +82,10 @@ def includes(text: str, phrase):
 
 @pytest.mark.asyncio
 async def test_completion_calls_litellm_client(mock_completion):
-    model = "test-model"
-    api_base = "api base"
-    api_version = "api version"
-    api_key = "api key"
+    model = "gpt-3.5-turbo"
+    api_base = "mock://api.test"
+    api_version = "2024-02-15"
+    api_key = "mock-api-key"
     messages: list = []
     litellm_params = {"test key": "test value"}
     local_args = {"local test key": "local test value"}
@@ -86,9 +99,9 @@ async def test_completion_calls_litellm_client(mock_completion):
     )
     lm = LLMService(config=config)
 
-    await lm.completion(messages, **local_args)
-
     client_mock, router_mock = mock_completion
+    await lm.completion(messages, response_model=None, **local_args)
+
     res = client_mock.mock_calls[1].kwargs
     assert res["model"] == model
     assert res["messages"] == messages
@@ -327,14 +340,15 @@ async def test_embedding_model_override(mock_embedding):
 
 @pytest.mark.asyncio
 async def test_completion_model_override(mock_completion):
-    model = "test-model"
-    override_model = "override model"
+    model = "gpt-3.5-turbo"
+    override_model = "gpt-4"
+    api_key = "mock-api-key"
 
-    llm_config = LLMConfig(model=model)
+    llm_config = LLMConfig(model=model, api_key=api_key, api_base="mock://api.test")
     lm = LLMService(config=llm_config)
 
+    client_mock, router_mock = mock_completion
     await lm.completion(messages=[], override_model=override_model)
 
-    client_mock, _ = mock_completion
     res = client_mock.mock_calls[1].kwargs
     assert res["model"] == override_model
