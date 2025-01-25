@@ -20,7 +20,6 @@ from teams_memory.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    Topic,
 )
 from teams_memory.services.llm_service import LLMService
 from teams_memory.utils.logging import configure_logging
@@ -74,7 +73,7 @@ class MemoryModule(BaseMemoryModule):
         self,
         user_id: Optional[str],
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
@@ -196,7 +195,7 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         *,
         user_id: Optional[str] = None,
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         validated_user_id = self._validate_user(user_id)

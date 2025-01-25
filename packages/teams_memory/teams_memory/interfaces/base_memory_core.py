@@ -11,7 +11,6 @@ from teams_memory.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    Topic,
 )
 
 
@@ -51,7 +50,7 @@ class BaseMemoryCore(ABC):
         *,
         user_id: Optional[str],
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         """Search for memories using semantic criteria.
@@ -62,7 +61,7 @@ class BaseMemoryCore(ABC):
         Args:
             user_id: Filter memories by specific user ID. If None, search across all users.
             query: Natural language search query to match against memory content.
-            topic: Filter memories by specific topic category.
+            topic: Filter memories by specific topic name.
             limit: Maximum number of memories to return.
 
         Returns:

@@ -19,7 +19,6 @@ from teams_memory.interfaces.types import (
     Message,
     MessageInput,
     TextEmbedding,
-    Topic,
 )
 from teams_memory.storage.sqlite_storage import SQLiteStorage
 from teams_memory.storage.utils import build_message_from_dict
@@ -149,7 +148,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         *,
         user_id: Optional[str],
         text_embedding: Optional[TextEmbedding] = None,
-        topics: Optional[List[Topic]] = None,
+        topics: Optional[List[str]] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         base_query = """
@@ -205,7 +204,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             topic_filter = (
                 " AND (" + " OR ".join(["m.topics LIKE ?"] * len(topics)) + ")"
             )
-            params.extend(f"%{t.name}%" for t in topics)
+            params.extend(f"%{t}%" for t in topics)
 
         user_filter = ""
         if user_id:

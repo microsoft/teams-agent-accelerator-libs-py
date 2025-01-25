@@ -649,7 +649,7 @@ async def test_retrieve_memories_by_topic(
 
     # Retrieve memories by Operating System topic
     os_memories = await scoped_memory_module.search_memories(
-        topic=Topic(name="Operating System", description="The user's operating system")
+        topic="Operating System",
     )
     assert all("Operating System" in memory.topics for memory in os_memories)
     assert any("windows 11" in memory.content.lower() for memory in os_memories)
@@ -718,7 +718,7 @@ async def test_retrieve_memories_by_topic_and_query(
 
     # Retrieve memories by Operating System topic AND query about Mac
     memories = await scoped_memory_module.search_memories(
-        topic=Topic(name="Operating System", description="The user's operating system"),
+        topic="Operating System",
         query="MacBook",
     )
     assert (
@@ -728,7 +728,7 @@ async def test_retrieve_memories_by_topic_and_query(
 
     # Try another query within the same topic
     windows_memories = await scoped_memory_module.search_memories(
-        topic=Topic(name="Operating System", description="The user's operating system"),
+        topic="Operating System",
         query="What operating system does the user use for their Windows PC?",
     )
     assert (

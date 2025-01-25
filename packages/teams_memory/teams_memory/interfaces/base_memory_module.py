@@ -11,7 +11,6 @@ from teams_memory.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    Topic,
 )
 
 
@@ -124,7 +123,7 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
         *,
         user_id: Optional[str],
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         """Search for relevant memories based on various criteria.
@@ -135,7 +134,7 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
         Args:
             user_id: Filter memories by specific user ID. If None, search across all users.
             query: Search string to match against memory content. Required if topic is None.
-            topic: Filter memories by specific topic. Required if query is None.
+            topic: Filter memories by specific topic name. Required if query is None.
             limit: Maximum number of memories to return. If None, returns all matching memories.
 
         Returns:
@@ -239,7 +238,7 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
         *,
         user_id: Optional[str] = None,
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         """Search memories within the scoped conversation context.
@@ -250,7 +249,7 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
         Args:
             user_id: Filter memories by specific user ID (must be in conversation scope).
             query: Search string to match against memory content.
-            topic: Filter memories by specific topic.
+            topic: Filter memories by specific topic name.
             limit: Maximum number of memories to return.
 
         Returns:
