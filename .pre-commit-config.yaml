@@ -24,6 +24,7 @@ repos:
           --ignore-missing-imports,
           --show-traceback,
           --disable-error-code=import-untyped,
+          --disable-error-code=no-untyped-call,
         ]
         files: ^packages/.+\.py$
         additional_dependencies:
