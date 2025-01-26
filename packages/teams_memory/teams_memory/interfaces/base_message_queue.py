@@ -50,3 +50,18 @@ class BaseMessageQueue(ABC):
             InvalidMessageIDError: If any of the provided message IDs are invalid.
         """
         pass
+
+    @abstractmethod
+    async def initialize(self) -> None:
+        """Initialize the message queue with pre-existing messages"""
+        pass
+
+    @abstractmethod
+    async def process_messages(self, conversation_ref: str) -> None:
+        """Process messages for a specific conversation"""
+        pass
+
+    @abstractmethod
+    async def shutdown(self) -> None:
+        """Shutdown the message queue and release resources."""
+        pass

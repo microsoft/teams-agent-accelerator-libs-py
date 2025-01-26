@@ -32,8 +32,8 @@ class SQLiteScheduledEventsStorage(BaseScheduledEventsStorage):
         """
         self.storage = SQLiteStorage(config.db_path or DEFAULT_DB_PATH)
 
-    async def store_event(self, event: Event) -> None:
-        """Store a scheduled event."""
+    async def upsert_event(self, event: Event) -> None:
+        """Upsert a scheduled event."""
         query = """
             INSERT OR REPLACE INTO scheduled_events
             (id, object, scheduled_time)

@@ -12,6 +12,7 @@ import numpy as np
 from teams_memory.interfaces.base_memory_storage import BaseMemoryStorage
 from teams_memory.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
+    BufferedMessage,
 )
 from teams_memory.interfaces.base_scheduled_events_service import Event
 from teams_memory.interfaces.base_scheduled_events_storage import (
@@ -352,7 +353,7 @@ class InMemoryStorage(
             count_dict[ref] = len(self.storage["buffered_messages"][ref])
         return count_dict
 
-    async def store_event(self, event: Event) -> None:
+    async def upsert_event(self, event: Event) -> None:
         """Store a scheduled event."""
         self.storage["scheduled_events"][event.id] = event
 
@@ -412,3 +413,25 @@ class InMemoryStorage(
             messages = [msg for msg in messages if msg.created_at < before]
 
         return messages
+
+    async def get_earliest_buffered_message(
+        self, conversation_refs: Optional[List[str]] = None
+    ) -> Dict[str, BufferedMessage]:
+        result = {}
+        refs_to_check = (
+            conversation_refs
+            if conversation_refs is not None
+            else self.storage["buffered_messages"].keys()
+        )
+
+        for ref in refs_to_check:
+            messages = self.storage["buffered_messages"].get(ref, [])
+            if messages:
+                earliest_message = min(messages, key=lambda x: x.created_at)
+                result[ref] = BufferedMessage(
+                    message_id=earliest_message.id,
+                    created_at=earliest_message.created_at,
+                    conversation_ref=ref,
+                )
+
+        return result

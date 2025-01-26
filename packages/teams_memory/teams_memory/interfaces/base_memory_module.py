@@ -176,6 +176,38 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
         """
         pass
 
+    async def listen(self) -> None:
+        """Enable scheduling of memory extraction tasks from messages
+
+        This method enables automatic scheduling of memory extraction tasks from messages.
+
+        This should be called when the module is initialzed or when
+        the server starts
+        """
+        pass
+
+    async def process_messages(self, conversation_ref: str) -> None:
+        """Process messages from the message buffer for a specific conversation
+
+        This method can be called to force processing of messages from the message buffer
+        for a specific conversation.
+
+        If the module is listening, you don't need to call this method, but it can
+        be used to force processing of messages for a specific conversation.
+
+        If the module is not listening, this method can be used to process whatever
+        messages are in the message buffer for the given conversation.
+        """
+        pass
+
+    async def shutdown(self) -> None:
+        """Shutdown the memory module
+
+        This method should be called when the module is shutting down. This is only
+        required if the module is listening.
+        """
+        pass
+
 
 class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
     """Base class for the scoped memory module interface.
@@ -258,5 +290,15 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
         Raises:
             ValueError: If neither query nor topic is provided.
             InvalidUserError: If user_id is provided but not in conversation scope.
+        """
+        pass
+
+    @abstractmethod
+    async def process_messages(self) -> None:
+        """Process messages for a specific conversation
+
+        This method should be called to process messages for a specific conversation.
+
+        This is only required if the module is not listening for automatic processing.
         """
         pass
