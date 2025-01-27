@@ -62,7 +62,7 @@ class LLMService:
         messages: List[Dict[str, str]],
         response_model: Optional[type[BaseModel]] = None,
         override_model: Optional[str] = None,
-        **kwargs: Any,
+        **kwargs: Dict[str, Any],
     ) -> Any:
         """Generate completion from the model."""
         model = override_model or self.model
