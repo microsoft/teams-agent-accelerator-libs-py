@@ -85,7 +85,7 @@ async def test_callback_execution(config):
         )  # Event should be removed after execution
     finally:
         # Clean up any remaining tasks
-        await service.shutdown()
+        await service.cleanup()
 
 
 @pytest.mark.asyncio
