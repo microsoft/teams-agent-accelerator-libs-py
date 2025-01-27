@@ -5,6 +5,7 @@ Licensed under the MIT License.
 
 from typing import Any, Dict, List, Optional, Union
 
+import instructor
 import litellm
 from litellm.router import Router
 from litellm.types.utils import EmbeddingResponse
@@ -70,19 +71,21 @@ class LLMService:
         if not model:
             raise ValueError("No LM model provided.")
 
-        router = Router(
-            model_list=[
-                {
-                    "model_name": model,
-                    "litellm_params": {
-                        "model": model,
-                        "api_key": self.api_key,
-                        "api_base": self.api_base,
-                        "api_version": self.api_version,
-                        **self._litellm_params,
-                    },
-                }
-            ]
+        router = instructor.patch(
+            Router(
+                model_list=[
+                    {
+                        "model_name": model,
+                        "litellm_params": {
+                            "model": model,
+                            "api_key": self.api_key,
+                            "api_base": self.api_base,
+                            "api_version": self.api_version,
+                            **self._litellm_params,
+                        },
+                    }
+                ]
+            )
         )
         return await router.acompletion(
             messages=messages,
