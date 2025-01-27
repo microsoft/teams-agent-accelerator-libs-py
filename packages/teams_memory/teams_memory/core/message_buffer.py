@@ -14,7 +14,7 @@ from teams_memory.interfaces.base_message_buffer_storage import (
 from teams_memory.interfaces.base_scheduled_events_service import (
     BaseScheduledEventsService,
 )
-from teams_memory.interfaces.interface_types import Message
+from teams_memory.interfaces.types import Message
 from teams_memory.services.scheduled_events_service import ScheduledEventsService
 from teams_memory.storage.in_memory_storage import InMemoryStorage
 from teams_memory.storage.sqlite_message_buffer_storage import (

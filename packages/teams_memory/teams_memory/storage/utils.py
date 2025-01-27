@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 from typing import Any, Dict
 
-from teams_memory.interfaces.interface_types import (
+from teams_memory.interfaces.types import (
     AssistantMessage,
     InternalMessage,
     Message,

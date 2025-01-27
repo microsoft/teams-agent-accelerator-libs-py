@@ -9,7 +9,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from teams_memory.interfaces.interface_types import (
+from teams_memory.interfaces.types import (
     AssistantMessage,
     Memory,
     MemoryType,

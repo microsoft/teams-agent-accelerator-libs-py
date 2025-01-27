@@ -8,7 +8,7 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from teams_memory.interfaces.interface_types import Topic
+from teams_memory.interfaces.types import Topic
 
 
 class LLMConfig(BaseModel):

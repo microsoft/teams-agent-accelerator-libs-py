@@ -13,7 +13,7 @@ from teams_memory.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
     BufferedMessage,
 )
-from teams_memory.interfaces.interface_types import Message
+from teams_memory.interfaces.types import Message
 from teams_memory.storage.sqlite_storage import SQLiteStorage
 from teams_memory.storage.utils import build_message_from_dict
 

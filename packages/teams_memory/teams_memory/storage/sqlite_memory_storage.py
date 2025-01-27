@@ -12,7 +12,7 @@ from typing import Any, List, Optional
 import sqlite_vec
 from teams_memory.config import StorageConfig
 from teams_memory.interfaces.base_memory_storage import BaseMemoryStorage
-from teams_memory.interfaces.interface_types import (
+from teams_memory.interfaces.types import (
     BaseMemoryInput,
     InternalMessageInput,
     Memory,

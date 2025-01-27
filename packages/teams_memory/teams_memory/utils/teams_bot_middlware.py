@@ -20,7 +20,7 @@ from botframework.connector.models import ChannelAccount, ConversationAccount
 from teams_memory.config import MemoryModuleConfig
 from teams_memory.core.memory_module import MemoryModule, ScopedMemoryModule
 from teams_memory.interfaces.base_memory_module import BaseMemoryModule
-from teams_memory.interfaces.interface_types import (
+from teams_memory.interfaces.types import (
     AssistantMessageInput,
     UserMessageInput,
 )

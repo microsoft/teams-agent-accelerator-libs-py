@@ -9,7 +9,7 @@ from teams_memory.interfaces.base_memory_module import (
     BaseMemoryModule,
     BaseScopedMemoryModule,
 )
-from teams_memory.interfaces.interface_types import (
+from teams_memory.interfaces.types import (
     AssistantMessage,
     AssistantMessageInput,
     InternalMessage,

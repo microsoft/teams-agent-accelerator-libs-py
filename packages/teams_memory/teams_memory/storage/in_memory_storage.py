@@ -18,7 +18,7 @@ from teams_memory.interfaces.base_scheduled_events_service import Event
 from teams_memory.interfaces.base_scheduled_events_storage import (
     BaseScheduledEventsStorage,
 )
-from teams_memory.interfaces.interface_types import (
+from teams_memory.interfaces.types import (
     AssistantMessage,
     AssistantMessageInput,
     BaseMemoryInput,

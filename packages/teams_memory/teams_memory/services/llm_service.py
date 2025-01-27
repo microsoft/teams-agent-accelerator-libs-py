@@ -62,6 +62,7 @@ class LLMService:
         messages: List[Dict[str, str]],
         response_model: Optional[type[BaseModel]] = None,
         override_model: Optional[str] = None,
+        stream: bool = False,
         **kwargs: Dict[str, Any],
     ) -> Any:
         """Generate completion from the model."""
@@ -84,7 +85,11 @@ class LLMService:
             ]
         )
         return await router.acompletion(
-            messages=messages, model=model, response_model=response_model, **kwargs
+            messages=messages,
+            model=model,
+            response_model=response_model,
+            stream=stream,
+            **kwargs,
         )
 
     async def embedding(

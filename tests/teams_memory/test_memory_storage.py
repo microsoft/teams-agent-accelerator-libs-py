@@ -9,7 +9,7 @@ from uuid import uuid4
 
 import pytest
 from teams_memory.config import StorageConfig
-from teams_memory.interfaces.interface_types import (
+from teams_memory.interfaces.types import (
     AssistantMessageInput,
     BaseMemoryInput,
     MemoryType,

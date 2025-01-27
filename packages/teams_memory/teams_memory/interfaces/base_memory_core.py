@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List, Optional
 
-from teams_memory.interfaces.interface_types import (
+from teams_memory.interfaces.types import (
     Memory,
     Message,
     MessageInput,

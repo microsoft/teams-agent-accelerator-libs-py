@@ -6,7 +6,7 @@ Licensed under the MIT License.
 from abc import ABC, abstractmethod
 from typing import List
 
-from teams_memory.interfaces.interface_types import Message
+from teams_memory.interfaces.types import Message
 
 
 class BaseMessageQueue(ABC):

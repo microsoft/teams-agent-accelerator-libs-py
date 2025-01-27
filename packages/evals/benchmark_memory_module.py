@@ -22,7 +22,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../teams_memory"))
 
 from teams_memory.config import LLMConfig, MemoryModuleConfig, StorageConfig
 from teams_memory.core.memory_module import MemoryModule
-from teams_memory.interfaces.interface_types import (
+from teams_memory.interfaces.types import (
     AssistantMessage,
     UserMessage,
 )
