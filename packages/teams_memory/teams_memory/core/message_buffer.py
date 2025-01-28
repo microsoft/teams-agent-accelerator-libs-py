@@ -126,6 +126,9 @@ class MessageBuffer:
         await self.storage.store_buffered_message(message)
 
         if not self._allow_automatic_processing:
+            logger.debug(
+                "MessageBuffer is not initialized, skipping automatic processing"
+            )
             return
 
         # TODO: Possible race condition here where the count includes messages currently being processed

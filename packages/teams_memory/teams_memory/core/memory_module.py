@@ -63,6 +63,10 @@ class MemoryModule(BaseMemoryModule):
 
         logger.debug(f"MemoryModule initialized with config: {config}")
 
+    @property
+    def is_listening(self) -> bool:
+        return self._is_listening
+
     async def listen(self) -> None:
         """Enable scheduling of memory extraction tasks from messages"""
         if self._is_listening:

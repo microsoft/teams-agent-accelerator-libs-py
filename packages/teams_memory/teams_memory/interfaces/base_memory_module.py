@@ -105,6 +105,16 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
     interface for memory management in a conversational context.
     """
 
+    @property
+    @abstractmethod
+    def is_listening(self) -> bool:
+        """Get the listening state of the memory module.
+
+        Returns:
+            bool: True if the module is listening for messages, False otherwise.
+        """
+        pass
+
     @abstractmethod
     async def search_memories(
         self,
