@@ -375,7 +375,7 @@ class RetrievalEvaluator(BaseEvaluator):
                 retrieved_memories = await memory_core.search_memories(
                     user_id=user_id,
                     query=query_test["query"],
-                    topic=topic,
+                    topic=topic.name if topic else None,
                     limit=5,
                 )
 

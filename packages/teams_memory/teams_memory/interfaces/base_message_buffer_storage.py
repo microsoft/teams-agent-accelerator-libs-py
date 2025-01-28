@@ -7,7 +7,15 @@ import datetime
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
+from pydantic import BaseModel
+
 from teams_memory.interfaces.types import Message
+
+
+class BufferedMessage(BaseModel):
+    message_id: str
+    conversation_ref: str
+    created_at: datetime.datetime
 
 
 class BaseMessageBufferStorage(ABC):
@@ -32,6 +40,13 @@ class BaseMessageBufferStorage(ABC):
         Returns:
             List[Message]: List of Message objects for the conversation
         """
+        pass
+
+    @abstractmethod
+    async def get_earliest_buffered_message(
+        self, conversation_refs: Optional[List[str]] = None
+    ) -> Dict[str, BufferedMessage]:
+        """Get the earliest buffered message for a conversation or all conversations if None provided"""
         pass
 
     @abstractmethod

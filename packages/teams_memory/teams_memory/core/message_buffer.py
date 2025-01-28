@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 class MessageBuffer:
     """Buffers messages by conversation_ref until reaching a threshold for processing."""
 
+    _enable_automatic_processing: bool = False
+
     def __init__(
         self,
         config: MemoryModuleConfig,
@@ -84,10 +86,50 @@ class MessageBuffer:
         """Handle a conversation timeout by processing its messages."""
         await self._process_conversation_messages(id)
 
+    async def initialize(self) -> None:
+        """Initialize the message buffer with pre-existing messages"""
+        # get all the conversations that have messages in the buffer
+        buffered_messages_by_conversation = (
+            await self.storage.get_earliest_buffered_message()
+        )
+        for (
+            conversation,
+            earliest_buffered_message,
+        ) in buffered_messages_by_conversation.items():
+            expected_timeout_time = earliest_buffered_message.created_at + timedelta(
+                seconds=self.timeout_seconds
+            )
+            current_time = datetime.now(expected_timeout_time.tzinfo)
+            time_left_to_expected_time = expected_timeout_time - current_time
+            time_left_to_expected_time = max(time_left_to_expected_time, timedelta(0))
+            updated_timeout_time = datetime.now() + time_left_to_expected_time
+            logger.debug(
+                "Initialized buffer for %s with timeout %s",
+                conversation,
+                updated_timeout_time,
+            )
+            await self.scheduler.add_event(
+                id=conversation,
+                object=None,
+                time=updated_timeout_time,
+            )
+
+        self._enable_automatic_processing = True
+
+    async def process_messages(self, conversation_ref: str):
+        await self._process_conversation_messages(conversation_ref)
+        await self.scheduler.cancel_event(conversation_ref)
+
     async def add_message(self, message: Message) -> None:
         """Add a message to the buffer and process if threshold reached."""
         # Store the message
         await self.storage.store_buffered_message(message)
+
+        if not self._enable_automatic_processing:
+            logger.debug(
+                "Automatic processing is not enabled, skipping message buffer processing"
+            )
+            return
 
         # TODO: Possible race condition here where the count includes messages currently being processed
         # but not yet removed from the buffer. This could cause the timer to not be triggered, but seems like
@@ -107,8 +149,7 @@ class MessageBuffer:
 
         # Check if we've reached the buffer size
         if count >= self.buffer_size:
-            await self._process_conversation_messages(message.conversation_ref)
-            await self.scheduler.cancel_event(message.conversation_ref)
+            await self.process_messages(message.conversation_ref)
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         """Remove list of messages from buffer if not in processing
@@ -152,7 +193,7 @@ class MessageBuffer:
         for item in removed_message_ids:
             message_ids.remove(item)
 
-    async def flush(self) -> None:
-        """Flush all messages from the buffer."""
+    async def shutdown(self) -> None:
+        """Shutdown the message buffer and release resources."""
         if isinstance(self.scheduler, ScheduledEventsService):
-            await self.scheduler.flush()
+            await self.scheduler.cleanup()

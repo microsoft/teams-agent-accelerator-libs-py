@@ -21,7 +21,6 @@ from teams_memory.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    Topic,
 )
 from teams_memory.services.llm_service import LLMService
 from teams_memory.utils.logging import configure_logging
@@ -31,6 +30,8 @@ logger = logging.getLogger(__name__)
 
 class MemoryModule(BaseMemoryModule):
     """Implementation of the memory module interface."""
+
+    _is_listening: bool = False
 
     def __init__(
         self,
@@ -62,6 +63,22 @@ class MemoryModule(BaseMemoryModule):
 
         logger.debug(f"MemoryModule initialized with config: {config}")
 
+    @property
+    def is_listening(self) -> bool:
+        return self._is_listening
+
+    async def listen(self) -> None:
+        """Enable scheduling of memory extraction tasks from messages"""
+        if self._is_listening:
+            logger.warning("MemoryModule is already listening")
+            return
+
+        await self.message_queue.initialize()
+        self._is_listening = True
+
+    async def process_messages(self, conversation_ref: str) -> None:
+        return await self.message_queue.process_messages(conversation_ref)
+
     async def add_message(self, message: MessageInput) -> Message:
         """Add a message to be processed into memory."""
         logger.debug(
@@ -71,11 +88,17 @@ class MemoryModule(BaseMemoryModule):
         await self.message_queue.enqueue(message_res)
         return message_res
 
+    def _validate_topic(self, topic: Optional[str]) -> bool:
+        """Validate topic. If topic is None, return None. Otherwise, return topic."""
+        if topic is None:
+            return True
+        return any(topic in t.name for t in self.config.topics)
+
     async def search_memories(
         self,
         user_id: Optional[str],
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
@@ -89,6 +112,9 @@ class MemoryModule(BaseMemoryModule):
 
         if query is None and topic is None:
             raise ValueError("Either query or topic must be provided")
+
+        if not self._validate_topic(topic):
+            raise ValueError(f"Topic {topic} is not in the config")
 
         memories = await self.memory_core.search_memories(
             user_id=user_id, query=query, topic=topic, limit=limit
@@ -154,6 +180,9 @@ class MemoryModule(BaseMemoryModule):
             before=before,
         )
 
+    async def shutdown(self) -> None:
+        await self.message_queue.shutdown()
+
 
 class ScopedMemoryModule(BaseScopedMemoryModule):
     def __init__(
@@ -197,7 +226,7 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         *,
         user_id: Optional[str] = None,
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         validated_user_id = self._validate_user(user_id)
@@ -250,3 +279,6 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         return await self.memory_module.remove_memories(
             user_id=validated_user_id, memory_ids=memory_ids
         )
+
+    async def process_messages(self) -> None:
+        return await self.memory_module.process_messages(self.conversation_ref)

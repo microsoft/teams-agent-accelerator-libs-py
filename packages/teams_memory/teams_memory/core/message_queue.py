@@ -43,6 +43,14 @@ class MessageQueue(BaseMessageQueue):
             storage=message_buffer_storage,
         )
 
+    async def initialize(self) -> None:
+        """Initialize the message queue with pre-existing messages"""
+        await self.message_buffer.initialize()
+
+    async def shutdown(self) -> None:
+        """Shutdown the message queue and release resources."""
+        await self.message_buffer.shutdown()
+
     async def enqueue(self, message: Message) -> None:
         """Add a message to the queue for processing.
 
@@ -54,6 +62,10 @@ class MessageQueue(BaseMessageQueue):
     async def dequeue(self, message_ids: List[str]) -> None:
         """Remove list of messages from queue"""
         await self.message_buffer.remove_messages(message_ids)
+
+    async def process_messages(self, conversation_ref: str) -> None:
+        """Process messages for a specific conversation"""
+        await self.message_buffer.process_messages(conversation_ref)
 
     async def _process_for_semantic_messages(self, messages: List[Message]) -> None:
         """Process a list of messages using the memory core.

@@ -13,7 +13,7 @@ class BaseScheduledEventsStorage(ABC):
     """Abstract base class for persisting scheduled events."""
 
     @abstractmethod
-    async def store_event(self, event: Event) -> None:
+    async def upsert_event(self, event: Event) -> None:
         """Store a scheduled event.
 
         Args:

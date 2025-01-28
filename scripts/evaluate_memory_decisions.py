@@ -187,7 +187,7 @@ class MemoryDecisionEvaluator(BaseEvaluator):
                 )
                 await memory_module.add_message(message)
 
-            await memory_module.message_queue.message_buffer.scheduler.flush()
+            await memory_module.process_messages(conversation_id)
 
             # Create incoming message
             new_message = [
