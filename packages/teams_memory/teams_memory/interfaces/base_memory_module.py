@@ -39,7 +39,6 @@ class _CommonBaseMemoryModule(ABC):
 
         Raises:
             ValueError: If neither memory_ids nor user_id is provided.
-            MemoryNotFoundError: If any specified memory_ids don't exist.
         """
         pass
 
@@ -58,7 +57,6 @@ class _CommonBaseMemoryModule(ABC):
 
         Raises:
             ValueError: If neither memory_ids nor user_id is provided.
-            MemoryNotFoundError: If any specified memory_ids don't exist.
         """
         pass
 
@@ -73,10 +71,6 @@ class _CommonBaseMemoryModule(ABC):
 
         Returns:
             Message: The stored message object with assigned ID and metadata.
-
-        Raises:
-            InvalidMessageError: If the message format is invalid.
-            StorageError: If the message cannot be stored.
         """
         pass
 
@@ -89,9 +83,6 @@ class _CommonBaseMemoryModule(ABC):
 
         Returns:
             List[Message]: List of message objects matching the provided IDs.
-
-        Raises:
-            MessageNotFoundError: If any of the specified message IDs don't exist.
         """
         pass
 
@@ -103,9 +94,6 @@ class _CommonBaseMemoryModule(ABC):
 
         Args:
             message_ids: List of message IDs to remove.
-
-        Raises:
-            MessageNotFoundError: If any of the specified message IDs don't exist.
         """
         pass
 
@@ -143,7 +131,6 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
 
         Raises:
             ValueError: If neither query nor topic is provided.
-            InvalidSearchError: If the search criteria are invalid.
         """
         pass
 
@@ -173,7 +160,6 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
 
         Raises:
             ValueError: If no filtering criteria (n_messages, last_minutes, or before) is provided.
-            ConversationNotFoundError: If the conversation_ref doesn't exist.
         """
         pass
 
