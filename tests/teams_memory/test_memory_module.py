@@ -180,7 +180,7 @@ async def test_simple_conversation(
     for message in messages:
         await scoped_memory_module.memory_module.add_message(message)
 
-    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.process_messages()
     stored_memories = (
         await scoped_memory_module.memory_module.memory_core.storage.get_memories(
             user_id=user_ids_in_conversation_scope[0]
@@ -240,7 +240,7 @@ async def test_episodic_memory_timeout(scoped_memory_module, config, monkeypatch
     for message in messages:
         await scoped_memory_module.memory_module.add_message(message)
 
-    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.process_messages()
     assert (
         extraction_called
     ), "Episodic memory extraction should have been triggered by timeout"
@@ -264,7 +264,7 @@ async def test_update_memory(
     for message in messages:
         await scoped_memory_module.memory_module.add_message(message)
 
-    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.process_messages()
     stored_memories = (
         await scoped_memory_module.memory_module.memory_core.storage.get_memories(
             user_id=user_ids_in_conversation_scope[0]
@@ -303,7 +303,7 @@ async def test_remove_memory(
 
     for message in messages:
         await scoped_memory_module.memory_module.add_message(message)
-    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.process_messages()
     stored_messages = (
         await scoped_memory_module.memory_module.memory_core.storage.get_memories(
             user_id=user_ids_in_conversation_scope[0]
@@ -432,7 +432,7 @@ async def test_add_memory_processing_decision(
     for message in old_messages:
         await scoped_memory_module.memory_module.add_message(message)
 
-    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.process_messages()
 
     await _validate_decision(scoped_memory_module, new_messages[0], "ignore")
     await _validate_decision(scoped_memory_module, new_messages[1], "add")
@@ -466,7 +466,7 @@ async def test_delete_messages(
     ]
     for message in messages:
         await scoped_memory_module.memory_module.add_message(message)
-    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.process_messages()
 
     stored_memories = (
         await scoped_memory_module.memory_module.memory_core.storage.get_memories(
@@ -572,7 +572,7 @@ async def test_topic_extraction(
             )
         await scoped_memory_module.memory_module.add_message(input)
 
-    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.process_messages()
     stored_memories = (
         await scoped_memory_module.memory_module.memory_core.storage.get_memories(
             user_id=user_ids_in_conversation_scope[0]
@@ -645,7 +645,7 @@ async def test_retrieve_memories_by_topic(
 
     for message in messages:
         await scoped_memory_module.memory_module.add_message(message)
-    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.process_messages()
 
     # Retrieve memories by Operating System topic
     os_memories = await scoped_memory_module.search_memories(
@@ -705,7 +705,7 @@ async def test_retrieve_memories_by_topic_and_query(
 
     for message in messages:
         await scoped_memory_module.memory_module.add_message(message)
-    await scoped_memory_module.memory_module.message_queue.message_buffer.scheduler.flush()
+    await scoped_memory_module.process_messages()
 
     # make sure we have memories
     stored_memories = (

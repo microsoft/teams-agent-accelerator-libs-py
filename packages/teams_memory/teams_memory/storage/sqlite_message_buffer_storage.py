@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 from teams_memory.config import StorageConfig
 from teams_memory.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
+    BufferedMessage,
 )
 from teams_memory.interfaces.types import Message
 from teams_memory.storage.sqlite_storage import SQLiteStorage
@@ -130,3 +131,27 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
             count_dict[result["conversation_ref"]] = result["count"]
 
         return count_dict
+
+    async def get_earliest_buffered_message(
+        self, conversation_refs: Optional[List[str]] = None
+    ) -> Dict[str, BufferedMessage]:
+        """Get the earliest buffered message for a conversation or all conversations if None provided"""
+        params: tuple = ()
+        query = """
+            SELECT
+                message_id, conversation_ref, created_at
+            FROM buffered_messages
+        """
+
+        if conversation_refs:
+            query += " WHERE conversation_ref IN ({})".format(
+                ",".join(["?"] * len(conversation_refs))
+            )
+            params += tuple(conversation_refs)
+
+        query += " GROUP BY conversation_ref ORDER BY created_at ASC"
+        results = await self.storage.fetch_all(query, params)
+
+        return {
+            result["conversation_ref"]: BufferedMessage(**result) for result in results
+        }

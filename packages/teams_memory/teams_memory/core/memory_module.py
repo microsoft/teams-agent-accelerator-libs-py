@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 class MemoryModule(BaseMemoryModule):
     """Implementation of the memory module interface."""
 
+    _is_listening: bool = False
+
     def __init__(
         self,
         config: MemoryModuleConfig,
@@ -60,6 +62,22 @@ class MemoryModule(BaseMemoryModule):
             configure_logging()
 
         logger.debug(f"MemoryModule initialized with config: {config}")
+
+    @property
+    def is_listening(self) -> bool:
+        return self._is_listening
+
+    async def listen(self) -> None:
+        """Enable scheduling of memory extraction tasks from messages"""
+        if self._is_listening:
+            logger.warning("MemoryModule is already listening")
+            return
+
+        await self.message_queue.initialize()
+        self._is_listening = True
+
+    async def process_messages(self, conversation_ref: str) -> None:
+        return await self.message_queue.process_messages(conversation_ref)
 
     async def add_message(self, message: MessageInput) -> Message:
         """Add a message to be processed into memory."""
@@ -162,6 +180,9 @@ class MemoryModule(BaseMemoryModule):
             before=before,
         )
 
+    async def shutdown(self) -> None:
+        await self.message_queue.shutdown()
+
 
 class ScopedMemoryModule(BaseScopedMemoryModule):
     def __init__(
@@ -258,3 +279,6 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         return await self.memory_module.remove_memories(
             user_id=validated_user_id, memory_ids=memory_ids
         )
+
+    async def process_messages(self) -> None:
+        return await self.memory_module.process_messages(self.conversation_ref)

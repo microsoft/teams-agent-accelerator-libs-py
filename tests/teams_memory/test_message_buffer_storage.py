@@ -128,3 +128,38 @@ async def test_get_conversations_from_buffered_messages(storage):
     conversation_refs = await buffer.get_conversations_from_buffered_messages(["msg1"])
     assert "conv1" in conversation_refs
     assert "msg1" in conversation_refs["conv1"]
+
+
+@pytest.mark.asyncio
+async def test_get_earliest_buffered_message(storage):
+    # Create messages with different timestamps
+    message1 = create_test_user_message("First")
+    message1.id = "msg1"
+    message1.conversation_ref = "conv1"
+    message1.created_at = message1.created_at - timedelta(hours=2)
+
+    message2 = create_test_user_message("Second")
+    message2.id = "msg2"
+    message2.conversation_ref = "conv1"
+    message2.created_at = message2.created_at - timedelta(hours=1)
+
+    message3 = create_test_user_message("Third")
+    message3.id = "msg3"
+    message3.conversation_ref = "conv2"
+
+    buffer, memory_storage = storage
+    # Store messages
+    for msg in [message1, message2, message3]:
+        await memory_storage.upsert_message(message=msg)
+        await buffer.store_buffered_message(message=msg)
+
+    # Test getting earliest message from specific conversation
+    earliest = await buffer.get_earliest_buffered_message(conversation_refs=["conv1"])
+    assert len(earliest) == 1
+    assert earliest["conv1"].message_id == "msg1"
+
+    # Test getting earliest messages from all conversations
+    all_earliest = await buffer.get_earliest_buffered_message()
+    assert len(all_earliest) == 2
+    assert all_earliest["conv1"].message_id == "msg1"
+    assert all_earliest["conv2"].message_id == "msg3"

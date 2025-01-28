@@ -93,7 +93,7 @@ class ScheduledEventsService(BaseScheduledEventsService):
         event = Event(id=id, object=object, time=time)
 
         # Store in persistent storage
-        await self.storage.store_event(event)
+        await self.storage.upsert_event(event)
 
         await self._create_task(event)
 
@@ -159,16 +159,3 @@ class ScheduledEventsService(BaseScheduledEventsService):
                 self._tasks.clear()
             except Exception as e:
                 logger.error("Error cleaning up scheduled events: %s", str(e))
-
-    async def flush(self) -> None:
-        """Flush all events from the storage. Process all immediately."""
-        # cancel all the tasks and
-        for task_info in self._tasks.values():
-            task_info.task.cancel()
-        self._tasks.clear()
-
-        # get all the events from storage and create tasks for them
-        if self._callback_func:
-            events = await self.storage.get_all_events()
-            for event in events:
-                await self._callback_func(event.id, event.object, event.time)
