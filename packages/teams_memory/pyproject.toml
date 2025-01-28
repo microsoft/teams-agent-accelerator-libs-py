@@ -20,6 +20,9 @@ dependencies = [
     "botframework-connector>=4.16.2",
 ]
 
+[project.urls]
+Homepage = "https://github.com/microsoft/teams-agent-accelerator-libs-py"
+
 [dependency-groups]
 dev = []
 

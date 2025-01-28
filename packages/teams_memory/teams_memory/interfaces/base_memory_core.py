@@ -31,7 +31,7 @@ class BaseMemoryCore(ABC):
         """Process messages into semantic memories.
 
         Analyzes messages to extract semantic information and creates long-term memories.
-        Can update or merge with existing memories if provided.
+        If the memory already exists, we ignore it.
 
         Args:
             messages: List of messages to process into semantic memories.
@@ -40,7 +40,6 @@ class BaseMemoryCore(ABC):
 
         Raises:
             ProcessingError: If there's an error during semantic processing.
-            InvalidMessageError: If any message is in an invalid format.
         """
         pass
 
@@ -59,17 +58,16 @@ class BaseMemoryCore(ABC):
         or topic-based filtering. One of query or topic must be provided.
 
         Args:
-            user_id: Filter memories by specific user ID. If None, search across all users.
-            query: Natural language search query to match against memory content.
-            topic: Filter memories by specific topic name.
-            limit: Maximum number of memories to return.
+            user_id (Optional[str]): Filter memories by specific user ID. If None, search across all users.
+            query (Optional[str]): Natural language search query to match against memory content.
+            topic (Optional[str]): Filter memories by specific topic category.
+            limit (Optional[int]): Maximum number of memories to return.
 
         Returns:
             List[Memory]: List of memories matching the search criteria, ordered by relevance.
 
         Raises:
             ValueError: If neither query nor topic is provided.
-            InvalidSearchError: If the search criteria are invalid.
         """
         pass
 
@@ -81,12 +79,14 @@ class BaseMemoryCore(ABC):
         and metadata.
 
         Args:
-            memory_id: ID of the memory to update.
-            updated_memory: New content for the memory.
+            memory_id (str): ID of the memory to update.
+            updated_memory (str): New content for the memory.
+
+        Returns:
+            None
 
         Raises:
             MemoryNotFoundError: If the specified memory_id doesn't exist.
-            InvalidMemoryError: If the updated content is invalid.
         """
         pass
 
@@ -100,15 +100,14 @@ class BaseMemoryCore(ABC):
         At least one parameter must be provided.
 
         Args:
-            memory_ids: Optional list of specific memory IDs to retrieve.
-            user_id: Optional user ID to retrieve all memories for.
+            memory_ids (Optional[List[str]]): Optional list of specific memory IDs to retrieve.
+            user_id (Optional[str]): Optional user ID to retrieve all memories for.
 
         Returns:
             List[Memory]: List of memory objects matching the criteria.
 
         Raises:
             ValueError: If neither memory_ids nor user_id is provided.
-            MemoryNotFoundError: If any specified memory_ids don't exist.
         """
         pass
 
@@ -119,13 +118,10 @@ class BaseMemoryCore(ABC):
         Gets all memories that were created from or are associated with a particular message.
 
         Args:
-            message_id: ID of the message to get related memories for.
+            message_id (str): ID of the message to get related memories for.
 
         Returns:
             List[Memory]: List of memories derived from or related to the message.
-
-        Raises:
-            MessageNotFoundError: If the specified message_id doesn't exist.
         """
         pass
 
@@ -139,12 +135,14 @@ class BaseMemoryCore(ABC):
         At least one parameter must be provided.
 
         Args:
-            user_id: Optional user ID to remove all memories for.
-            memory_ids: Optional list of specific memory IDs to remove.
+            user_id (Optional[str]): Optional user ID to remove all memories for.
+            memory_ids (Optional[List[str]]): Optional list of specific memory IDs to remove.
+
+        Returns:
+            None
 
         Raises:
             ValueError: If neither memory_ids nor user_id is provided.
-            MemoryNotFoundError: If any specified memory_ids don't exist.
         """
         pass
 
@@ -155,14 +153,10 @@ class BaseMemoryCore(ABC):
         Stores a message and prepares it for semantic processing into memories.
 
         Args:
-            message: MessageInput object containing the message content and metadata.
+            message (MessageInput): MessageInput object containing the message content and metadata.
 
         Returns:
             Message: The stored message object with assigned ID and metadata.
-
-        Raises:
-            InvalidMessageError: If the message format is invalid.
-            StorageError: If the message cannot be stored.
         """
         pass
 
@@ -171,7 +165,7 @@ class BaseMemoryCore(ABC):
         """Retrieve messages by their IDs.
 
         Args:
-            message_ids: List of message IDs to retrieve.
+            message_ids (List[str]): List of message IDs to retrieve.
 
         Returns:
             List[Message]: List of message objects matching the provided IDs.
@@ -188,10 +182,10 @@ class BaseMemoryCore(ABC):
         Deletes messages and any memories that were created from them.
 
         Args:
-            message_ids: List of message IDs to remove.
+            message_ids (List[str]): List of message IDs to remove.
 
-        Raises:
-            MessageNotFoundError: If any of the specified message IDs don't exist.
+        Returns:
+            None
         """
         pass
 
@@ -208,11 +202,12 @@ class BaseMemoryCore(ABC):
 
         Fetches conversation messages using time-based or quantity-based filters.
         At least one criteria must be provided.
+
         Args:
-            conversation_ref: Unique identifier for the conversation.
-            n_messages: Number of most recent messages to retrieve.
-            last_minutes: Retrieve messages from the last N minutes.
-            before: Retrieve messages before this timestamp.
+            conversation_ref (str): Unique identifier for the conversation.
+            n_messages (Optional[int]): Number of most recent messages to retrieve.
+            last_minutes (Optional[float]): Retrieve messages from the last N minutes.
+            before (Optional[datetime]): Retrieve messages before this timestamp.
 
         Returns:
             List[Message]: List of message objects from the conversation history,
@@ -220,6 +215,5 @@ class BaseMemoryCore(ABC):
 
         Raises:
             ValueError: If no filtering criteria is provided.
-            ConversationNotFoundError: If the conversation_ref doesn't exist.
         """
         pass

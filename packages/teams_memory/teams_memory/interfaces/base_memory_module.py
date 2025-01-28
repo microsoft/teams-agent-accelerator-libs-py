@@ -30,15 +30,14 @@ class _CommonBaseMemoryModule(ABC):
         At least one parameter must be provided to filter the memories.
 
         Args:
-            memory_ids: Optional list of specific memory IDs to retrieve.
-            user_id: Optional user ID to retrieve all memories for a specific user.
+            memory_ids (Optional[List[str]]): Optional list of specific memory IDs to retrieve.
+            user_id (Optional[str]): Optional user ID to retrieve all memories for a specific user.
 
         Returns:
             List[Memory]: List of memory objects matching the specified criteria.
 
         Raises:
             ValueError: If neither memory_ids nor user_id is provided.
-            MemoryNotFoundError: If any specified memory_ids don't exist.
         """
         pass
 
@@ -52,12 +51,11 @@ class _CommonBaseMemoryModule(ABC):
         At least one parameter must be provided.
 
         Args:
-            user_id: Optional user ID to remove all memories for a specific user.
-            memory_ids: Optional list of specific memory IDs to remove.
+            user_id (Optional[str]): Optional user ID to remove all memories for a specific user.
+            memory_ids (Optional[List[str]]): Optional list of specific memory IDs to remove.
 
         Raises:
             ValueError: If neither memory_ids nor user_id is provided.
-            MemoryNotFoundError: If any specified memory_ids don't exist.
         """
         pass
 
@@ -68,14 +66,10 @@ class _CommonBaseMemoryModule(ABC):
         This method stores a message and queues it for processing into long-term memories.
 
         Args:
-            message: MessageInput object containing the message content and metadata.
+            message (MessageInput): MessageInput object containing the message content and metadata.
 
         Returns:
             Message: The stored message object with assigned ID and metadata.
-
-        Raises:
-            InvalidMessageError: If the message format is invalid.
-            StorageError: If the message cannot be stored.
         """
         pass
 
@@ -84,13 +78,10 @@ class _CommonBaseMemoryModule(ABC):
         """Retrieve messages by their IDs.
 
         Args:
-            message_ids: List of message IDs to retrieve.
+            message_ids (List[str]): List of message IDs to retrieve.
 
         Returns:
             List[Message]: List of message objects matching the provided IDs.
-
-        Raises:
-            MessageNotFoundError: If any of the specified message IDs don't exist.
         """
         pass
 
@@ -101,10 +92,7 @@ class _CommonBaseMemoryModule(ABC):
         This method removes both the messages and any memories that were derived from them.
 
         Args:
-            message_ids: List of message IDs to remove.
-
-        Raises:
-            MessageNotFoundError: If any of the specified message IDs don't exist.
+            message_ids (List[str]): List of message IDs to remove.
         """
         pass
 
@@ -132,17 +120,16 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
         filtered by user and limited in quantity. One of query or topic must be provided.
 
         Args:
-            user_id: Filter memories by specific user ID. If None, search across all users.
-            query: Search string to match against memory content. Required if topic is None.
-            topic: Filter memories by specific topic name. Required if query is None.
-            limit: Maximum number of memories to return. If None, returns all matching memories.
+            user_id (Optional[str]): Filter memories by specific user ID. If None, search across all users.
+            query (Optional[str]): Search string to match against memory content. Required if topic is None.
+            topic (Optional[str]): Filter memories by specific topic. Required if query is None.
+            limit (Optional[int]): Maximum number of memories to return. If None, returns all matching memories.
 
         Returns:
             List[Memory]: List of memory objects matching the search criteria, ordered by relevance.
 
         Raises:
             ValueError: If neither query nor topic is provided.
-            InvalidSearchError: If the search criteria are invalid.
         """
         pass
 
@@ -161,10 +148,10 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
         quantity-based filters.
 
         Args:
-            conversation_ref: Unique identifier for the conversation.
-            n_messages: Number of most recent messages to retrieve.
-            last_minutes: Retrieve messages from the last N minutes.
-            before: Retrieve messages before this timestamp.
+            conversation_ref (str): Unique identifier for the conversation.
+            n_messages (Optional[int]): Number of most recent messages to retrieve.
+            last_minutes (Optional[float]): Retrieve messages from the last N minutes.
+            before (Optional[datetime]): Retrieve messages before this timestamp.
 
         Returns:
             List[Message]: List of message objects from the conversation history,
@@ -172,7 +159,6 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
 
         Raises:
             ValueError: If no filtering criteria (n_messages, last_minutes, or before) is provided.
-            ConversationNotFoundError: If the conversation_ref doesn't exist.
         """
         pass
 
@@ -251,9 +237,9 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
         uses the scoped conversation_ref.
 
         Args:
-            n_messages: Number of most recent messages to retrieve.
-            last_minutes: Retrieve messages from the last N minutes.
-            before: Retrieve messages before this timestamp.
+            n_messages (Optional[int]): Number of most recent messages to retrieve.
+            last_minutes (Optional[float]): Retrieve messages from the last N minutes.
+            before (Optional[datetime]): Retrieve messages before this timestamp.
 
         Returns:
             List[Message]: List of message objects from the conversation history,
@@ -279,10 +265,10 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
         from users in the conversation scope. One of query or topic must be provided.
 
         Args:
-            user_id: Filter memories by specific user ID (must be in conversation scope).
-            query: Search string to match against memory content.
-            topic: Filter memories by specific topic name.
-            limit: Maximum number of memories to return.
+            user_id (Optional[str]): Filter memories by specific user ID (must be in conversation scope).
+            query (Optional[str]): Search string to match against memory content.
+            topic (Optional[str]): Filter memories by specific topic.
+            limit (Optional[int]): Maximum number of memories to return.
 
         Returns:
             List[Memory]: List of memory objects matching the criteria.
