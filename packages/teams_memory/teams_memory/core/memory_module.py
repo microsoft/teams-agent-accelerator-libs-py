@@ -21,7 +21,6 @@ from teams_memory.interfaces.types import (
     Memory,
     Message,
     MessageInput,
-    Topic,
 )
 from teams_memory.services.llm_service import LLMService
 from teams_memory.utils.logging import configure_logging
@@ -71,11 +70,17 @@ class MemoryModule(BaseMemoryModule):
         await self.message_queue.enqueue(message_res)
         return message_res
 
+    def _validate_topic(self, topic: Optional[str]) -> bool:
+        """Validate topic. If topic is None, return None. Otherwise, return topic."""
+        if topic is None:
+            return True
+        return any(topic in t.name for t in self.config.topics)
+
     async def search_memories(
         self,
         user_id: Optional[str],
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         """Retrieve relevant memories based on a query."""
@@ -89,6 +94,9 @@ class MemoryModule(BaseMemoryModule):
 
         if query is None and topic is None:
             raise ValueError("Either query or topic must be provided")
+
+        if not self._validate_topic(topic):
+            raise ValueError(f"Topic {topic} is not in the config")
 
         memories = await self.memory_core.search_memories(
             user_id=user_id, query=query, topic=topic, limit=limit
@@ -197,7 +205,7 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         *,
         user_id: Optional[str] = None,
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         validated_user_id = self._validate_user(user_id)

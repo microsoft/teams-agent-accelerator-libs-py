@@ -13,7 +13,6 @@ from teams_memory.interfaces.types import (
     Message,
     MessageInput,
     TextEmbedding,
-    Topic,
 )
 
 
@@ -104,7 +103,7 @@ class BaseMemoryStorage(ABC):
         *,
         user_id: Optional[str],
         text_embedding: Optional[TextEmbedding] = None,
-        topics: Optional[List[Topic]] = None,
+        topics: Optional[List[str]] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         """Search memories using semantic similarity and/or topics.

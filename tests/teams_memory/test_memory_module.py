@@ -649,7 +649,7 @@ async def test_retrieve_memories_by_topic(
 
     # Retrieve memories by Operating System topic
     os_memories = await scoped_memory_module.search_memories(
-        topic=Topic(name="Operating System", description="The user's operating system")
+        topic="Operating System",
     )
     assert all("Operating System" in memory.topics for memory in os_memories)
     assert any("windows 11" in memory.content.lower() for memory in os_memories)
@@ -718,7 +718,7 @@ async def test_retrieve_memories_by_topic_and_query(
 
     # Retrieve memories by Operating System topic AND query about Mac
     memories = await scoped_memory_module.search_memories(
-        topic=Topic(name="Operating System", description="The user's operating system"),
+        topic="Operating System",
         query="MacBook",
     )
     assert (
@@ -728,10 +728,19 @@ async def test_retrieve_memories_by_topic_and_query(
 
     # Try another query within the same topic
     windows_memories = await scoped_memory_module.search_memories(
-        topic=Topic(name="Operating System", description="The user's operating system"),
+        topic="Operating System",
         query="What operating system does the user use for their Windows PC?",
     )
     assert (
         len(windows_memories) > 0
     ), f"No memories found for Windows, check out stored memories: {stored_memories}"
     assert any("windows" in memory.content.lower() for memory in windows_memories)
+
+
+@pytest.mark.asyncio
+async def test_retrieve_memories_by_topic_not_in_config(
+    scoped_memory_module, conversation_id, user_ids_in_conversation_scope
+):
+    """Test retrieving memories by topic not in the config."""
+    with pytest.raises(ValueError, match="not in the config"):
+        await scoped_memory_module.search_memories(topic="Non-existent Topic")

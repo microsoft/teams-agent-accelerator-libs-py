@@ -27,7 +27,6 @@ from teams_memory.interfaces.types import (
     Message,
     MessageInput,
     TextEmbedding,
-    Topic,
     UserMessage,
     UserMessageInput,
 )
@@ -145,7 +144,7 @@ class InMemoryStorage(
         *,
         user_id: Optional[str],
         text_embedding: Optional[TextEmbedding] = None,
-        topics: Optional[List[Topic]] = None,
+        topics: Optional[List[str]] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         limit = limit or self.default_limit
@@ -159,7 +158,7 @@ class InMemoryStorage(
             filtered_memories = [
                 m
                 for m in filtered_memories
-                if m.topics and any(topic.name in m.topics for topic in topics)
+                if m.topics and any(topic in m.topics for topic in topics)
             ]
 
         # If we have text_embedding, calculate similarities and sort
