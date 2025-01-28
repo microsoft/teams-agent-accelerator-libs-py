@@ -193,6 +193,14 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
 
         If the module is not listening, this method can be used to process whatever
         messages are in the message buffer for the given conversation.
+
+        No Op if there are no messages in the buffer waiting to be processed.
+
+        Args:
+            conversation_ref (str): The conversation reference to process messages for.
+
+        Returns:
+            None
         """
         pass
 
