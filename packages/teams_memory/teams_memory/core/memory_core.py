@@ -19,6 +19,7 @@ from teams_memory.core.prompts import (
 )
 from teams_memory.interfaces.base_memory_core import BaseMemoryCore
 from teams_memory.interfaces.base_memory_storage import BaseMemoryStorage
+from teams_memory.interfaces.errors import MemoryNotFoundError
 from teams_memory.interfaces.types import (
     BaseMemoryInput,
     Memory,
@@ -220,6 +221,11 @@ class MemoryCore(BaseMemoryCore):
         )
 
     async def update_memory(self, memory_id: str, updated_memory: str) -> None:
+        # Verify that the memory exists
+        memory = await self.get_memories(memory_ids=[memory_id])
+        if not memory:
+            raise MemoryNotFoundError(f"Memory with id {memory_id} not found")
+
         metadata = await self._extract_metadata_from_fact(updated_memory)
         embed_vectors = await self._get_semantic_fact_embeddings(
             updated_memory, metadata
@@ -231,11 +237,13 @@ class MemoryCore(BaseMemoryCore):
     async def remove_memories(
         self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
     ) -> None:
+        if not memory_ids and not user_id:
+            raise ValueError("Either memory_ids or user_id must be provided")
         await self.storage.delete_memories(user_id=user_id, memory_ids=memory_ids)
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         # Get list of memories that need to be updated/removed with removed messages
-        remove_memories_list = await self.storage.get_all_memories(
+        remove_memories_list = await self.storage.get_attributed_memories(
             message_ids=message_ids
         )
 
@@ -466,6 +474,10 @@ class MemoryCore(BaseMemoryCore):
         before: Optional[datetime.datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
+        if not n_messages and not last_minutes and not before:
+            raise ValueError(
+                "At least one of n_messages, last_minutes, or before must be provided"
+            )
         return await self.storage.retrieve_conversation_history(
             conversation_ref,
             n_messages=n_messages,
@@ -488,4 +500,4 @@ class MemoryCore(BaseMemoryCore):
         return await self.storage.get_messages(memory_ids)
 
     async def get_memories_from_message(self, message_id):
-        return await self.storage.get_all_memories(message_ids=[message_id])
+        return await self.storage.get_attributed_memories(message_ids=[message_id])

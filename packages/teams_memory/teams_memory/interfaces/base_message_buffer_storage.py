@@ -18,7 +18,7 @@ class BaseMessageBufferStorage(ABC):
         """Store a message in the buffer.
 
         Args:
-            message: The Message object to store
+            message (Message): The Message object to store
         """
         pass
 
@@ -27,10 +27,10 @@ class BaseMessageBufferStorage(ABC):
         """Retrieve all buffered messages for a conversation.
 
         Args:
-            conversation_ref: The conversation reference to retrieve messages for
+            conversation_ref (str): The conversation reference to retrieve messages for
 
         Returns:
-            List of Message objects for the conversation
+            List[Message]: List of Message objects for the conversation
         """
         pass
 
@@ -38,7 +38,28 @@ class BaseMessageBufferStorage(ABC):
     async def get_conversations_from_buffered_messages(
         self, message_ids: List[str]
     ) -> Dict[str, List[str]]:
-        """Get conversation - messages maps"""
+        """Get conversation - messages maps
+
+        Args:
+            message_ids (List[str]): List of message IDs to get conversations for
+
+        Returns:
+            Dict[str, List[str]]: Dictionary mapping conversation references to lists of message IDs
+        """
+        pass
+
+    @abstractmethod
+    async def count_buffered_messages(
+        self, conversation_refs: List[str]
+    ) -> Dict[str, int]:
+        """Count the number of buffered messages for selected conversations.
+
+        Args:
+            conversation_refs (List[str]): The conversation references to count messages for
+
+        Returns:
+            Dict[str, int]: Dictionary mapping conversation references to message counts
+        """
         pass
 
     @abstractmethod
@@ -49,8 +70,8 @@ class BaseMessageBufferStorage(ABC):
         only messages created on or before that time will be removed.
 
         Args:
-            conversation_ref: The conversation reference to clear messages for
-            before: Optional cutoff time to clear messages before
+            conversation_ref (str): The conversation reference to clear messages for
+            before (Optional[datetime.datetime]): Optional cutoff time to clear messages before
         """
         pass
 
@@ -59,19 +80,6 @@ class BaseMessageBufferStorage(ABC):
         """Remove list of messages in buffered storage
 
         Args:
-            message_ids: List of messages to be removed
-        """
-
-    @abstractmethod
-    async def count_buffered_messages(
-        self, conversation_refs: List[str]
-    ) -> Dict[str, int]:
-        """Count the number of buffered messages for selected conversations.
-
-        Args:
-            conversation_ref: The conversation reference to count messages for
-
-        Returns:
-            Number of buffered messages for the conversation
+            message_ids (List[str]): List of messages to be removed
         """
         pass
