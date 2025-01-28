@@ -16,6 +16,7 @@ from teams_memory.interfaces.base_memory_module import (
     BaseScopedMemoryModule,
 )
 from teams_memory.interfaces.base_message_queue import BaseMessageQueue
+from teams_memory.interfaces.errors import InvalidUserError
 from teams_memory.interfaces.types import (
     Memory,
     Message,
@@ -190,10 +191,10 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         """
 
         if user_id and user_id not in self.users_in_conversation_scope:
-            raise ValueError(f"User {user_id} is not in the conversation scope")
+            raise InvalidUserError(f"User {user_id} is not in the conversation scope")
         if not user_id:
             if len(self.users_in_conversation_scope) > 1:
-                raise ValueError(
+                raise InvalidUserError(
                     "No user id provided and there are multiple users in the conversation scope"
                 )
             return self.users_in_conversation_scope[0]

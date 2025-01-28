@@ -25,7 +25,7 @@ class BaseMessageQueue(ABC):
         Messages are typically processed in the order they are received.
 
         Args:
-            message: The Message object to be queued for processing. This should contain
+            message (Message): The Message object to be queued for processing. This should contain
                     all necessary information like content, metadata, and conversation context.
 
         Raises:
@@ -42,7 +42,7 @@ class BaseMessageQueue(ABC):
         from the queue. This helps maintain queue size and prevent reprocessing.
 
         Args:
-            message_ids: List of message IDs to remove from the queue. These should be
+            message_ids (List[str]): List of message IDs to remove from the queue. These should be
                         messages that have been successfully processed into memories.
 
         Raises:
