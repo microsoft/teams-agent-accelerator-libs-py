@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class MessageBuffer:
     """Buffers messages by conversation_ref until reaching a threshold for processing."""
 
-    _allow_automatic_processing: bool = False
+    _enable_automatic_processing: bool = False
 
     def __init__(
         self,
@@ -114,7 +114,7 @@ class MessageBuffer:
                 time=updated_timeout_time,
             )
 
-        self._allow_automatic_processing = True
+        self._enable_automatic_processing = True
 
     async def process_messages(self, conversation_ref: str):
         await self._process_conversation_messages(conversation_ref)
@@ -125,9 +125,9 @@ class MessageBuffer:
         # Store the message
         await self.storage.store_buffered_message(message)
 
-        if not self._allow_automatic_processing:
+        if not self._enable_automatic_processing:
             logger.debug(
-                "MessageBuffer is not initialized, skipping automatic processing"
+                "Automatic processing is not enabled, skipping message buffer processing"
             )
             return
 
