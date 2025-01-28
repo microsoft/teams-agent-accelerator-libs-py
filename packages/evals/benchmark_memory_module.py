@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import asyncio
 import os
 import sys
@@ -13,11 +18,11 @@ import pandas as pd
 from tqdm import tqdm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(os.path.join(os.path.dirname(__file__), "../memory_module"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../teams_memory"))
 
-from memory_module.config import LLMConfig, MemoryModuleConfig, StorageConfig
-from memory_module.core.memory_module import MemoryModule
-from memory_module.interfaces.types import (
+from teams_memory.config import LLMConfig, MemoryModuleConfig, StorageConfig
+from teams_memory.core.memory_module import MemoryModule
+from teams_memory.interfaces.types import (
     AssistantMessage,
     UserMessage,
 )

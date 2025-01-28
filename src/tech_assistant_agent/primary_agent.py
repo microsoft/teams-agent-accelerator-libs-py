@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import json
 import os
 import sys
@@ -6,7 +11,7 @@ from typing import List
 from botbuilder.core import TurnContext
 from litellm import acompletion
 from litellm.types.utils import Choices, ModelResponse
-from memory_module import (
+from teams_memory import (
     BaseScopedMemoryModule,
     InternalMessageInput,
 )

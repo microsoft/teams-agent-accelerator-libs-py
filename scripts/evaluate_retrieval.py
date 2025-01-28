@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import asyncio
 import sys
 from datetime import datetime
@@ -8,24 +13,23 @@ from uuid import uuid4
 import click
 
 sys.path.append(str(Path(__file__).parent.parent))
-sys.path.append(str(Path(__file__).parent.parent / "packages/memory_module"))
+sys.path.append(str(Path(__file__).parent.parent / "packages/teams_memory"))
 
-from memory_module import (
+from teams_memory import (
     MemoryModuleConfig,
-    RetrievalConfig,
     StorageConfig,
     Topic,
 )
-from memory_module.core.memory_core import MemoryCore
-from memory_module.interfaces.types import BaseMemoryInput, MemoryType
-from memory_module.services.llm_service import LLMService
+from teams_memory.core.memory_core import MemoryCore
+from teams_memory.interfaces.types import BaseMemoryInput, MemoryType
+from teams_memory.services.llm_service import LLMService
 
 from scripts.utils.evaluation_utils import (
     BaseEvaluator,
     EvaluationResult,
     run_evaluation,
 )
-from tests.memory_module.utils import build_llm_config
+from tests.teams_memory.utils import build_llm_config
 
 TEST_CASES = [
     {

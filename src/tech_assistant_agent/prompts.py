@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 system_prompt = """
 You are an IT Chat Bot that helps users troubleshoot tasks
 

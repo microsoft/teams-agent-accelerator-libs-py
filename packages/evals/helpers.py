@@ -1,3 +1,8 @@
+"""
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+"""
+
 import json
 import logging
 import os
@@ -45,6 +50,6 @@ class Dataset(TypedDict):
 
 
 def load_dataset() -> Dataset:
-    with open(Path(__file__) / ".." / "memory_module_dataset.json") as f:
+    with open(Path(__file__) / ".." / "teams_memory_dataset.json") as f:
         dataset = json.load(f)
         return dataset

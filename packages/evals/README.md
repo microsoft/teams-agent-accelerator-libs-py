@@ -8,9 +8,9 @@ How does the memory module work, and is it any good?
 
 ### Files
 
-`benchmark_memory_module.py` - script to run the benchmark
+`benchmark_teams_memory.py` - script to run the benchmark
 
-`memory_module_dataset.json` - benchmark dataset
+`teams_memory_dataset.json` - benchmark dataset
 
 `helpers.py` - contains helper functions
 
@@ -66,5 +66,5 @@ mlflow server
 3. Run the benchmark:
 
 ```
-python packages/evals/benchmark_memory_module.py
+python packages/evals/benchmark_teams_memory.py
 ```
