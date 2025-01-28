@@ -10,9 +10,9 @@ from typing import List, Literal
 
 from botbuilder.core import TurnContext
 from botbuilder.schema import Activity
-from memory_module import BaseScopedMemoryModule, Memory, Topic
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
+from teams_memory import BaseScopedMemoryModule, Memory, Topic
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -146,7 +146,7 @@ async def confirm_memorized_fields(
             )
             # Get first message attribution if it exists
             first_message_id = (
-                associated_memory.message_attributions[0]
+                list(associated_memory.message_attributions)[0]
                 if associated_memory.message_attributions
                 else None
             )

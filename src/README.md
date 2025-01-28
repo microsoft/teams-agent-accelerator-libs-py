@@ -68,7 +68,7 @@ Currently the scaffolding only supports Azure OpenAI related configurations but 
 1. Open a new terminal under root folder.
 1. run `uv sync`
 1. run `.venv\Scripts\Activate`
-1. Build the memory module into a distribtuion file by doing `uv build packages/memory_module`. This should create the artifact `dist/memory_module-0.1.0.tar.gz`. Copy this into the `src/dist/` folder.
+1. Build the memory module into a distribtuion file by doing `uv build packages/teams_memory`. This should create the artifact `dist/teams_memory-0.1.0.tar.gz`. Copy this into the `src/dist/` folder.
 1. Open this folder as a VSCode workspace.
 1. Copy the contents of the `.env` file and add it to the `env/.env.dev.user` file.
 1. Navigate to the Teams Toolkit extension in VSCode.

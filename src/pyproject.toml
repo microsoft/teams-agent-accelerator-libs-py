@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "memory_module",
+    "teams_memory",
     "python-dotenv",
     "aiohttp",
     "teams-ai",
@@ -15,4 +15,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-memory_module = { workspace = true }
+teams_memory = { workspace = true }
