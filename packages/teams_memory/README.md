@@ -1,5 +1,4 @@
-> [!IMPORTANT]
-> _`teams_memory` is in alpha, we are still internally validating and testing!_
+> [!IMPORTANT] > _`teams_memory` is in alpha, we are still internally validating and testing!_
 
 # What is Teams Memory Module?
 
@@ -13,7 +12,7 @@ Teams Memory module is a simple yet powerful addition to help manage memories fo
   - Give a set of topics (or use default ones) that your application cares more about, and the memory module will automatically begin extracting and storing those memories
 - Simple Short Term memory retrieval
   - Simple paradigms for working memory retrievals (last N mins, or last M messages)
-- Query Based or Topic Based memory retrieval
+- Query-Based or Topic-Based memory retrieval
   - Search for existing memories using natural language queries or topics
 
 # Integration
@@ -190,7 +189,9 @@ configure_logging(logging_level=logging.INFO)
 
 # Model Performance
 
-We have tested the memory module with `gpt-4o` and `text-embedding-3-small` where it has performed reasonably well with our own datasets and evals. We plan to share details on its performance in the future and also plan to share evaluations for other models.
+| Model  | Embedding Model        | Tested | Notes                                   |
+| ------ | ---------------------- | ------ | --------------------------------------- |
+| gpt-4o | text-embedding-3-small | ✅     | Tested via both openai and azure openai |
 
 # Future Work
 
