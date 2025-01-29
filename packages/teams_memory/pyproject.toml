@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/microsoft/teams-agent-accelerator-libs-py"
+Homepage = "https://github.com/microsoft/teams-agent-accelerator-libs-py/tree/main/packages/teams_memory"
 
 [dependency-groups]
 dev = []
