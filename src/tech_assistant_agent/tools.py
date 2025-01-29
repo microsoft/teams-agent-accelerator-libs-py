@@ -12,7 +12,7 @@ from botbuilder.core import TurnContext
 from botbuilder.schema import Activity
 from pydantic import BaseModel, Field
 from teams.ai.citations import AIEntity, Appearance, ClientCitation
-from teams_memory import BaseScopedMemoryModule, Memory, Topic
+from teams_memory import BaseScopedMemoryModule, Topic
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -64,7 +64,7 @@ class ExecuteTask(BaseModel):
 
 class ConfirmMemorizedFields(BaseModel):
     model_config = {"json_schema_extra": {"additionalProperties": False}}
-    fields_to_confirm: List[UserDetail]
+    fields: List[UserDetail]
 
 
 async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
@@ -75,19 +75,19 @@ async def get_candidate_tasks(candidate_tasks: GetCandidateTasks) -> str:
 async def get_memorized_fields(
     memory_module: BaseScopedMemoryModule, fields_to_retrieve: GetMemorizedFields
 ) -> str:
-    empty_obj: dict = {}
+    fields: dict = {}
     for topic in fields_to_retrieve.memory_topics:
         relevant_topic = next((t for t in topics if t.name == topic))
-        result = await memory_module.search_memories(topic=relevant_topic, limit=None)
+        result = await memory_module.search_memories(topic=relevant_topic)
         print("Getting memorized queries: ", topic)
         print(result)
         print("---")
 
         if result:
-            empty_obj[topic] = ", ".join([f"{r.id}. {r.content}" for r in result])
+            fields[topic] = ", ".join([f"{r.id}. {r.content}" for r in result])
         else:
-            empty_obj[topic] = None
-    return json.dumps(empty_obj)
+            fields[topic] = None
+    return json.dumps(fields)
 
 
 async def confirm_memorized_fields(
@@ -96,78 +96,59 @@ async def confirm_memorized_fields(
     context: TurnContext,
 ) -> str:
     print("Confirming memorized fields", fields_to_confirm)
-    if not fields_to_confirm.fields_to_confirm:
+    if not fields_to_confirm.fields:
         print("No fields to confirm")
         return "No fields to confirm"
-    flattened_memory_ids = [
-        memory_id
-        for user_detail in fields_to_confirm.fields_to_confirm
-        for memory_id in user_detail.memory_ids
-    ]
-    if not flattened_memory_ids:
-        return "No memories to confirm"
-    memories = await memory_module.get_memories(memory_ids=flattened_memory_ids)
-    if not memories:
-        return "No memories to confirm"
-    # group memories by field name
-    user_details_with_memories: List[tuple[UserDetail, Memory | None]] = []
-    for user_detail in fields_to_confirm.fields_to_confirm:
-        memories_for_user_detail = [
-            memory for memory in memories if memory.id in user_detail.memory_ids
-        ]
-        # just take the first one into account for citation (for now)
-        user_details_with_memories.append(
-            (
-                user_detail,
-                memories_for_user_detail[0] if memories_for_user_detail else None,
+
+    # Get memories and attributed messages
+    cited_fields = []
+    for user_detail in fields_to_confirm.fields:
+        field_name = user_detail.field_name
+        field_value = user_detail.field_value
+        memories = None
+        memories_messages_map = {}
+        if user_detail.memory_ids:
+            memories = await memory_module.get_memories(
+                memory_ids=user_detail.memory_ids
             )
-        )
+            if not memories:
+                continue
 
-    cited_memories: List[Memory] = [
-        memory for _, memory in user_details_with_memories if memory is not None
-    ]
-    # Get all message IDs from memory attributions
-    message_ids = []
-    for memory in cited_memories:
-        if memory.message_attributions:
-            message_ids.extend(memory.message_attributions)
+            # Get messages for each memory
+            for memory in memories:
+                if not memory.message_attributions:
+                    continue
+                messages = await memory_module.get_messages(
+                    list(memory.message_attributions)
+                )
+                memories_messages_map[memory.id] = messages
 
-    messages = await memory_module.get_messages(message_ids)
-    # Create a lookup dict for messages by ID
-    messages_by_id = {msg.id: msg for msg in messages}
+        cited_fields.append((field_name, field_value, memories, memories_messages_map))
 
+    # Build client citations to send in Teams
     memory_strs = []
     citations: List[ClientCitation] = []
-    for user_detail, associated_memory in user_details_with_memories:
+    for cited_field in cited_fields:
         idx = len(citations) + 1
-        if associated_memory:
-            memory_strs.append(
-                f"{user_detail.field_name}: {user_detail.field_value} [{idx}]"
-            )
-            # Get first message attribution if it exists
-            first_message_id = (
-                list(associated_memory.message_attributions)[0]
-                if associated_memory.message_attributions
-                else None
-            )
-            associated_message = (
-                messages_by_id.get(first_message_id) if first_message_id else None
-            )
+        field_name, field_value, memories, memories_messages_map = cited_field
+        if memories is None and len(memories) == 0:
+            memory_strs.append(f"{field_name}: {field_value}")
+            continue
+        else:
+            memory_strs.append(f"{field_name}: {field_value} [{idx}]")
+
+            memory = memories[0]
+            messages = memories_messages_map[memory.id]  # type: ignore
             citations.append(
                 ClientCitation(
                     str(idx),
                     Appearance(
-                        name=user_detail.field_name,
-                        abstract=associated_memory.content,
-                        url=(
-                            associated_message.deep_link if associated_message else None
-                        ),
+                        name=field_name,
+                        abstract=memory.content,
+                        url=messages[0].deep_link if messages else None,
                     ),
                 )
             )
-        else:
-            memory_strs.append(f"{user_detail.field_name}: {user_detail.field_value}")
-            continue
 
     memory_details_str = "<br>".join([memory_str for memory_str in memory_strs])
     ai_entity = AIEntity(

@@ -143,7 +143,7 @@ class TechAssistantAgent(Agent):
                 "function": {
                     "name": "get_candidate_tasks",
                     "description": "Identify the task based on user's query",
-                    "parameters": GetCandidateTasks.schema(),
+                    "parameters": GetCandidateTasks.model_json_schema(),
                     "strict": True,
                 },
             },
@@ -152,7 +152,7 @@ class TechAssistantAgent(Agent):
                 "function": {
                     "name": "get_memorized_fields",
                     "description": "Retrieve values for fields that have been previously memorized",
-                    "parameters": GetMemorizedFields.schema(),
+                    "parameters": GetMemorizedFields.model_json_schema(),
                 },
             },
             {
@@ -160,7 +160,7 @@ class TechAssistantAgent(Agent):
                 "function": {
                     "name": "confirm_memorized_fields",
                     "description": "Confirm the fields that have been previously memorized",
-                    "parameters": ConfirmMemorizedFields.schema(),
+                    "parameters": ConfirmMemorizedFields.model_json_schema(),
                 },
             },
             {
@@ -168,7 +168,7 @@ class TechAssistantAgent(Agent):
                 "function": {
                     "name": "execute_task",
                     "description": "Execute a troubleshooting task",
-                    "parameters": ExecuteTask.schema(),
+                    "parameters": ExecuteTask.model_json_schema(),
                     "strict": True,
                 },
             },
