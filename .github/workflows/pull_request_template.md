@@ -7,7 +7,7 @@ Did you test your code? Unit tests? Manual testing?
 # Details
 
 <!---
-Not needed if it's trivial or the summary convers it
+Not needed if it's trivial or the summary covers it
 -->
 
 # Testing
