@@ -1,4 +1,5 @@
-> [!IMPORTANT] _`teams_memory` is in alpha, we are still internally validating and testing!_
+> [!IMPORTANT]
+> _`teams_memory` is in alpha, we are still internally validating and testing!_
 
 # What is Teams Memory Module?
 
