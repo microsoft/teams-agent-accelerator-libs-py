@@ -2179,7 +2179,7 @@ wheels = [
 
 [[package]]
 name = "teams-memory"
-version = "0.1.0a0"
+version = "0.1.1a0"
 source = { editable = "packages/teams_memory" }
 dependencies = [
     { name = "aiosqlite" },
