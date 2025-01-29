@@ -187,7 +187,7 @@ class MemoryCore(BaseMemoryCore):
         *,
         user_id: Optional[str],
         query: Optional[str] = None,
-        topic: Optional[Topic] = None,
+        topic: Optional[str] = None,
         limit: Optional[int] = None,
     ) -> List[Memory]:
         return await self._retrieve_memories(
@@ -201,7 +201,7 @@ class MemoryCore(BaseMemoryCore):
         self,
         user_id: Optional[str],
         query: Optional[str],
-        topics: Optional[List[Topic]],
+        topics: Optional[List[str]],
         limit: Optional[int],
     ) -> List[Memory]:
         """Retrieve memories based on a query.

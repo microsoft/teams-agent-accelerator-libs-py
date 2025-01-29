@@ -14,7 +14,6 @@ from teams_memory.interfaces.types import (
     BaseMemoryInput,
     MemoryType,
     TextEmbedding,
-    Topic,
     UserMessageInput,
 )
 from teams_memory.storage.in_memory_storage import InMemoryStorage
@@ -459,7 +458,7 @@ async def test_retrieve_memories_by_topic(memory_storage, sample_embedding):
 
     # Retrieve memories by single topic
     memories = await memory_storage.search_memories(
-        user_id="test_user", topics=[Topic(name="AI", description="")], limit=10
+        user_id="test_user", topics=["AI"], limit=10
     )
     assert len(memories) == 1
     assert memories[0].content == "Memory about AI"
@@ -468,7 +467,7 @@ async def test_retrieve_memories_by_topic(memory_storage, sample_embedding):
     # Test with non-existent topic
     memories = await memory_storage.search_memories(
         user_id="test_user",
-        topics=[Topic(name="non_existent_topic", description="")],
+        topics=["non_existent_topic"],
         limit=10,
     )
     assert len(memories) == 0
@@ -518,7 +517,7 @@ async def test_retrieve_memories_by_topic_and_embedding(
     memories = await memory_storage.search_memories(
         user_id="test_user",
         text_embedding=query,
-        topics=[Topic(name="AI", description="")],
+        topics=["AI"],
         limit=2,
     )
 
@@ -560,14 +559,14 @@ async def test_retrieve_memories_with_multiple_topics(memory_storage, sample_emb
 
     # Retrieve memories by AI topic (should get both AI-related memories)
     memories = await memory_storage.search_memories(
-        user_id="test_user", topics=[Topic(name="AI", description="")], limit=10
+        user_id="test_user", topics=["AI"], limit=10
     )
     assert len(memories) == 2
     assert all("AI" in memory.topics for memory in memories)
 
     # Retrieve memories by robotics topic (should get only the robotics memory)
     memories = await memory_storage.search_memories(
-        user_id="test_user", topics=[Topic(name="robotics", description="")], limit=10
+        user_id="test_user", topics=["robotics"], limit=10
     )
     assert len(memories) == 1
     assert "robotics" in memories[0].topics
@@ -611,10 +610,7 @@ async def test_retrieve_memories_with_multiple_topics_parameter(
     # Retrieve memories by multiple topics
     memories = await memory_storage.search_memories(
         user_id="test_user",
-        topics=[
-            Topic(name="AI", description=""),
-            Topic(name="robotics", description=""),
-        ],
+        topics=["AI", "robotics"],
         limit=10,
     )
 

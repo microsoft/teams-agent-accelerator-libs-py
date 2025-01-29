@@ -45,5 +45,16 @@ app.router.add_static(
     "/memoriesTab", os.path.join(os.path.dirname(__file__), "public/memoriesTab")
 )
 
+
+async def initialize_memory_module(_app: web.Application):
+    await memory_middleware.memory_module.listen()
+
+
+async def shutdown_memory_module(_app: web.Application):
+    await memory_middleware.memory_module.shutdown()
+
+
 if __name__ == "__main__":
+    app.on_startup.append(initialize_memory_module)
+    app.on_shutdown.append(shutdown_memory_module)
     web.run_app(app, host="localhost", port=Config.PORT)

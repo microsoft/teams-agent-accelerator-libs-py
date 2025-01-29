@@ -6,13 +6,13 @@ Licensed under the MIT License.
 import logging
 
 
-def configure_logging():
+def configure_logging(logging_level: int = logging.DEBUG):
     module_name = __name__.split(".")[0]  # == "teams_memory"
     logger = logging.getLogger(module_name)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging_level)
 
     handler = logging.StreamHandler()
-    handler.setLevel(logging.DEBUG)
+    handler.setLevel(logging_level)
 
     formatter = DefaultFormatter(
         f"%(asctime)s:{module_name.upper()}:%(levelname)s - %(message)s"
