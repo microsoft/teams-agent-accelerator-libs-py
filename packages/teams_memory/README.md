@@ -1,6 +1,8 @@
-# What is memory module?
+> [!IMPORTANT] > _`teams_memory` is in alpha, we are still internally validating and testing!_
 
-Memory module is a simple yet powerful addition to help manage memories for Teams AI Agents. By offloading responsibility for keeping track of facts about users, it allows developers to create agents that are both more personable and more efficient.
+# What is Teams Memory Module?
+
+Teams Memory module is a simple yet powerful addition to help manage memories for Teams AI Agents. By offloading responsibility for keeping track of facts about users, it allows developers to create agents that are both more personable and more efficient.
 
 # Features
 
@@ -19,24 +21,29 @@ Integrating the Memory Module into your Teams AI SDK application (or Bot Framewo
 
 ## Prerequisites
 
-1. Azure Open AI or Open AI keys
-   - The LLM Layer for the application is built using [LiteLLM](https://docs.litellm.ai/), so it can technically support any supported [providers](https://docs.litellm.ai/docs/providers), but we have only tested with AOAI and OAI.
+- Azure Open AI or Open AI keys
+  - The LLM Layer for the application is built using [LiteLLM](https://docs.litellm.ai/), so it can technically support any supported [providers](https://docs.litellm.ai/docs/providers), but we have only tested with AOAI and OAI.
 
 ## Integrating into a Teams AI SDK Application
 
-### Add messages for extraction
+### Add messages
 
-1. After you build your bot `Application`, build a `MemoryMiddleware` which takes in some configs:
-   - `llm` - these are configurations for the LLM. This is required.
-   - `storage` - these are configurations for the storage layer. By default, it uses InMemoryStorage if no config is provided
-   - `buffer_size` - This is the minimum size of the message buffer before memories are extracted using all the messages inside it.
-   - `timeout_seconds` - This is the length of time that needs to elapse after the buffer starts filling up for a particular conversation before the extraction takes place.
-     - Note: The system uses whichever condition occurs first: The `buffer_size` reaching its limit or the `timeout_seconds` elapsing before the extraction can take place.
-   - `topics` - These are topics that the system can use to perform extraction. These are generally relevant to your application. Using specific topics here can help in the extraction process:
-     - Focus - it helps the LLM focus on what's actually important and ignore less general facts that your application may never use
-     - Storage - General topics cause the LLM to over-extract which can be unnecessary and may use up storage space unnecessarily
+#### Incoming / Outgoing Messages
 
-```
+Memory extraction requires incoming and outgoing messages to your application. To simlify this, you can use a middlware to automatically do this for you.
+
+After you build your bot `Application`, build a `MemoryMiddleware` which takes in some configs:
+
+- `llm` - these are configurations for the LLM. This is required.
+- `storage` - these are configurations for the storage layer. By default, it uses InMemoryStorage if no config is provided
+- `buffer_size` - This is the minimum size of the message buffer before memories are extracted using all the messages inside it.
+- `timeout_seconds` - This is the length of time that needs to elapse after the buffer starts filling up for a particular conversation before the extraction takes place.
+  - Note: The system uses whichever condition occurs first: The `buffer_size` reaching its limit or the `timeout_seconds` elapsing before the extraction can take place.
+- `topics` - These are topics that the system can use to perform extraction. These are generally relevant to your application. Using specific topics here can help in the extraction process:
+  - Focus - it helps the LLM focus on what's actually important and ignore less general facts that your application may never use
+  - Storage - General topics cause the LLM to over-extract which can be unnecessary and may use up storage space unnecessarily
+
+```python
 memory_middleware = MemoryMiddleware(
     config=MemoryModuleConfig(
         llm=LLMConfig(**memory_llm_config),
@@ -58,9 +65,20 @@ memory_middleware = MemoryMiddleware(
 bot_app.adapter.use(memory_middleware)
 ```
 
-At this point, the application is automatically listening to all incoming and outgoing messages. It groups messages by conversations and begins to schedule them for extraction. 2. The previous step only automatically stores incoming and outgoing messages from your bot. But sometimes, you may want to store `InternalMessage` as well. These can be used as additional context for extraction of memories, or for your agent to keep track of internal messages that may be required to keep track of the conversation. You can use it after a `tool_call` for example.
+At this point, the application is automatically listening to all incoming and outgoing messages.
 
-```
+> [!NOTE]  
+> Additionally, doing this will automatically augment the `TurnContext` with a `memory_module` property that is scoped to the conversation for that particular request. During the lifetime of the request, you can access this property to get a `ScopedMemoryModule` that is scoped to the conversation via:
+>
+> ```python
+> memory_module: BaseScopedMemoryModule = context.get("memory_module")
+> ```
+
+#### [Optional] Internal Messages
+
+The previous step only automatically stores incoming and outgoing messages from your bot. But sometimes, you may want to store `InternalMessage` as well. These can be used as additional context for extraction of memories, or for your agent to keep track of internal messages that may be required to keep track of the conversation. You can use it after a `tool_call` for example.
+
+```python
 async def add_internal_message(self, context: TurnContext, tool_call_name: str, tool_call_result: str):
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
         memory_module: BaseScopedMemoryModule = context.get("memory_module")
@@ -74,9 +92,43 @@ async def add_internal_message(self, context: TurnContext, tool_call_name: str, 
         return True
 ```
 
+### Extracting Memories
+
+> [!NOTE]  
+> The memory module currently only supports extracting semantic memories about a user. What this means is that that each extracted memory is related to a particular user. We have plans to support extracting memories about a conversation in the future. See [Future Work](#future-work) for more details.
+
+There are two ways to extract memories using the memory module.
+
+1.  Automatically - The memory module will automatically extract memories when the `buffer_size` is reached or the `timeout_seconds` elapses. This is helpful if you want to passively extract memories without having to call any methods.
+2.  On-Demand - You can manually trigger the extraction of memories by calling the `memory_module.process_messages()` method. This is helpful if you want to extract memories at a specific point in time. This could be after a specific
+
+#### Automatic Extraction
+
+To enable automatic extraction, you need to call `memory_middleware.memory_module.listen()` when your application starts. This will begin listening to all incoming and outgoing messages and automatically extract memories when the `buffer_size` is reached or the `timeout_seconds` elapses. Here's an example of doing this in a Teams AI SDK application:
+
+```python
+async def initialize_memory_module(_app: web.Application):
+    await memory_middleware.memory_module.listen()
+
+app.on_startup.append(initialize_memory_module)
+```
+
+#### On-Demand Extraction
+
+You might prefer on-demand extraction if you want to extract memories at a specific point in time or after a particular event. For example, you may want to extract memories after a `tool_call` or after a specific message. For this, you can simply call the `process_messages()` method on the `ScopedMemoryModule` that you have access to via the `TurnContext`.
+
+```python
+async def extract_memories_after_tool_call(context: TurnContext):
+    memory_module: ScopedMemoryModule = context.get('memory_module')
+    await memory_module.process_messages() # takes whatever messages are in the buffer and extracts memories
+```
+
+> [!NOTE]  
+> `memory_module.process_messages()` is not exclusive to `listen()` and can be called at any time to extract memories, even if automatic extraction is enabled.
+
 ### Using Short Term Memories / Working Memory
 
-Working Module allows you to store and use messages when using an LLM.
+Memory module makes it easy for you to use messages when using an LLM. Since the `memory_module` is already listening to all incoming and outgoing messages, you can simply retrieve the messages from it and use them as context for your LLM.
 
 ```
 async def build_llm_messages(self, context: TurnContext, system_message: str):
@@ -103,7 +155,7 @@ async def build_llm_messages(self, context: TurnContext, system_message: str):
 
 ### Using Extracted Semantic Memory
 
-When it's time to use memories in your application, you may get a `ScopedMemoryModule` from the `TurnContext`:
+When it's time to use memories in your application, you may use the scoped memory module that you have access to via the `TurnContext`:
 
 ```
 async def retrieve_device_type_memories(context: TurnContext):
@@ -116,8 +168,6 @@ async def retrieve_device_type_memories(context: TurnContext):
 
 You may search for memories either using a topic or a natural language query (or both, but not none).
 
-> [!IMPORTANT] > _`teams_memory` is in alpha, we are still internally validating and testing!_
-
 ## Logging
 
 You can enable logging when setting up the memory module in the config.
@@ -127,29 +177,26 @@ config = MemoryModuleConfig()
 config.enable_logging=True,
 ```
 
-### How does it work?
+Internally, it uses Python's [logging](https://docs.python.org/3.12/library/logging.html) library to facilitate logging. But setting `MemoryModuleConfig.enable_logging` to True, the module will begin logging all messages to the console.
 
-The `teams_memory` library uses
-Python's [logging](https://docs.python.org/3.12/library/logging.html) library to facilitate logging. The `teams_memory` logger is configured to log debug messages (and higher serverity) to the console.
-
-To set up the logger in your Python file, use the following code:
+By default, the logger will log debug messages (and higher serverity) to the console, but you can customize this behavior by setting up the logger in your Python file.
 
 ```py
-import logging
+from teams_memory import configure_logging
 
-logger = logging.getLogger(__name__)
+configure_logging(logging_level=logging.INFO)
 ```
 
-This will create a logger named `teams_memory.<sub_module>.<file_name>`, which is a descendant of the `teams_memory` logger. All logged messages will be passed up to the handler assigned to the `teams_memory` logger.
+# Model Performance
 
-### How to customize the logging behavior of the library?
+We have tested the memory module with `gpt-4o` and `text-embedding-3-small` where it has performed reasonably well with our own datasets and evals. We plan to share details on its performance in the future and also plan to share evaluations for other models.
 
-Instead of setting `MemoryModuleConfig.enable_logging` to True, directly access the `teams_memory` logger like this:
+# Future Work
 
-```py
-import logging
+Teams Memory Module is currently in alpha. We are actively working on improving its performance and adding more features. Here are some of the features we plan to add in the future:
 
-logger = logging.getLogger("teams_memory")
-```
-
-You can apply customizations to it. All loggers used in the library will be a descendant of it and so logs will be propagated to it.
+- Evals and performance on other models
+- More storage providers (eg. PostgresSQL, CosmosDB, etc.)
+- Automatic Message Expiration (eg. messages older than 1 day are automatically deleted)
+- Episodic Memory extraction (memories about a conversation, not just a user)
+- Sophisticated memory access patterns (eg. memories across multiple groups being shared securely)
