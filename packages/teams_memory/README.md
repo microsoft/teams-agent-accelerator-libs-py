@@ -200,7 +200,3 @@ The Teams Memory Module is in active development. Planned features include:
 - **Automatic Message Expiration**: Delete messages older than a specified duration (e.g., 1 day).
 - **Episodic Memory Extraction**: Memories about conversations, not just users.
 - **Sophisticated Memory Access Patterns**: Secure sharing of memories across multiple groups.
-
----
-
-This version improves readability, fixes grammatical issues, and ensures consistency in tone and formatting. Let me know if you need further adjustments!
