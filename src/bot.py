@@ -3,6 +3,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
+import logging
 import os
 import sys
 import traceback
@@ -10,7 +11,13 @@ import traceback
 from botbuilder.core import MemoryStorage, TurnContext
 from teams import Application, ApplicationOptions, TeamsAdapter
 from teams.state import TurnState
-from teams_memory import LLMConfig, MemoryMiddleware, MemoryModuleConfig, StorageConfig
+from teams_memory import (
+    LLMConfig,
+    MemoryMiddleware,
+    MemoryModuleConfig,
+    StorageConfig,
+    configure_logging,
+)
 
 from config import Config
 from tech_assistant_agent.agent import LLMConfig as AgentLLMConfig
@@ -64,10 +71,10 @@ memory_middleware = MemoryMiddleware(
         ),
         timeout_seconds=60,
         buffer_size=20,
-        enable_logging=True,
         topics=topics,
     )
 )
+configure_logging(logging.INFO)
 bot_app.adapter.use(memory_middleware)
 
 
