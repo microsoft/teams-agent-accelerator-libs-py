@@ -21,6 +21,7 @@ from teams_memory.interfaces.types import (
     UserMessage,
     UserMessageInput,
 )
+from teams_memory.utils.logging import configure_logging
 from teams_memory.utils.teams_bot_middlware import MemoryMiddleware
 
 __all__ = [
@@ -41,4 +42,5 @@ __all__ = [
     "MemoryMiddleware",
     "Topic",
     "BaseScopedMemoryModule",
+    "configure_logging",
 ]
