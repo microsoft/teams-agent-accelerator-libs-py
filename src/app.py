@@ -55,6 +55,6 @@ async def shutdown_memory_module(_app: web.Application):
 
 
 if __name__ == "__main__":
-    web.run_app(app, host="localhost", port=Config.PORT)
     app.on_startup.append(initialize_memory_module)
     app.on_shutdown.append(shutdown_memory_module)
+    web.run_app(app, host="localhost", port=Config.PORT)

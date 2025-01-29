@@ -78,7 +78,9 @@ async def get_memorized_fields(
     empty_obj: dict = {}
     for topic in fields_to_retrieve.memory_topics:
         relevant_topic = next((t for t in topics if t.name == topic))
-        result = await memory_module.search_memories(topic=relevant_topic, limit=None)
+        result = await memory_module.search_memories(
+            topic=relevant_topic.name, limit=None
+        )
         print("Getting memorized queries: ", topic)
         print(result)
         print("---")
