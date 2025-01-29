@@ -9,7 +9,7 @@
   - Change get_messages to accept message_ids and not memory_ids
   - Remove references to short_term_memory - that's just messages
   - Consolidate remove_memories to just 1 method (it was remove_memories, and clear_memories). In storage, call it "delete_memories"
-  - Add remove_messages for completions sake
+  - Add remove_messages for completion's sake
 - Updated memory_module to teams_memory
 - Added documentation for public functions in public abstract base classes
 - [Breaking] Updated search_memories to accept strings for topic instead of Topic objects
