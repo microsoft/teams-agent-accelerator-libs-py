@@ -1,6 +1,6 @@
 [project]
 name = "teams_memory"
-version = "0.1.1-alpha"
+version = "0.1.2-alpha"
 authors = [{ name="Microsoft", email="teams@microsoft.com" }]
 description = "Memory module for creating intelligent agents within Microsoft Teams"
 readme = "README.md"
