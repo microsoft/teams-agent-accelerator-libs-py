@@ -4,6 +4,12 @@
 
 ### Features
 
+### Bug Fixes
+
+## 0.1.1-alpha
+
+### Features
+
 - [Minor] Refactors to remove unused codepaths and improve readability
   - Remove get_memories_by_user_id and consolidate to get_memories
   - Change get_messages to accept message_ids and not memory_ids
