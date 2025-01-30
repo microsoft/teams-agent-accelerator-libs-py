@@ -5,7 +5,6 @@ Licensed under the MIT License.
 
 import logging
 import os
-import sys
 import traceback
 
 from botbuilder.core import MemoryStorage, TurnContext
@@ -23,7 +22,9 @@ from config import Config
 from tech_assistant_agent.agent import LLMConfig as AgentLLMConfig
 from tech_assistant_agent.primary_agent import TechAssistantAgent
 from tech_assistant_agent.tools import topics
+from utils import get_logger
 
+logger = get_logger(__name__)
 config = Config()
 
 memory_llm_config: dict
@@ -95,6 +96,6 @@ async def on_message(context: TurnContext, state: TurnState):
 
 @bot_app.error
 async def on_error(context: TurnContext, error: Exception):
-    print(f"\n [on_turn_error] unhandled error: {error}", file=sys.stderr)
+    logger.error(f"\n [on_turn_error] unhandled error: {error}")
     traceback.print_exc()
     await context.send_activity("The bot encountered an error or bug.")

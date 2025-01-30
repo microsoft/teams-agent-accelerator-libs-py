@@ -30,6 +30,9 @@ from tech_assistant_agent.tools import (
     get_candidate_tasks,
     get_memorized_fields,
 )
+from utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class TechAssistantAgent(Agent):
@@ -75,10 +78,11 @@ class TechAssistantAgent(Agent):
                 await self.send_string_message(context, message.content)
                 break
             elif message.tool_calls is None and message.content is None:
-                print("No tool calls and no content")
+                logger.info("No tool calls and no content")
                 break
             elif message.tool_calls is None:
-                print("Tool calls but no content")
+                logger.info("Tool calls but no content")
+
                 break
 
             for tool_call in message.tool_calls:

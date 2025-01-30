@@ -17,6 +17,9 @@ from teams_memory import BaseScopedMemoryModule, Topic
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from tech_assistant_agent.supported_tech_tasks import tasks_by_config
+from utils import get_logger
+
+logger = get_logger(__name__)
 
 topics = [
     Topic(name="Device Type", description="The type of device the user has"),
@@ -78,9 +81,9 @@ async def get_memorized_fields(
     fields: dict = {}
     for topic in fields_to_retrieve.memory_topics:
         result = await memory_module.search_memories(topic=topic)
-        print("Getting memorized queries: ", topic)
-        print(result)
-        print("---")
+        logger.info(f"Getting memorized queries: {topic}")
+        logger.info(result)
+        logger.info("---")
 
         if result:
             fields[topic] = ", ".join([f"{r.id}. {r.content}" for r in result])
@@ -94,9 +97,10 @@ async def confirm_memorized_fields(
     fields_to_confirm: ConfirmMemorizedFields,
     context: TurnContext,
 ) -> str:
-    print("Confirming memorized fields", fields_to_confirm)
+    logger.info(f"Confirming memorized fields: {fields_to_confirm}")
     if not fields_to_confirm.fields:
-        print("No fields to confirm")
+        logger.info("No fields to confirm")
+
         return "No fields to confirm"
 
     # Get memories and attributed messages
