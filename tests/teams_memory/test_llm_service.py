@@ -50,12 +50,24 @@ async def _return_arguments(**kwargs):
 
 @pytest.fixture()
 def mock_completion(monkeypatch):
-    client = mock.Mock()
-    router = mock.Mock()
-    monkeypatch.setattr(instructor, "patch", client)
-    monkeypatch.setattr(litellm, "Router", router)
+    mock_chat_create = mock.AsyncMock()
 
-    return client, router
+    MockClient = type(
+        "Client",
+        (),
+        {
+            "chat": type(
+                "Chat",
+                (),
+                {"completions": type("Completions", (), {"create": mock_chat_create})},
+            )
+        },
+    )
+    mock_client = mock.Mock()
+    mock_client.return_value = MockClient()
+    monkeypatch.setattr(instructor, "from_litellm", mock_client)
+
+    return mock_chat_create
 
 
 @pytest.fixture()
@@ -88,20 +100,16 @@ async def test_completion_calls_litellm_client(mock_completion):
 
     await lm.completion(messages, **local_args)
 
-    client_mock, router_mock = mock_completion
-    res = client_mock.mock_calls[1].kwargs
-    assert res["model"] == model
-    assert res["messages"] == messages
-    assert res["response_model"] is None
-    assert res["local test key"] == local_args["local test key"]
-
-    config = router_mock.mock_calls[0].kwargs["model_list"][0]
-    assert config["model_name"] == model
-    assert config["litellm_params"]["model"] == model
-    assert config["litellm_params"]["api_key"] == api_key
-    assert config["litellm_params"]["api_base"] == api_base
-    assert config["litellm_params"]["api_version"] == api_version
-    assert config["litellm_params"]["test key"] == litellm_params["test key"]
+    config = mock_completion.mock_calls[0].kwargs
+    assert config["model"] == model
+    assert config["messages"] == messages
+    assert config["local test key"] == local_args["local test key"]
+    assert config["response_model"] is None
+    assert config["model"] == model
+    assert config["api_key"] == api_key
+    assert config["api_base"] == api_base
+    assert config["api_version"] == api_version
+    assert config["test key"] == litellm_params["test key"]
 
 
 @pytest.mark.asyncio
@@ -139,7 +147,7 @@ async def test_completion_openai(config: EnvLLMConfig):
     if not config.openai_api_key:
         pytest.skip("OpenAI API key is missing")
 
-    llm_config = LLMConfig(model="gpt-4o", api_key=config.openai_api_key)
+    llm_config = LLMConfig(model="gpt-4o-mini", api_key=config.openai_api_key)
     lm = LLMService(config=llm_config)
     messages = [
         {"role": "system", "content": "Which country has a maple leaf in its flag?"}
@@ -335,6 +343,23 @@ async def test_completion_model_override(mock_completion):
 
     await lm.completion(messages=[], override_model=override_model)
 
-    client_mock, _ = mock_completion
-    res = client_mock.mock_calls[1].kwargs
+    completions_mock = mock_completion
+    res = completions_mock.mock_calls[0].kwargs
     assert res["model"] == override_model
+
+
+@pytest.mark.asyncio
+async def test_completion_parameter_override(mock_completion):
+    model = "test-model"
+    override_params = {"temperature": 0.7, "max_tokens": 100, "top_p": 0.9}
+
+    llm_config = LLMConfig(model=model)
+    lm = LLMService(config=llm_config)
+
+    await lm.completion(messages=[], **override_params)
+
+    completions_mock = mock_completion
+    res = completions_mock.mock_calls[0].kwargs
+
+    for key, value in override_params.items():
+        assert res[key] == value

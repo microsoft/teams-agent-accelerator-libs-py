@@ -3,14 +3,16 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
-from typing import List, Optional, Union
+from typing import Any, List, Optional, TypeVar, Union, cast, overload
 
 import instructor
 import litellm
 from litellm import BaseModel
-from litellm.types.utils import EmbeddingResponse
+from litellm.types.utils import EmbeddingResponse, ModelResponse
 
 from teams_memory.config import LLMConfig
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class LLMService:
@@ -49,6 +51,10 @@ class LLMService:
         self.api_version = config.api_version
         self.embedding_model = config.embedding_model
 
+        self.client = cast(
+            instructor.AsyncInstructor, instructor.from_litellm(litellm.acompletion)
+        )  # we need to cast this because acompletion is still a callable, even though it's awaitable
+
         # Get any additional kwargs from the config
         self._litellm_params = {
             k: v
@@ -57,36 +63,55 @@ class LLMService:
             not in {"model", "api_key", "api_base", "api_version", "embedding_model"}
         }
 
+    @overload
     async def completion(
         self,
         messages: List,
-        response_model: Optional[type[BaseModel]] = None,
+        response_model: None = None,
         override_model: Optional[str] = None,
         **kwargs,
-    ):
+    ) -> ModelResponse: ...
+
+    @overload
+    async def completion(
+        self,
+        messages: List,
+        response_model: type[T],
+        override_model: Optional[str] = None,
+        **kwargs,
+    ) -> T: ...
+
+    async def completion(
+        self,
+        messages: List,
+        response_model: Optional[type[T]] = None,
+        override_model: Optional[str] = None,
+        **kwargs,
+    ) -> Union[ModelResponse, T]:
         """Generate completion from the model."""
         model = override_model or self.model
         if not model:
             raise ValueError("No LM model provided.")
 
-        client = instructor.patch(
-            litellm.Router(
-                model_list=[
-                    {
-                        "model_name": model,
-                        "litellm_params": {
-                            "model": model,
-                            "api_key": self.api_key,
-                            "api_base": self.api_base,
-                            "api_version": self.api_version,
-                            **self._litellm_params,
-                        },
-                    }
-                ]
-            )  # type: ignore
-        )
+        # Start with base parameters
+        params: dict[str, Any] = {"messages": messages, "model": model}
 
-        return client.chat.completions.create(messages=messages, model=model, response_model=response_model, **kwargs)  # type: ignore
+        # Add optional parameters only if they are not None
+        if self.api_key is not None:
+            params["api_key"] = self.api_key
+        if self.api_base is not None:
+            params["api_base"] = self.api_base
+        if self.api_version is not None:
+            params["api_version"] = self.api_version
+
+        # Add litellm params and kwargs, which will override any previous values if there are conflicts
+        params.update(self._litellm_params)
+        params.update(kwargs)
+
+        res = await self.client.chat.completions.create(
+            response_model=response_model, **params
+        )
+        return res
 
     async def embedding(
         self,
