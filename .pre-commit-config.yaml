@@ -23,8 +23,7 @@ repos:
         args: [
           --ignore-missing-imports,
           --show-traceback,
-          --disable-error-code=import-untyped,
-          --disable-error-code=no-untyped-call,
+          --no-strict,
         ]
         files: ^packages/.+\.py$
         additional_dependencies:
