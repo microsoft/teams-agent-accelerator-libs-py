@@ -3,14 +3,16 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
-from typing import Any, List, Optional, Union, cast
+from typing import Any, List, Optional, TypeVar, Union, cast, overload
 
 import instructor
 import litellm
 from litellm import BaseModel, acompletion
-from litellm.types.utils import EmbeddingResponse
+from litellm.types.utils import EmbeddingResponse, ModelResponse
 
 from teams_memory.config import LLMConfig
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class LLMService:
@@ -61,13 +63,31 @@ class LLMService:
             not in {"model", "api_key", "api_base", "api_version", "embedding_model"}
         }
 
+    @overload
     async def completion(
         self,
         messages: List,
-        response_model: Optional[type[BaseModel]] = None,
+        response_model: None = None,
         override_model: Optional[str] = None,
         **kwargs,
-    ):
+    ) -> ModelResponse: ...
+
+    @overload
+    async def completion(
+        self,
+        messages: List,
+        response_model: type[T],
+        override_model: Optional[str] = None,
+        **kwargs,
+    ) -> T: ...
+
+    async def completion(
+        self,
+        messages: List,
+        response_model: Optional[type[T]] = None,
+        override_model: Optional[str] = None,
+        **kwargs,
+    ) -> Union[ModelResponse, T]:
         """Generate completion from the model."""
         model = override_model or self.model
         if not model:

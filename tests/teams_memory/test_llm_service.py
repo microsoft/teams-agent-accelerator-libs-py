@@ -338,3 +338,20 @@ async def test_completion_model_override(mock_completion):
     client_mock, _ = mock_completion
     res = client_mock.mock_calls[1].kwargs
     assert res["model"] == override_model
+
+
+@pytest.mark.asyncio
+async def test_completion_parameter_override(mock_completion):
+    model = "test-model"
+    override_params = {"temperature": 0.7, "max_tokens": 100, "top_p": 0.9}
+
+    llm_config = LLMConfig(model=model)
+    lm = LLMService(config=llm_config)
+
+    await lm.completion(messages=[], **override_params)
+
+    client_mock, _ = mock_completion
+    res = client_mock.mock_calls[1].kwargs
+
+    for key, value in override_params.items():
+        assert res[key] == value
