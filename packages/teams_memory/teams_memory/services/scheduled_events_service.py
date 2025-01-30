@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Awaitable, Callable, Dict, List, NamedTuple, Optional
 
 from teams_memory.config import MemoryModuleConfig
@@ -57,7 +57,7 @@ class ScheduledEventsService(BaseScheduledEventsService):
 
         raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
 
-    async def _initialize_tasks(self) -> None:
+    async def initialize(self) -> None:
         """Asynchronously initialize tasks from storage."""
 
         events = await self.storage.get_all_events()
@@ -83,17 +83,14 @@ class ScheduledEventsService(BaseScheduledEventsService):
             if not task_info.task.done()
         ]
 
-    async def add_event(self, id: str, object: Any, time: datetime) -> None:
+    async def add_event(self, id: str, object: Any, time: datetime | timedelta) -> None:
         """Schedule a new event to be executed at the specified time."""
         # Cancel existing task if there is one
         if id in self._tasks and not self._tasks[id].task.done():
             self._tasks[id].task.cancel()
 
-        # Create new event
-        event = Event(id=id, object=object, time=time)
-
         # Store in persistent storage
-        await self.storage.upsert_event(event)
+        event = await self.storage.upsert_event(id, object, time)
 
         await self._create_task(event)
 
@@ -104,6 +101,17 @@ class ScheduledEventsService(BaseScheduledEventsService):
         delay = (event.time - now).total_seconds()
         if delay < 0:
             delay = 0
+
+        if event.id in self._tasks:
+            existing_task = self._tasks[event.id].event
+            if abs((existing_task.time - event.time).total_seconds()) > 0:
+                logger.info("Cancelling existing task for event %s", event.id)
+                self._tasks[event.id].task.cancel()
+            else:
+                logger.debug(
+                    "Task already exists for event %s. Skipping rescheduling", event.id
+                )
+                return
 
         # Create and store new task
         self._tasks[event.id] = TaskInfo(

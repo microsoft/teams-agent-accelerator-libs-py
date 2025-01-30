@@ -3,11 +3,11 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
-import datetime
 import json
 import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from teams_memory.config import StorageConfig
 from teams_memory.interfaces.base_scheduled_events_service import Event
@@ -32,21 +32,54 @@ class SQLiteScheduledEventsStorage(BaseScheduledEventsStorage):
         """
         self.storage = SQLiteStorage(config.db_path or DEFAULT_DB_PATH)
 
-    async def upsert_event(self, event: Event) -> None:
+    async def upsert_event(
+        self, id: str, object: Any, time: datetime | timedelta
+    ) -> Event:
         """Upsert a scheduled event."""
-        query = """
-            INSERT OR REPLACE INTO scheduled_events
-            (id, object, scheduled_time)
-            VALUES (?, ?, ?)
-        """
-        await self.storage.execute(
-            query,
-            (
-                event.id,
-                json.dumps(event.object),  # Serialize to JSON
-                event.time.astimezone(datetime.timezone.utc),
-            ),
-        )
+        existing_event = await self.get_event(id)
+        params = ()
+        if existing_event:
+            query = """
+                UPDATE scheduled_events
+                SET object = ?, scheduled_time = ?, updated_at = ?
+                WHERE id = ?
+            """
+            if isinstance(time, timedelta):
+                time = existing_event.time + time
+            else:
+                time = time
+
+            if existing_event.time == time:
+                return existing_event
+
+            params = (
+                json.dumps(object),
+                time.astimezone(timezone.utc),
+                datetime.now().astimezone(timezone.utc),
+                id,
+            )
+        else:
+            query = """
+                INSERT INTO scheduled_events
+                (id, object, scheduled_time, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+            """
+            if isinstance(time, timedelta):
+                time = datetime.now() + time
+            else:
+                time = time
+            params = (
+                id,
+                json.dumps(object),  # Serialize to JSON
+                time.astimezone(timezone.utc),
+                datetime.now().astimezone(timezone.utc),
+                datetime.now().astimezone(timezone.utc),
+            )
+        await self.storage.execute(query, params)
+        event = await self.get_event(id)
+        if not event:
+            raise ValueError(f"Event {id} not found after upsert")
+        return event
 
     async def get_event(self, event_id: str) -> Optional[Event]:
         """Retrieve a specific event by ID."""

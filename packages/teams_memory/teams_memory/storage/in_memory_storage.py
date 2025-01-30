@@ -388,6 +388,7 @@ class InMemoryStorage(
         n_messages: Optional[int] = None,
         last_minutes: Optional[float] = None,
         before: Optional[datetime.datetime] = None,
+        after: Optional[datetime.datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         messages = []
@@ -404,13 +405,17 @@ class InMemoryStorage(
                 for msg in conversation_messages
                 if (current_time - msg.created_at).total_seconds() / 60 <= last_minutes
             ]
+        else:
+            messages = conversation_messages[:]
 
         # Sort messages in descending order based on created_at
         messages.sort(key=lambda msg: msg.created_at, reverse=True)
 
-        # Filter messages based on before
+        # Filter messages based on before and after
         if before is not None:
-            messages = [msg for msg in messages if msg.created_at < before]
+            messages = [msg for msg in messages if msg.created_at <= before]
+        if after is not None:
+            messages = [msg for msg in messages if msg.created_at >= after]
 
         return messages
 

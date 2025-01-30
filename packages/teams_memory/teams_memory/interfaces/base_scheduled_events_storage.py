@@ -4,7 +4,8 @@ Licensed under the MIT License.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from datetime import datetime, timedelta
+from typing import Any, List, Optional
 
 from teams_memory.interfaces.base_scheduled_events_service import Event
 
@@ -13,11 +14,17 @@ class BaseScheduledEventsStorage(ABC):
     """Abstract base class for persisting scheduled events."""
 
     @abstractmethod
-    async def upsert_event(self, event: Event) -> None:
+    async def upsert_event(
+        self, id: str, object: Any, time: datetime | timedelta
+    ) -> Event:
         """Store a scheduled event.
 
+        If the event already exists, it will only be updated if the time has changed.
+
         Args:
-            event: The event to store
+            id: The ID of the event
+            object: The object to store
+            time: The time to schedule the event
         """
         pass
 

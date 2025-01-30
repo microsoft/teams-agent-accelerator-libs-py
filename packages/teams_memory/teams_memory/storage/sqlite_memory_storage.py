@@ -355,6 +355,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         n_messages: Optional[int] = None,
         last_minutes: Optional[float] = None,
         before: Optional[datetime.datetime] = None,
+        after: Optional[datetime.datetime] = None,
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
@@ -368,8 +369,12 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             params += (cutoff_time,)
 
         if before is not None:
-            query += " AND created_at < ?"
+            query += " AND created_at <= ?"
             params += (before.astimezone(datetime.timezone.utc),)
+
+        if after is not None:
+            query += " AND created_at >= ?"
+            params += (after.astimezone(datetime.timezone.utc),)
 
         query += " ORDER BY created_at DESC"
         if n_messages is not None:

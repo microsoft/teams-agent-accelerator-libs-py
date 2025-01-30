@@ -4,24 +4,27 @@ Licensed under the MIT License.
 """
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Awaitable, Callable, List, Optional, Set
 
 from teams_memory.config import MemoryModuleConfig
-from teams_memory.interfaces.base_message_buffer_storage import (
-    BaseMessageBufferStorage,
+from teams_memory.interfaces.base_memory_storage import (
+    BaseMemoryStorage,
 )
 from teams_memory.interfaces.base_scheduled_events_service import (
     BaseScheduledEventsService,
 )
 from teams_memory.interfaces.types import Message
 from teams_memory.services.scheduled_events_service import ScheduledEventsService
-from teams_memory.storage.in_memory_storage import InMemoryStorage
-from teams_memory.storage.sqlite_message_buffer_storage import (
-    SQLiteMessageBufferStorage,
-)
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class MessageBufferScheduledEventObject:
+    conversation_ref: str
+    first_message_timestamp: datetime
 
 
 class MessageBuffer:
@@ -33,29 +36,23 @@ class MessageBuffer:
         self,
         config: MemoryModuleConfig,
         process_callback: Callable[[List[Message]], Awaitable[None]],
-        storage: Optional[BaseMessageBufferStorage] = None,
+        storage: BaseMemoryStorage,
         scheduler: Optional[BaseScheduledEventsService] = None,
     ):
         """Initialize the message buffer."""
         self.buffer_size = config.buffer_size
         self.timeout_seconds = config.timeout_seconds
         self._process_callback = process_callback
-        self.storage = storage or self._build_storage(config)
+        self.storage = storage
         self.scheduler = scheduler or ScheduledEventsService(config=config)
         self.scheduler.callback = self._handle_timeout
 
         # Track conversations being processed
         self._processing: Set[str] = set()
 
-    def _build_storage(self, config: MemoryModuleConfig) -> BaseMessageBufferStorage:
-        if not config.storage or config.storage.storage_type == "in-memory":
-            return InMemoryStorage()
-        if config.storage.storage_type == "sqlite":
-            return SQLiteMessageBufferStorage(config.storage)
-
-        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
-
-    async def _process_conversation_messages(self, conversation_ref: str) -> None:
+    async def _process_conversation_messages(
+        self, conversation_ref: str, originally_scheduled_at: datetime
+    ) -> None:
         """Process all messages for a conversation and clear its buffer.
 
         Args:
@@ -84,35 +81,12 @@ class MessageBuffer:
 
     async def _handle_timeout(self, id: str, object: Any, time: datetime) -> None:
         """Handle a conversation timeout by processing its messages."""
-        await self._process_conversation_messages(id)
+        await self._process_conversation_messages(id, time)
 
     async def initialize(self) -> None:
         """Initialize the message buffer with pre-existing messages"""
         # get all the conversations that have messages in the buffer
-        buffered_messages_by_conversation = (
-            await self.storage.get_earliest_buffered_message()
-        )
-        for (
-            conversation,
-            earliest_buffered_message,
-        ) in buffered_messages_by_conversation.items():
-            expected_timeout_time = earliest_buffered_message.created_at + timedelta(
-                seconds=self.timeout_seconds
-            )
-            current_time = datetime.now(expected_timeout_time.tzinfo)
-            time_left_to_expected_time = expected_timeout_time - current_time
-            time_left_to_expected_time = max(time_left_to_expected_time, timedelta(0))
-            updated_timeout_time = datetime.now() + time_left_to_expected_time
-            logger.debug(
-                "Initialized buffer for %s with timeout %s",
-                conversation,
-                updated_timeout_time,
-            )
-            await self.scheduler.add_event(
-                id=conversation,
-                object=None,
-                time=updated_timeout_time,
-            )
+        await self.scheduler.initialize()
 
         self._enable_automatic_processing = True
 
@@ -122,9 +96,6 @@ class MessageBuffer:
 
     async def add_message(self, message: Message) -> None:
         """Add a message to the buffer and process if threshold reached."""
-        # Store the message
-        await self.storage.store_buffered_message(message)
-
         if not self._enable_automatic_processing:
             logger.debug(
                 "Automatic processing is not enabled, skipping message buffer processing"
@@ -135,21 +106,35 @@ class MessageBuffer:
         # but not yet removed from the buffer. This could cause the timer to not be triggered, but seems like
         # a rare edge case.
         # Check if this is the first message in the conversation
-        count = (
-            await self.storage.count_buffered_messages([message.conversation_ref])
-        )[message.conversation_ref]
-        if count == 1:
-            # Start timeout for this conversation
-            timeout_time = datetime.now() + timedelta(seconds=self.timeout_seconds)
-            await self.scheduler.add_event(
-                id=message.conversation_ref,
-                object=None,
-                time=timeout_time,
-            )
+        first_pending_event = next(
+            (
+                event
+                for event in self.scheduler.pending_events
+                if event.id == message.conversation_ref
+            ),
+            None,
+        )
 
+        if first_pending_event:
+            messages = await self.storage.retrieve_conversation_history(
+                conversation_ref=message.conversation_ref,
+                after=first_pending_event.created_at,
+            )
+            count = len(messages)
+        else:
+            count = 0
         # Check if we've reached the buffer size
         if count >= self.buffer_size:
             await self.process_messages(message.conversation_ref)
+        elif count == 0:
+            await self.scheduler.add_event(
+                id=message.conversation_ref,
+                object=MessageBufferScheduledEventObject(
+                    conversation_ref=message.conversation_ref,
+                    first_message_timestamp=message.created_at,
+                ),
+                time=datetime.now() + timedelta(seconds=self.timeout_seconds),
+            )
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         """Remove list of messages from buffer if not in processing

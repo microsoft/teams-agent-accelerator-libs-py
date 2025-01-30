@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 import json
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Awaitable, Callable, List, Optional
 
 from pydantic import BaseModel, field_validator
@@ -17,6 +17,8 @@ class Event(BaseModel):
     id: str
     object: Any
     time: datetime
+    created_at: datetime
+    updated_at: datetime
 
     @field_validator("object")
     @classmethod
@@ -57,6 +59,11 @@ class BaseScheduledEventsService(ABC):
     def callback(self, value: Callable[[str, Any, datetime], Awaitable[None]]) -> None:
         pass
 
+    @abstractmethod
+    async def initialize(self) -> None:
+        """Initialize the scheduled events service."""
+        pass
+
     @property
     @abstractmethod
     def pending_events(self) -> List[Event]:
@@ -64,7 +71,7 @@ class BaseScheduledEventsService(ABC):
         pass
 
     @abstractmethod
-    async def add_event(self, id: str, object: Any, time: datetime) -> None:
+    async def add_event(self, id: str, object: Any, time: datetime | timedelta) -> None:
         """Schedule a new event to be executed at the specified time.
 
         Args:

@@ -186,6 +186,7 @@ class BaseMemoryStorage(ABC):
         n_messages: Optional[int] = None,
         last_minutes: Optional[float] = None,
         before: Optional[datetime] = None,
+        after: Optional[datetime] = None,
     ) -> List[Message]:
         """Retrieve conversation history based on specified criteria.
 
@@ -195,7 +196,10 @@ class BaseMemoryStorage(ABC):
             conversation_ref (str): Unique identifier for the conversation
             n_messages (Optional[int]): Number of most recent messages to retrieve
             last_minutes (Optional[float]): Retrieve messages from the last N minutes
-            before (Optional[datetime]): Retrieve messages before this timestamp
+            before (Optional[datetime]): Retrieve messages before this timestamp. You cannot supply both
+                before and after.
+            after (Optional[datetime]): Retrieve messages after this timestamp. You cannot supply both
+                before and after.
 
         Returns:
             List[Message]: List of message objects from the conversation history,
