@@ -46,13 +46,13 @@ class _CommonBaseMemoryModule(ABC):
     async def get_memories_with_attributions(
         self, memory_ids: List[str]
     ) -> List[MemoryWithAttributions]:
-        """Get memories and their attributed messages.
+        """Utility to get memories and their attributed messages.
 
         Args:
-            memory_ids: List of memory IDs to fetch
+            memory_ids (List[str]): List of memory IDs to fetch
 
         Returns:
-            List of MemoryWithAttributions objects containing memories and their messages
+            List[MemoryWithAttributions]: List of MemoryWithAttributions objects containing memories and their messages
         """
         pass
 
