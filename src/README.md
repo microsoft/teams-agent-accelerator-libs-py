@@ -1,7 +1,7 @@
 # Overview of the Basic AI Chatbot template
 
-This app template is built on top of [Teams AI library](https://aka.ms/teams-ai-library) and [Teams Memory Agent]().
-This template showcases a bot app that responds to user questions like an AI assistant. This enables your users to talk with the AI assistant in Teams to find information.
+This app template is built on top of [Teams AI library](https://aka.ms/teams-ai-library) and [Teams Memory](../packages/teams_memory/README.md).
+This template showcases a Tech Assistant agent which can help users with their device problems.
 
 ## Get started with the template
 
@@ -34,6 +34,8 @@ OPENAI_MODEL_NAME=gpt-4o
 OPENAI_API_KEY=<API key>
 OPENAI_EMBEDDING_MODEL_NAME=text-embedding-3-small
 ```
+
+Remember, that these are also used by the Memory Module to extract and retrieve memories.
 
 Fill out only one of Azure OpenAI and OpenAI configurations.
 

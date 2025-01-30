@@ -30,6 +30,12 @@ Integrating the Memory Module into your Teams AI SDK application (or Bot Framewo
 
 ## Integrating into a Teams AI SDK Application
 
+### Installing the Memory Module
+
+```bash
+pip install teams-memory
+```
+
 ### Adding Messages
 
 #### Incoming / Outgoing Messages

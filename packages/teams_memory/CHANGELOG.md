@@ -3,10 +3,13 @@
 ## Latest Changes
 
 ### Features
-- Added method `BaseMemoryModule.get_memories_with_attributions` to easily get the messages associated to memories. 
+
+- Added method `BaseMemoryModule.get_memories_with_attributions` to easily get the messages associated to memories.
 
 ### Bug Fixes
+
 - Tech assistant sample changes: fixed a bug, refactored citations, updated it to use python's logger library.
+- Improved documentation for sample and teams-memory integration.
 
 ## 0.1.2-alpha
 
