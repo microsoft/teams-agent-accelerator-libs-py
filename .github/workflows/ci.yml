@@ -71,7 +71,7 @@ jobs:
 
       - name: Type Check (MyPy)
         run: |
-          . .venv/bin/activate  # Execute script in current shell to use virtual environment
+          source .venv/bin/activate  # Execute script in current shell to use virtual environment
           mypy --config-file mypy.ini \
             --ignore-missing-imports \
             --show-traceback \
@@ -87,5 +87,5 @@ jobs:
           AZURE_OPENAI_API_BASE: ${{ secrets.AZURE_OPENAI_API_BASE }}
           AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
         run: |
-          . .venv/bin/activate  # Execute script in current shell to use virtual environment
+          source .venv/bin/activate  # Execute script in current shell to use virtual environment
           pytest tests/ -v
