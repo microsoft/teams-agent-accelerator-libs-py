@@ -1,7 +1,7 @@
 # Summary of PR
 
 <!---
-Did you test your code? Unit tests? Manual testing?
+Describe the changes you made in a few sentences.
 -->
 
 # Details
