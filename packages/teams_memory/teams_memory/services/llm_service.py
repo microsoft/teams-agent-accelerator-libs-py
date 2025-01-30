@@ -7,7 +7,7 @@ from typing import Any, List, Optional, TypeVar, Union, cast, overload
 
 import instructor
 import litellm
-from litellm import BaseModel, acompletion
+from litellm import BaseModel
 from litellm.types.utils import EmbeddingResponse, ModelResponse
 
 from teams_memory.config import LLMConfig
@@ -52,7 +52,7 @@ class LLMService:
         self.embedding_model = config.embedding_model
 
         self.client = cast(
-            instructor.AsyncInstructor, instructor.from_litellm(acompletion)
+            instructor.AsyncInstructor, instructor.from_litellm(litellm.acompletion)
         )  # we need to cast this because acompletion is still a callable, even though it's awaitable
 
         # Get any additional kwargs from the config
