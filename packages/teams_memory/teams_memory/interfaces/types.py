@@ -126,6 +126,13 @@ class Memory(BaseMemoryInput):
     id: str
 
 
+class MemoryWithCitations(BaseModel):
+    """A memory with its associated citation messages."""
+
+    memory: Memory
+    messages: List[Message]
+
+
 class TextEmbedding(BaseModel):
     text: str
     embedding_vector: List[float]

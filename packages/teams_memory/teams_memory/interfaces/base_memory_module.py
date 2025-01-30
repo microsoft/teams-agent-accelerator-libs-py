@@ -9,6 +9,7 @@ from typing import List, Optional
 
 from teams_memory.interfaces.types import (
     Memory,
+    MemoryWithCitations,
     Message,
     MessageInput,
 )
@@ -38,6 +39,20 @@ class _CommonBaseMemoryModule(ABC):
 
         Raises:
             ValueError: If neither memory_ids nor user_id is provided.
+        """
+        pass
+
+    @abstractmethod
+    async def get_memories_with_citations(
+        self, memory_ids: List[str]
+    ) -> List[MemoryWithCitations]:
+        """Get memories and their associated citation messages.
+
+        Args:
+            memory_ids: List of memory IDs to fetch
+
+        Returns:
+            List of MemoryWithCitations objects containing memories and their messages
         """
         pass
 

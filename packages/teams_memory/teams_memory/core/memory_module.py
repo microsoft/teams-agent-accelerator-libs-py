@@ -19,6 +19,7 @@ from teams_memory.interfaces.base_message_queue import BaseMessageQueue
 from teams_memory.interfaces.errors import InvalidUserError
 from teams_memory.interfaces.types import (
     Memory,
+    MemoryWithCitations,
     Message,
     MessageInput,
 )
@@ -131,6 +132,56 @@ class MemoryModule(BaseMemoryModule):
         return await self.memory_core.get_memories(
             memory_ids=memory_ids, user_id=user_id
         )
+
+    async def get_memories_with_citations(
+        self, memory_ids: List[str]
+    ) -> List[MemoryWithCitations]:
+        """Get memories and their associated citation messages.
+
+        Args:
+            memory_ids: List of memory IDs to fetch
+
+        Returns:
+            List of MemoryWithCitations objects containing memories and their messages
+        """
+        if not memory_ids:
+            return []
+
+        memories = await self.get_memories(memory_ids=memory_ids)
+        if not memories:
+            return []
+
+        # Collect all unique message IDs across all memories
+        all_message_ids = set()
+        for memory in memories:
+            if memory.message_attributions:
+                all_message_ids.update(memory.message_attributions)
+
+        # Fetch all messages in one call
+        if not all_message_ids:
+            return []
+
+        messages = await self.get_messages(list(all_message_ids))
+        messages_by_id = {msg.id: msg for msg in messages}
+
+        # Build result by matching messages to memories
+        result = []
+        for memory in memories:
+            if not memory.message_attributions:
+                continue
+
+            memory_messages = [
+                messages_by_id[msg_id]
+                for msg_id in memory.message_attributions
+                if msg_id in messages_by_id
+            ]
+
+            if memory_messages:
+                result.append(
+                    MemoryWithCitations(memory=memory, messages=memory_messages)
+                )
+
+        return result
 
     async def get_messages(self, message_ids: List[str]) -> List[Message]:
         return await self.memory_core.get_messages(message_ids)
@@ -260,6 +311,11 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         )
 
     # Implement abstract methods by forwarding to memory_module
+    async def get_memories_with_citations(
+        self, memory_ids: List[str]
+    ) -> List[MemoryWithCitations]:
+        return await self.memory_module.get_memories_with_citations(memory_ids)
+
     async def add_message(self, message):
         return await self.memory_module.add_message(message)
 

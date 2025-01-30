@@ -293,7 +293,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
                 GROUP_CONCAT(ma.message_id) as message_attributions
             FROM memories m
             LEFT JOIN memory_attributions ma ON m.id = ma.memory_id
-            WHERE ma.message_id IN ({','.join(['?'] * len(message_ids))})
+            WHERE ma.message_id IN ({",".join(["?"] * len(message_ids))})
             GROUP BY m.id
             ORDER BY m.created_at DESC
         """

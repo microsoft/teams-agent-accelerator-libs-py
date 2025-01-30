@@ -77,8 +77,7 @@ async def get_memorized_fields(
 ) -> str:
     fields: dict = {}
     for topic in fields_to_retrieve.memory_topics:
-        relevant_topic = next((t for t in topics if t.name == topic))
-        result = await memory_module.search_memories(topic=relevant_topic)
+        result = await memory_module.search_memories(topic=topic)
         print("Getting memorized queries: ", topic)
         print(result)
         print("---")
@@ -105,40 +104,28 @@ async def confirm_memorized_fields(
     for user_detail in fields_to_confirm.fields:
         field_name = user_detail.field_name
         field_value = user_detail.field_value
-        memories = None
-        memories_messages_map = {}
+        memories_with_citations = None
         if user_detail.memory_ids:
-            memories = await memory_module.get_memories(
+            memories_with_citations = await memory_module.get_memories_with_citations(
                 memory_ids=user_detail.memory_ids
             )
-            if not memories:
-                continue
-
-            # Get messages for each memory
-            for memory in memories:
-                if not memory.message_attributions:
-                    continue
-                messages = await memory_module.get_messages(
-                    list(memory.message_attributions)
-                )
-                memories_messages_map[memory.id] = messages
-
-        cited_fields.append((field_name, field_value, memories, memories_messages_map))
+        cited_fields.append((field_name, field_value, memories_with_citations))
 
     # Build client citations to send in Teams
     memory_strs = []
     citations: List[ClientCitation] = []
     for cited_field in cited_fields:
         idx = len(citations) + 1
-        field_name, field_value, memories, memories_messages_map = cited_field
-        if memories is None and len(memories) == 0:
+        field_name, field_value, memories_with_citations = cited_field
+
+        if memories_with_citations is None or len(memories_with_citations) == 0:
             memory_strs.append(f"{field_name}: {field_value}")
             continue
         else:
             memory_strs.append(f"{field_name}: {field_value} [{idx}]")
 
-            memory = memories[0]
-            messages = memories_messages_map[memory.id]  # type: ignore
+            memory = memories_with_citations[0].memory
+            messages = memories_with_citations[0].messages  # type: ignore
             citations.append(
                 ClientCitation(
                     str(idx),

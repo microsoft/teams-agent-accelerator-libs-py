@@ -744,3 +744,48 @@ async def test_retrieve_memories_by_topic_not_in_config(
     """Test retrieving memories by topic not in the config."""
     with pytest.raises(ValueError, match="not in the config"):
         await scoped_memory_module.search_memories(topic="Non-existent Topic")
+
+
+@pytest.mark.asyncio
+async def test_get_memories_with_citations(
+    scoped_memory_module, conversation_id, user_ids_in_conversation_scope
+):
+    """Test retrieving memories with their citation messages - happy path."""
+    # Create two messages
+    message1_id = str(uuid4())
+    messages = [
+        UserMessageInput(
+            id=message1_id,
+            content="I love hiking in the mountains",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        )
+    ]
+
+    # Add messages and process them to create a memory
+    for message in messages:
+        await scoped_memory_module.memory_module.add_message(message)
+    await scoped_memory_module.process_messages()
+
+    # Get the created memory
+    stored_memories = await scoped_memory_module.memory_module.get_memories(
+        user_id=user_ids_in_conversation_scope[0]
+    )
+    assert len(stored_memories) == 1
+    memory = stored_memories[0]
+
+    # Test get_memories_with_citations
+    memories_with_citations = (
+        await scoped_memory_module.memory_module.get_memories_with_citations(
+            memory_ids=[memory.id]
+        )
+    )
+
+    # Verify results
+    assert len(memories_with_citations) == 1
+    memory_with_citations = memories_with_citations[0]
+    assert memory_with_citations.memory.id == memory.id
+    assert len(memory_with_citations.messages) == 1
+    assert {msg.id for msg in memory_with_citations.messages} == {message1_id}
+    assert any("hiking" in msg.content for msg in memory_with_citations.messages)

@@ -97,7 +97,7 @@ async def test_add_agent_message(middleware, turn_context):
     assert middleware.memory_module.add_message.call_count == 2
     for i, call in enumerate(middleware.memory_module.add_message.call_args_list):
         args = call[0][0]
-        assert args.content == f"Bot response {i+1}"
+        assert args.content == f"Bot response {i + 1}"
         assert args.author_id == "28:bot-id"
         assert args.conversation_ref == "conversation-id"
 
