@@ -19,7 +19,7 @@ from teams_memory.interfaces.base_message_queue import BaseMessageQueue
 from teams_memory.interfaces.errors import InvalidUserError
 from teams_memory.interfaces.types import (
     Memory,
-    MemoryWithCitations,
+    MemoryWithAttributions,
     Message,
     MessageInput,
 )
@@ -133,18 +133,21 @@ class MemoryModule(BaseMemoryModule):
             memory_ids=memory_ids, user_id=user_id
         )
 
-    async def get_memories_with_citations(
+    async def get_memories_with_attributions(
         self, memory_ids: List[str]
-    ) -> List[MemoryWithCitations]:
-        """Get memories and their associated citation messages.
+    ) -> List[MemoryWithAttributions]:
+        """A utility method that get memories and their attributed messages.
+        This is useful in scenarioes where citations are needed for a memory.
+
 
         Args:
             memory_ids: List of memory IDs to fetch
 
         Returns:
-            List of MemoryWithCitations objects containing memories and their messages
+            List of MemoryWithAttributions objects containing memories and their messages
         """
         if not memory_ids:
+
             return []
 
         memories = await self.get_memories(memory_ids=memory_ids)
@@ -178,7 +181,7 @@ class MemoryModule(BaseMemoryModule):
 
             if memory_messages:
                 result.append(
-                    MemoryWithCitations(memory=memory, messages=memory_messages)
+                    MemoryWithAttributions(memory=memory, messages=memory_messages)
                 )
 
         return result
@@ -311,10 +314,10 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         )
 
     # Implement abstract methods by forwarding to memory_module
-    async def get_memories_with_citations(
+    async def get_memories_with_attributions(
         self, memory_ids: List[str]
-    ) -> List[MemoryWithCitations]:
-        return await self.memory_module.get_memories_with_citations(memory_ids)
+    ) -> List[MemoryWithAttributions]:
+        return await self.memory_module.get_memories_with_attributions(memory_ids)
 
     async def add_message(self, message):
         return await self.memory_module.add_message(message)

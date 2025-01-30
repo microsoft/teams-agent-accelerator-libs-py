@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from teams_memory.interfaces.types import (
     Memory,
-    MemoryWithCitations,
+    MemoryWithAttributions,
     Message,
     MessageInput,
 )
@@ -43,16 +43,16 @@ class _CommonBaseMemoryModule(ABC):
         pass
 
     @abstractmethod
-    async def get_memories_with_citations(
+    async def get_memories_with_attributions(
         self, memory_ids: List[str]
-    ) -> List[MemoryWithCitations]:
-        """Get memories and their associated citation messages.
+    ) -> List[MemoryWithAttributions]:
+        """Get memories and their attributed messages.
 
         Args:
             memory_ids: List of memory IDs to fetch
 
         Returns:
-            List of MemoryWithCitations objects containing memories and their messages
+            List of MemoryWithAttributions objects containing memories and their messages
         """
         pass
 

@@ -80,6 +80,7 @@ async def get_memorized_fields(
 ) -> str:
     fields: dict = {}
     for topic in fields_to_retrieve.memory_topics:
+        topic = next((t.name for t in topics if t.name == topic), None)
         result = await memory_module.search_memories(topic=topic)
         logger.info(f"Getting memorized queries: {topic}")
         logger.info(result)
@@ -105,31 +106,52 @@ async def confirm_memorized_fields(
 
     # Get memories and attributed messages
     cited_fields = []
+    all_memory_ids = []
+    field_details = []
+
+    # First collect all memory IDs and field info
     for user_detail in fields_to_confirm.fields:
-        field_name = user_detail.field_name
-        field_value = user_detail.field_value
-        memories_with_citations = None
         if user_detail.memory_ids:
-            memories_with_citations = await memory_module.get_memories_with_citations(
-                memory_ids=user_detail.memory_ids
+            all_memory_ids.extend(user_detail.memory_ids)
+        field_details.append(
+            (user_detail.field_name, user_detail.field_value, user_detail.memory_ids)
+        )
+
+    # Make single call to get all memories with attributions
+    all_memories_with_attributions = None
+    if all_memory_ids:
+        all_memories_with_attributions = (
+            await memory_module.get_memories_with_attributions(
+                memory_ids=all_memory_ids
             )
-        cited_fields.append((field_name, field_value, memories_with_citations))
+        )
+
+    # Map memories back to each field
+    for field_name, field_value, memory_ids in field_details:
+        field_memories = None
+        if memory_ids and all_memories_with_attributions:
+            field_memories = [
+                m for m in all_memories_with_attributions if m.memory.id in memory_ids
+            ]
+        cited_fields.append((field_name, field_value, field_memories))
 
     # Build client citations to send in Teams
     memory_strs = []
     citations: List[ClientCitation] = []
     for cited_field in cited_fields:
         idx = len(citations) + 1
-        field_name, field_value, memories_with_citations = cited_field
+        field_name, field_value, field_memories = cited_field
 
-        if memories_with_citations is None or len(memories_with_citations) == 0:
+        # Create a citation for each field with its memory and message attributions
+        # If no attributions exist, the field will be displayed without a citation
+        if field_memories is None or len(field_memories) == 0:
             memory_strs.append(f"{field_name}: {field_value}")
             continue
         else:
             memory_strs.append(f"{field_name}: {field_value} [{idx}]")
 
-            memory = memories_with_citations[0].memory
-            messages = memories_with_citations[0].messages  # type: ignore
+            memory = field_memories[0].memory
+            messages = field_memories[0].messages  # type: ignore
             citations.append(
                 ClientCitation(
                     str(idx),

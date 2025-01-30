@@ -126,8 +126,8 @@ class Memory(BaseMemoryInput):
     id: str
 
 
-class MemoryWithCitations(BaseModel):
-    """A memory with its associated citation messages."""
+class MemoryWithAttributions(BaseModel):
+    """A memory with its attributed messages."""
 
     memory: Memory
     messages: List[Message]
