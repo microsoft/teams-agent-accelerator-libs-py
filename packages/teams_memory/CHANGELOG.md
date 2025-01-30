@@ -9,6 +9,7 @@
 ### Bug Fixes
 
 - Tech assistant sample changes: fixed a bug, refactored citations, updated it to use python's logger library.
+- Improved documentation for sample and teams-memory integration.
 - Update the way we build the litellm client for better typings
 
 ## 0.1.2-alpha
