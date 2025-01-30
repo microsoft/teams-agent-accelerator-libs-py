@@ -30,6 +30,9 @@ from tech_assistant_agent.tools import (
     get_candidate_tasks,
     get_memorized_fields,
 )
+from utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class TechAssistantAgent(Agent):
@@ -75,10 +78,11 @@ class TechAssistantAgent(Agent):
                 await self.send_string_message(context, message.content)
                 break
             elif message.tool_calls is None and message.content is None:
-                print("No tool calls and no content")
+                logger.info("No tool calls and no content")
                 break
             elif message.tool_calls is None:
-                print("Tool calls but no content")
+                logger.info("Tool calls but no content")
+
                 break
 
             for tool_call in message.tool_calls:
@@ -143,7 +147,7 @@ class TechAssistantAgent(Agent):
                 "function": {
                     "name": "get_candidate_tasks",
                     "description": "Identify the task based on user's query",
-                    "parameters": GetCandidateTasks.schema(),
+                    "parameters": GetCandidateTasks.model_json_schema(),
                     "strict": True,
                 },
             },
@@ -152,7 +156,7 @@ class TechAssistantAgent(Agent):
                 "function": {
                     "name": "get_memorized_fields",
                     "description": "Retrieve values for fields that have been previously memorized",
-                    "parameters": GetMemorizedFields.schema(),
+                    "parameters": GetMemorizedFields.model_json_schema(),
                 },
             },
             {
@@ -160,7 +164,7 @@ class TechAssistantAgent(Agent):
                 "function": {
                     "name": "confirm_memorized_fields",
                     "description": "Confirm the fields that have been previously memorized",
-                    "parameters": ConfirmMemorizedFields.schema(),
+                    "parameters": ConfirmMemorizedFields.model_json_schema(),
                 },
             },
             {
@@ -168,7 +172,7 @@ class TechAssistantAgent(Agent):
                 "function": {
                     "name": "execute_task",
                     "description": "Execute a troubleshooting task",
-                    "parameters": ExecuteTask.schema(),
+                    "parameters": ExecuteTask.model_json_schema(),
                     "strict": True,
                 },
             },

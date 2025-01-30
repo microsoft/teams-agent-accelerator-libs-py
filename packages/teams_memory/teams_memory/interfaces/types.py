@@ -126,6 +126,13 @@ class Memory(BaseMemoryInput):
     id: str
 
 
+class MemoryWithAttributions(BaseModel):
+    """A memory with its attributed messages."""
+
+    memory: Memory
+    messages: List[Message]
+
+
 class TextEmbedding(BaseModel):
     text: str
     embedding_vector: List[float]
