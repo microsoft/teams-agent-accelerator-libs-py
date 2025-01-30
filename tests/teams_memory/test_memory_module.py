@@ -747,7 +747,7 @@ async def test_retrieve_memories_by_topic_not_in_config(
 
 
 @pytest.mark.asyncio
-async def test_get_memories_with_citations(
+async def test_get_memories_with_attributions(
     scoped_memory_module, conversation_id, user_ids_in_conversation_scope
 ):
     """Test retrieving memories with their citation messages - happy path."""
@@ -776,16 +776,17 @@ async def test_get_memories_with_citations(
     memory = stored_memories[0]
 
     # Test get_memories_with_citations
-    memories_with_citations = (
-        await scoped_memory_module.memory_module.get_memories_with_citations(
+    memories_with_attributions = (
+        await scoped_memory_module.memory_module.get_memories_with_attributions(
             memory_ids=[memory.id]
         )
     )
 
     # Verify results
-    assert len(memories_with_citations) == 1
-    memory_with_citations = memories_with_citations[0]
-    assert memory_with_citations.memory.id == memory.id
-    assert len(memory_with_citations.messages) == 1
-    assert {msg.id for msg in memory_with_citations.messages} == {message1_id}
-    assert any("hiking" in msg.content for msg in memory_with_citations.messages)
+    assert len(memories_with_attributions) == 1
+    memory_with_attributions = memories_with_attributions[0]
+    assert memory_with_attributions.memory.id == memory.id
+    assert len(memory_with_attributions.messages) == 1
+
+    assert {msg.id for msg in memory_with_attributions.messages} == {message1_id}
+    assert any("hiking" in msg.content for msg in memory_with_attributions.messages)
