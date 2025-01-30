@@ -64,30 +64,30 @@ class LLMService:
         response_model: Optional[type[BaseModel]] = None,
         override_model: Optional[str] = None,
         stream: bool = False,
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Any:
         """Generate completion from the model."""
         model = override_model or self.model
         if not model:
             raise ValueError("No LM model provided.")
 
-        router = instructor.patch(
-            Router(
-                model_list=[
-                    {
-                        "model_name": model,
-                        "litellm_params": {
-                            "model": model,
-                            "api_key": self.api_key,
-                            "api_base": self.api_base,
-                            "api_version": self.api_version,
-                            **self._litellm_params,
-                        },
-                    }
-                ]
-            )
+        router = Router(
+            model_list=[
+                {
+                    "model_name": model,
+                    "litellm_params": {
+                        "model": model,
+                        "api_key": self.api_key,
+                        "api_base": self.api_base,
+                        "api_version": self.api_version,
+                        **self._litellm_params,
+                    },
+                }
+            ]
         )
-        return await router.acompletion(
+
+        client = instructor.patch(router)
+        return await client.chat.completions.create(
             messages=messages,
             model=model,
             response_model=response_model,

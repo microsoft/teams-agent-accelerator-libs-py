@@ -50,23 +50,23 @@ async def _return_arguments(**kwargs):
 
 @pytest.fixture()
 def mock_completion(monkeypatch):
+    # Create mock for the chat completions client
+    chat_completions = mock.Mock()
+    chat_completions.create = mock.AsyncMock()
+
     client = mock.Mock()
-    router = mock.Mock()
+    client.chat.completions = chat_completions
 
-    # Create a mock Router instance that returns a proper response
-    mock_response = {"choices": [{"message": {"content": "test response"}}]}
-
-    async def mock_acompletion(*args, **kwargs):
-        return mock_response
-
+    # Create a proper Router mock instance
     router_instance = mock.Mock()
-    router_instance.acompletion = mock_acompletion
     router_instance.model_list = []
-    router_instance.api_key = "mock-key"
+
+    router = mock.Mock()
     router.return_value = router_instance
 
-    monkeypatch.setattr(instructor, "patch", client)
-    monkeypatch.setattr(litellm, "Router", router)
+    # Patch both instructor.patch and litellm.router.Router
+    monkeypatch.setattr(instructor, "patch", lambda x: client)
+    monkeypatch.setattr(litellm.router, "Router", router)
 
     return client, router
 

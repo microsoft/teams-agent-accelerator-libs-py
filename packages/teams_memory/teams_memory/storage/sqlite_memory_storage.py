@@ -189,6 +189,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             """
             distance_select = ", rm.distance as _distance, rm.text as _embedding_text"
             order_by = "ORDER BY rm.distance ASC"
+            # keep as list then convert to tuple at end
             params = params + (
                 sqlite_vec.serialize_float32(text_embedding.embedding_vector),
                 limit or self.default_limit,
@@ -202,7 +203,8 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             topic_filter = (
                 " AND (" + " OR ".join(["m.topics LIKE ?"] * len(topics)) + ")"
             )
-            params.extend(f"%{t}%" for t in topics)
+            # params.extend(f"%{t}%" for t in topics)
+            params = params + tuple(f"%{t}%" for t in topics)
 
         user_filter = ""
         if user_id:
