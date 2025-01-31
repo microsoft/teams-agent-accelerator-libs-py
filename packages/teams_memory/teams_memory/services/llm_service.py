@@ -69,7 +69,6 @@ class LLMService:
         messages: List[Dict[str, str]],
         response_model: None = None,
         override_model: Optional[str] = None,
-        stream: bool = False,
         **kwargs: Any,
     ) -> ModelResponse: ...
 
@@ -79,7 +78,6 @@ class LLMService:
         messages: List[Dict[str, str]],
         response_model: type[T],
         override_model: Optional[str] = None,
-        stream: bool = False,
         **kwargs: Any,
     ) -> T: ...
 
@@ -88,7 +86,6 @@ class LLMService:
         messages: List[Dict[str, str]],
         response_model: Optional[type[T]] = None,
         override_model: Optional[str] = None,
-        stream: bool = False,
         **kwargs: Any,
     ) -> Union[ModelResponse, T]:
         """Generate completion from the model."""
