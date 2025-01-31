@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from teams_memory.config import MemoryModuleConfig
 from teams_memory.core.memory_core import MemoryCore
@@ -94,6 +94,18 @@ class MemoryModule(BaseMemoryModule):
         if topic is None:
             return True
         return any(topic in t.name for t in self.config.topics)
+
+    async def answer_question(
+        self,
+        user_id: Optional[str],
+        question: str,
+        query: Optional[str] = None,
+        topic: Optional[str] = None,
+    ) -> Optional[Tuple[str, List[Memory]]]:
+        """Answer a question based on the existing memories."""
+        return await self.memory_core.answer_question(
+            user_id=user_id, question=question, query=query, topic=topic
+        )
 
     async def search_memories(
         self,
@@ -274,6 +286,18 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
                 )
             return self.users_in_conversation_scope[0]
         return user_id
+
+    async def answer_question(
+        self,
+        user_id: Optional[str],
+        question: str,
+        query: Optional[str] = None,
+        topic: Optional[str] = None,
+    ) -> Optional[Tuple[str, List[Memory]]]:
+        validated_user_id = self._validate_user(user_id)
+        return await self.memory_module.answer_question(
+            user_id=validated_user_id, question=question, query=query, topic=topic
+        )
 
     async def search_memories(
         self,
