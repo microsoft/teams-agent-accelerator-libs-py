@@ -33,7 +33,6 @@ class InternalMessageInput(BaseMessageInput):
     type: ClassVar = "internal"
     deep_link: ClassVar[None] = None
     created_at: datetime = Field(default_factory=datetime.now)
-    source: Optional[str] = None
 
 
 class InternalMessage(InternalMessageInput):
@@ -57,7 +56,6 @@ class UserMessageInput(BaseMessageInput):
     id: str
     type: ClassVar = "user"
     deep_link: Optional[str] = None
-    user_id: Optional[str] = None
 
 
 class UserMessage(UserMessageInput):
@@ -126,7 +124,6 @@ class Memory(BaseMemoryInput):
     """Represents a processed memory."""
 
     id: str
-    relevance_score: Optional[float] = None
 
 
 class MemoryWithAttributions(BaseModel):
