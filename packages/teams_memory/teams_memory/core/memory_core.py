@@ -5,11 +5,10 @@ Licensed under the MIT License.
 
 import datetime
 import logging
-from typing import List, Literal, Optional, Set, Tuple
+from typing import Any, List, Literal, Optional, Set, Tuple
 
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field, create_model, field_validator, model_validator
-from typing_extensions import Self
 
 from teams_memory.config import MemoryModuleConfig
 from teams_memory.core.prompts import (
@@ -94,17 +93,18 @@ class ProcessSemanticMemoryDecision(BaseModel):
 
 
 class Answer(BaseModel):
-    @model_validator(mode="after")
-    def validate(self) -> Self:
-        if self.answer and self.answer.lower() == "unknown":
-            self.answer = None
-            self.fact_ids = None
-        return self
-
     answer: Optional[str] = Field(..., description="The answer to the question")
     fact_ids: Optional[List[str]] = Field(
         ..., description="The fact ids that were used to answer the question"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_answer(cls, data: Any) -> Any:
+        if isinstance(data, dict) and data.get("answer", "").lower() == "unknown":
+            data["answer"] = None
+            data["fact_ids"] = None
+        return data
 
 
 class MemoryCore(BaseMemoryCore):
