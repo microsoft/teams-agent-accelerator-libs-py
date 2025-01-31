@@ -116,7 +116,7 @@ class MessageBuffer:
 
         self._enable_automatic_processing = True
 
-    async def process_messages(self, conversation_ref: str):
+    async def process_messages(self, conversation_ref: str) -> None:
         await self._process_conversation_messages(conversation_ref)
         await self.scheduler.cancel_event(conversation_ref)
 

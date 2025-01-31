@@ -67,7 +67,9 @@ class MemoryModuleManager:
         os.remove(self._db_path)
 
 
-async def add_messages(memory_module: MemoryModule, messages: List[SessionMessage]) -> None:
+async def add_messages(
+    memory_module: MemoryModule, messages: List[SessionMessage]
+) -> None:
     def create_message(**kwargs: Any) -> Union[AssistantMessage, UserMessage]:
         params = {
             "id": str(uuid.uuid4()),
@@ -114,7 +116,9 @@ def run_benchmark(
         memory_module: MemoryModule
         with MemoryModuleManager(buffer_size=len(session)) as memory_module:
             await add_messages(memory_module, messages=session)
-            memories = await memory_module.search_memories(user_id=None, query=query, limit=None)
+            memories = await memory_module.search_memories(
+                user_id=None, query=query, limit=None
+            )
 
         return {
             "input": {
@@ -145,7 +149,7 @@ def run_benchmark(
     mlflow_metric = string_check_metric()
     with mlflow.start_run(run_name=name):
         mlflow.log_params({"dataset": dataset_name})
-        mlflow.evaluate(iterate_benchmark_cases, pd_dataset, extra_metrics=[mlflow_metric])
+        mlflow.evaluate(iterate_benchmark_cases, pd_dataset, extra_metrics=[mlflow_metric])  # type: ignore
 
 
 @click.command()

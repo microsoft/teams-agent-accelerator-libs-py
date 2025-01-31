@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Optional, TypeVar, Union, cast, overload
 
 import instructor
 import litellm
-from litellm import BaseModel
 from litellm.types.utils import EmbeddingResponse, ModelResponse
+from pydantic import BaseModel
 
 from teams_memory.config import LLMConfig
 

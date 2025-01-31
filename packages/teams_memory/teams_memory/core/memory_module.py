@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 import logging
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from teams_memory.config import MemoryModuleConfig
 from teams_memory.core.memory_core import MemoryCore
@@ -322,11 +322,11 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
     async def add_message(self, message: MessageInput) -> Message:
         return await self.memory_module.add_message(message)
 
-    async def get_messages(self, *args, **kwargs) -> List[Message]:
-        return await self.memory_module.get_messages(*args, **kwargs)
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        return await self.memory_module.get_messages(message_ids)
 
-    async def remove_messages(self, *args, **kwargs) -> None:
-        return await self.memory_module.remove_messages(*args, **kwargs)
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        return await self.memory_module.remove_messages(message_ids)
 
     async def remove_memories(
         self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None

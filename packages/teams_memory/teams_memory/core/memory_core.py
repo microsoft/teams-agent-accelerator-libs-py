@@ -500,5 +500,5 @@ class MemoryCore(BaseMemoryCore):
     async def get_messages(self, memory_ids: List[str]) -> List[Message]:
         return await self.storage.get_messages(memory_ids)
 
-    async def get_memories_from_message(self, message_id):
+    async def get_memories_from_message(self, message_id: str) -> List[Memory]:
         return await self.storage.get_attributed_memories(message_ids=[message_id])

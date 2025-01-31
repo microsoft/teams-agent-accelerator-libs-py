@@ -10,7 +10,9 @@ from mlflow.metrics import MetricValue, make_metric
 from mlflow.metrics.base import standard_aggregations
 
 
-def check_strings_in_retrieved_memories(expected_strings: List[str], actual_strings: Optional[List[str]]) -> bool:
+def check_strings_in_retrieved_memories(
+    expected_strings: List[str], actual_strings: Optional[List[str]]
+) -> bool:
     """Check if all expected strings are present in the retrieved memories.
 
     For example:
@@ -50,12 +52,14 @@ def string_check_metric() -> Any:
         scores: list[float] = []
         memories = predictions.apply(lambda x: x["memories"])
         for expected, actual in zip(inputs, memories, strict=False):
-            score = 1.0 if check_strings_in_retrieved_memories(expected, actual) else 0.0
+            score = (
+                1.0 if check_strings_in_retrieved_memories(expected, actual) else 0.0
+            )
 
             scores.append(score)
 
-        aggregated_results = standard_aggregations(scores)
+        aggregated_results = standard_aggregations(scores)  # type: ignore
 
         return MetricValue(scores=scores, aggregate_results=aggregated_results)
 
-    return make_metric(eval_fn=ml_metric, greater_is_better=True, name="string check")
+    return make_metric(eval_fn=ml_metric, greater_is_better=True, name="string check")  # type: ignore

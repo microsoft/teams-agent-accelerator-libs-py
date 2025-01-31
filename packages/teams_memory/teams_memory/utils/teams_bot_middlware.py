@@ -159,7 +159,7 @@ class MemoryMiddleware(Middleware):  # type: ignore
         )
 
     async def on_turn(
-        self, context: TurnContext, logic: Callable[[], Awaitable]
+        self, context: TurnContext, logic: Callable[[], Awaitable[None]]
     ) -> None:
         await self._augment_context(context)
         # Handle incoming message
