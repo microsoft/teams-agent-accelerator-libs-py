@@ -98,7 +98,7 @@ async def test_completion_calls_litellm_client(mock_completion):
     )
     lm = LLMService(config=config)
 
-    await lm.completion(messages, **local_args)
+    await lm.completion(messages, response_model=None, **local_args)
 
     config = mock_completion.mock_calls[0].kwargs
     assert config["model"] == model
