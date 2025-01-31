@@ -7,11 +7,12 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import List, TypedDict
+from typing import List
 
 import mlflow
 from dotenv import load_dotenv
 from mlflow.openai import autolog
+from typing_extensions import TypedDict
 
 load_dotenv()
 
