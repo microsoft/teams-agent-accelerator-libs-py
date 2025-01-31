@@ -5,6 +5,7 @@
 ### Features
 
 - Added method `BaseMemoryModule.get_memories_with_attributions` to easily get the messages associated to memories.
+- Added method `BaseMemoryModule.answer_question` to answer a question using memories.
 
 ### Bug Fixes
 
