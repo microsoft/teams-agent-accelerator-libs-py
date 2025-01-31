@@ -1,3 +1,5 @@
+# mypy: disable-error-code="misc"
+
 """
 Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
@@ -7,11 +9,12 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import List, TypedDict
+from typing import List
 
 import mlflow
 from dotenv import load_dotenv
 from mlflow.openai import autolog
+from typing_extensions import TypedDict
 
 load_dotenv()
 

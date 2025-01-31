@@ -70,7 +70,7 @@ class LLMService:
         response_model: None = None,
         override_model: Optional[str] = None,
         stream: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> ModelResponse: ...
 
     @overload
@@ -80,7 +80,7 @@ class LLMService:
         response_model: type[T],
         override_model: Optional[str] = None,
         stream: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> T: ...
 
     async def completion(
@@ -89,7 +89,7 @@ class LLMService:
         response_model: Optional[type[T]] = None,
         override_model: Optional[str] = None,
         stream: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> Union[ModelResponse, T]:
         """Generate completion from the model."""
         model = override_model or self.model

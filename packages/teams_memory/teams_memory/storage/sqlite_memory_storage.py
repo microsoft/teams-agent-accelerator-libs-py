@@ -358,7 +358,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
-        params: tuple = (conversation_ref,)
+        params: tuple[Any, ...] = (conversation_ref,)
 
         if last_minutes is not None:
             cutoff_time = datetime.datetime.now(

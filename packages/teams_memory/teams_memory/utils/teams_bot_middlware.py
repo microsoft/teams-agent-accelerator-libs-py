@@ -175,7 +175,9 @@ class MemoryMiddleware(Middleware):  # type: ignore
         async def wrapped_send_activities(
             activities: List[Activity],
         ) -> List[ResourceResponse]:
-            responses = await original_send_activities(activities)
+            responses = cast(
+                List[ResourceResponse], await original_send_activities(activities)
+            )
             await self._add_agent_message(context, activities, responses)
             return responses
 

@@ -4,7 +4,13 @@ version = "0.0.0"
 description = "a framework for creating intelligent agents within Microsoft Teams"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
-dependencies = ["agent-runtime", "teams_memory", "litellm", "evals"]
+dependencies = [
+    "agent-runtime",
+    "teams_memory",
+    "litellm",
+    "evals",
+    "pydantic>=2.0"
+]
 
 [dependency-groups]
 dev = [
@@ -21,6 +27,8 @@ dev = [
     "black>=24.10.0",
     "types-tqdm>=4.66.0",
     "pandas-stubs>=2.1.0",
+    "pydantic-core>=2.16.3",
+    "typing-extensions>=4.9.0"
 ]
 
 [tool.uv.sources]
