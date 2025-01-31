@@ -75,25 +75,29 @@ TEST_CASES: List[Dict[str, Any]] = [
                 "question": "What is the user's favorite food?",
                 "expected_answer_contains": ["sushi", "salmon rolls"],
                 "topic": "Food Preferences",
-                "relevant_memory_indices": [0],
+                "required_memory_indices": [0],
+                "irrelevant_memory_indices": [2, 3],
             },
             {
                 "question": "What are the user's food allergies and restrictions?",
                 "expected_answer_contains": ["shellfish", "lactose intolerance"],
                 "topic": "Health",
-                "relevant_memory_indices": [1, 4],
+                "required_memory_indices": [1, 4],
+                "irrelevant_memory_indices": [0, 2, 3],
             },
             {
                 "question": "What kind of cuisine does the user cook?",
                 "expected_answer_contains": ["Japanese"],
                 "topic": "Hobbies",
-                "relevant_memory_indices": [2],
+                "required_memory_indices": [2],
+                "irrelevant_memory_indices": [0, 1, 4],
             },
             {
                 "question": "How does the user like their food prepared?",
                 "expected_answer_contains": ["spicy", "hot sauce"],
                 "topic": "Food Preferences",
-                "relevant_memory_indices": [3],
+                "required_memory_indices": [3],
+                "irrelevant_memory_indices": [1, 2],
             },
         ],
     },
@@ -125,6 +129,14 @@ TEST_CASES: List[Dict[str, Any]] = [
                     "content": "The user has noise-cancelling headphones for focus",
                     "topics": ["Equipment"],
                 },
+                {
+                    "content": "The user has a dairly allergy",
+                    "topics": ["Health"],
+                },
+                {
+                    "content": "The user has a young daughter",
+                    "topics": ["Family"],
+                },
             ],
             "topics": [
                 Topic(name="Work", description="Work-related information"),
@@ -145,17 +157,19 @@ TEST_CASES: List[Dict[str, Any]] = [
                     "MacBook Pro",
                 ],
                 "topic": None,
-                "relevant_memory_indices": [0, 1, 2],
+                "required_memory_indices": [0, 1, 2],
+                "irrelevant_memory_indices": [6, 7],
             },
             {
-                "question": "What equipment does the user use for work?",
+                "question": "What equipment does the user use for during work?",
                 "expected_answer_contains": [
                     "MacBook Pro",
                     "standing desk",
                     "headphones",
                 ],
                 "topic": "Equipment",
-                "relevant_memory_indices": [2, 3, 5],
+                "required_memory_indices": [2, 3, 5],
+                "irrelevant_memory_indices": [0, 1],
             },
             {
                 "question": "How does the user structure their work day?",
@@ -165,7 +179,8 @@ TEST_CASES: List[Dict[str, Any]] = [
                     "coffee shops",
                 ],
                 "topic": None,
-                "relevant_memory_indices": [1, 4],
+                "required_memory_indices": [1, 4],
+                "irrelevant_memory_indices": [2, 3, 5],
             },
         ],
     },
@@ -193,19 +208,22 @@ TEST_CASES: List[Dict[str, Any]] = [
                 "question": "Does the user have any siblings?",
                 "expected_answer_contains": None,
                 "topic": "Family",
-                "relevant_memory_indices": None,
+                "required_memory_indices": None,
+                "irrelevant_memory_indices": [0, 1],
             },
             {
-                "question": "What kind of pets does the user have?",
+                "question": "Provide some details about the user's pets",
                 "expected_answer_contains": ["dog", "Max", "golden retriever"],
                 "topic": "Pets",
-                "relevant_memory_indices": [0, 1],
+                "required_memory_indices": [0, 1],
+                "irrelevant_memory_indices": [],
             },
             {
                 "question": "Where did the user go to college?",
                 "expected_answer_contains": None,
                 "topic": "Education",
-                "relevant_memory_indices": None,
+                "required_memory_indices": None,
+                "irrelevant_memory_indices": [0, 1],
             },
         ],
     },
@@ -270,19 +288,22 @@ TEST_CASES: List[Dict[str, Any]] = [
                     "30 minutes daily",
                 ],
                 "topic": "Hobbies",
-                "relevant_memory_indices": [0, 2, 4, 9],
+                "required_memory_indices": [0, 2, 4, 9],
+                "irrelevant_memory_indices": [1, 3, 6, 7, 8],
             },
             {
                 "question": "How does the user take their coffee?",
                 "expected_answer_contains": ["black", "no sugar"],
                 "topic": "Preferences",
-                "relevant_memory_indices": [1],
+                "required_memory_indices": [1],
+                "irrelevant_memory_indices": [0, 2, 4, 5, 6, 7, 8, 9],
             },
             {
                 "question": "What are the user's communication preferences?",
                 "expected_answer_contains": ["texting", "calling"],
                 "topic": "Preferences",
-                "relevant_memory_indices": [6],
+                "required_memory_indices": [6],
+                "irrelevant_memory_indices": [1, 3],
             },
         ],
     },
@@ -300,7 +321,7 @@ class QuestionAnsweringEvaluator(BaseEvaluator):
         self.llm_config = llm_config
         self.llm_service = LLMService(llm_config)
 
-    async def evaluate_single(self, test_case: Dict) -> EvaluationResult:
+    async def evaluate_single(self, test_case: Dict) -> List[EvaluationResult]:
         try:
             # Setup memory core with test configuration
             db_path = (
@@ -330,11 +351,13 @@ class QuestionAnsweringEvaluator(BaseEvaluator):
                 memory_inputs.append(memory_input)
 
             # Test question answering for each query
-            success = True
-            failures = []
-            all_answers = []
+            evaluation_results = []
 
             for question_test in test_case["questions"]:
+                question_success = True
+                question_failures = []
+                answer_response = None
+
                 answer_tuple = await memory_core._answer_question_from_memories(
                     memories=memory_inputs,
                     question=question_test["question"],
@@ -343,78 +366,111 @@ class QuestionAnsweringEvaluator(BaseEvaluator):
                 if question_test["expected_answer_contains"] is None:
                     # We expect no answer for this question
                     if answer_tuple is not None:
-                        success = False
-                        failures.append(
-                            f"Question '{question_test['question']}' should have returned None but got an answer"
+                        question_success = False
+                        question_failures.append(
+                            "Question should have returned None but got an answer"
                         )
                 else:
                     # We expect an answer containing specific phrases
                     if answer_tuple is None:
-                        success = False
-                        failures.append(
-                            f"Question '{question_test['question']}' failed to get an answer"
-                        )
+                        question_success = False
+                        question_failures.append("Failed to get an answer")
                     else:
                         answer, returned_memories = answer_tuple
-                        all_answers.append(
-                            {
-                                "question": question_test["question"],
-                                "answer": answer,
-                                "memories": [m.content for m in returned_memories],
-                            }
-                        )
+                        answer_response = {
+                            "answer": answer,
+                            "memories": [m.content for m in returned_memories],
+                        }
 
                         # Check expected phrases in answer
                         for expected in question_test["expected_answer_contains"]:
                             if expected.lower() not in answer.lower():
-                                success = False
-                                failures.append(
-                                    f"Answer to '{question_test['question']}' missing expected content '{expected}'"
+                                question_success = False
+                                question_failures.append(
+                                    f"Missing expected content '{expected}'. The answer was: '{answer}'"
                                 )
 
-                        # Check that returned memories match expected indices
-                        expected_indices = question_test["relevant_memory_indices"]
-                        if expected_indices is not None:
-                            expected_memories_ids = set(
-                                [memory_inputs[i].id for i in expected_indices]
+                        # Check that returned memories include required and exclude irrelevant
+                        required_indices = question_test.get("required_memory_indices")
+                        irrelevant_indices = question_test.get(
+                            "irrelevant_memory_indices", []
+                        )
+
+                        if required_indices is not None:
+                            returned_memory_ids = set([m.id for m in returned_memories])
+                            required_memory_ids = set(
+                                [memory_inputs[i].id for i in required_indices]
                             )
-                            returned_memory_set = set([m.id for m in returned_memories])
-                            if expected_memories_ids != returned_memory_set:
-                                success = False
-                                missing_memories_ids = (
-                                    expected_memories_ids - returned_memory_set
-                                )
+                            irrelevant_memory_ids = set(
+                                [memory_inputs[i].id for i in irrelevant_indices]
+                            )
+
+                            # Check for missing required memories
+                            missing_memory_ids = (
+                                required_memory_ids - returned_memory_ids
+                            )
+                            if missing_memory_ids:
+                                question_success = False
                                 missing_memories = [
                                     next(
                                         (m.content for m in memory_inputs if m.id == id)
                                     )
-                                    for id in missing_memories_ids
+                                    for id in missing_memory_ids
                                 ]
-                                extra_memories_ids = (
-                                    returned_memory_set - expected_memories_ids
+                                question_failures.append(
+                                    f"Missing required memories: {missing_memories}"
                                 )
-                                extra_memories = [
+
+                            # Check for incorrectly included irrelevant memories
+                            included_irrelevant = (
+                                returned_memory_ids & irrelevant_memory_ids
+                            )
+                            if included_irrelevant:
+                                question_success = False
+                                irrelevant_included = [
                                     next(
                                         (m.content for m in memory_inputs if m.id == id)
                                     )
-                                    for id in extra_memories_ids
+                                    for id in included_irrelevant
                                 ]
-                                failures.append(
-                                    f"Answer to '{question_test['question']}' returned unexpected memories where the answer was '{answer}'. "  # noqa: E501
-                                    f"Missing memories: {missing_memories}. "
-                                    f"Extra memories: {extra_memories}. "
+                                question_failures.append(
+                                    f"Incorrectly included irrelevant memories: {irrelevant_included}"
                                 )
 
-            return EvaluationResult(
-                success=success,
-                test_case=test_case,
-                response={"answers": all_answers},
-                failures=failures,
-            )
+                # Create a test case specific to this question
+                question_test_case = {
+                    "title": f"{test_case['title']} - {question_test['question']}",
+                    "setup": test_case["setup"],
+                    "questions": [question_test],
+                }
+
+                evaluation_results.append(
+                    EvaluationResult(
+                        success=question_success,
+                        test_case=question_test_case,
+                        response=answer_response,
+                        failures=question_failures,
+                    )
+                )
+
+            return evaluation_results
 
         except Exception as e:
             logging.error(e)
-            return EvaluationResult(False, test_case, None, [f"Error: {str(e)}"])
+            # Return a failed result for each question in case of error
+            return [
+                EvaluationResult(
+                    False,
+                    {
+                        "title": f"{test_case['title']} - {q['question']}",
+                        "setup": test_case["setup"],
+                        "questions": [q],
+                    },
+                    None,
+                    [f"Error: {str(e)}"],
+                )
+                for q in test_case["questions"]
+            ]
 
 
 @click.command()
