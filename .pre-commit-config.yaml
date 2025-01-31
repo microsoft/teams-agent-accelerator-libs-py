@@ -20,5 +20,15 @@ repos:
     rev: v1.13.0
     hooks:
       - id: mypy
-        pass_filenames: false
-        args: [--ignore-missing-imports, --show-traceback]
+        args: [
+          --ignore-missing-imports,
+          --show-traceback,
+          --no-strict,
+        ]
+        files: ^packages/.+\.py$
+        additional_dependencies:
+          - pydantic>=2.0.0
+          - numpy
+          - click>=8.0.0
+          - pandas-stubs
+          - types-tqdm

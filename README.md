@@ -8,26 +8,33 @@
 
 ### Prerequisites
 
+Note: Ensure uv version is >= 0.4.27
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### Installing
 
 1. `uv sync` - it installs the virtual env and dependencies
-    - If you are using Windows, you may need to manually install [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
+   - If you are using Windows, you may need to manually install [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 2. Activate virtual env
 
 - Mac: `source .venv/bin/activate`
 - Windows: `.venv\Scripts\Activate`
 
+> **Note:** After the initial setup, you need to activate the virtual environment each time you start a new terminal session
+
 3. Install pre-commit hooks
 
-- `pre-commit install`
+Set up pre-commit hooks:
+
+```bash
+pre-commit install
+```
 
 ### Debug with test cases
 
 #### Connect with LLM service
 
-Under root folder, create `.env` and put LLM configurations into it.  
+Under root folder, create `.env` and put LLM configurations into it.
 Note: for azure models, please add `azure/` prefix.
 
 ```
@@ -38,23 +45,23 @@ AZURE_OPENAI_API_BASE=https://<domain name>.openai.azure.com
 AZURE_OPENAI_API_VERSION=<version name>
 ```
 
-#### Start debugging on selected test case
+#### Run all test cases
 
-**Remove overrided model string**:  
-In `test_memory_core.py`, `LLMService` initiator, remove `model="gpt-4o-mini",` in param.  
-In `test_memory_module.py`, `build_llm_config` initiator, remove `{"model": "gpt-4o-mini"}` in param.
+**Remove overrided model string**:
+`pytest`
 
-**Debug selected test**:  
+**Debug selected test**:
 For test cases marked with `@pytest.mark.asyncio`, find the play icon left to it. Right click and choose `Debug test`.
 ![alt text](image.png)
 ![alt text](image-1.png)
 
 ### Test Running
 
-Mac: `PYTHONPATH=$PYTHONPATH:. pytest tests/test_memory_module.py`  
+Mac: `PYTHONPATH=$PYTHONPATH:. pytest tests/test_memory_module.py`
 Window: `$env:PYTHONPATH = "$env:PYTHONPATH;."; pytest tests/test_memory_module.py`
 
 ## Run with test bot
+
 Please refer to src/README.md for more details.
 
 ## Contributing
@@ -69,7 +76,6 @@ This repo is licensed under the MIT License. It includes tools to use APIs provi
 
 - OpenAI API. Use of the OpenAI API requires an API key, which can be obtained from OpenAI. By using this SDK, you agree to abide by the OpenAI API Terms of Use and Privacy Policy. You can find them at [OpenAI Terms of Use](https://openai.com/policies/terms-of-use)
 - Azure OpenAI Service. Use of the Azure OpenAI API requires an API key. By using this SDK, you agree to abide by the Azure OpenAI API terms. You can find them at [Azure OPENAI TOS](https://www.microsoft.com/licensing/terms/productoffering/MicrosoftAzure/MCA#ServiceSpecificTerms), and associated documentation at [Azure Cognitive Services](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/).
-
 
 ## Code of Conduct
 
