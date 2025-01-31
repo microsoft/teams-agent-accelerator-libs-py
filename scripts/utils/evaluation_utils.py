@@ -148,7 +148,7 @@ def print_final_report(all_results: List[Dict]) -> None:
 
     # Most common failures if there are any failures
     if total_failures > 0:
-        failure_counts = {}
+        failure_counts: Dict[str, int] = {}
         for run in all_results:
             for result in run["results"]:
                 if not result["success"]:
