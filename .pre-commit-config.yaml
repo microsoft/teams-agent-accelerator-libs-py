@@ -20,3 +20,10 @@ repos:
     rev: v1.13.0
     hooks:
       - id: mypy
+        args: [
+          --ignore-missing-imports,
+          --show-traceback,
+          --no-strict,
+        ]
+        files: ^packages/.+\.py$
+
