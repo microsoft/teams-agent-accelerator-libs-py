@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 import datetime
 import logging
-from typing import Any, List, Literal, Optional, Set, Tuple
+from typing import List, Literal, Optional, Set, Tuple
 
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field, create_model, field_validator, model_validator
@@ -98,13 +98,12 @@ class Answer(BaseModel):
         ..., description="The fact ids that were used to answer the question"
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_answer(cls, data: Any) -> Any:
-        if isinstance(data, dict) and data.get("answer", "").lower() == "unknown":
-            data["answer"] = None
-            data["fact_ids"] = None
-        return data
+    @model_validator(mode="after")
+    def validate_answer(self) -> "Answer":
+        if self.answer and self.answer.lower() == "unknown":
+            self.answer = None
+            self.fact_ids = None
+        return self
 
 
 class MemoryCore(BaseMemoryCore):
