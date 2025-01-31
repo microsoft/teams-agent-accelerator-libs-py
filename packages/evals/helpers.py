@@ -28,7 +28,7 @@ def setup_mlflow(experiment_name: str):
         logging.info("Using Remote Databricks")
         mlflow.set_tracking_uri("databricks://memorymodule-evals")
         mlflow.set_experiment(experiment_name)
-    autolog()
+    autolog()  # type: ignore
 
 
 class SessionMessage(TypedDict):
