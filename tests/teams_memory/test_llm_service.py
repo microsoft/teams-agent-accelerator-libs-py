@@ -337,8 +337,9 @@ async def test_embedding_model_override(mock_embedding):
 async def test_completion_model_override(mock_completion):
     model = "test-model"
     override_model = "override model"
+    api_key = "mock-api-key"
 
-    llm_config = LLMConfig(model=model)
+    llm_config = LLMConfig(model=model, api_key=api_key, api_base="mock://api.test")
     lm = LLMService(config=llm_config)
 
     await lm.completion(messages=[], override_model=override_model)
