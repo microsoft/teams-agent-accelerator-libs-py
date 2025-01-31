@@ -51,6 +51,6 @@ class Dataset(TypedDict):
 
 
 def load_dataset() -> Dataset:
-    with open(Path(__file__) / ".." / "teams_memory_dataset.json") as f:
-        dataset = json.load(f)
+    with open(Path(__file__).parent / "teams_memory_dataset.json") as f:
+        dataset: Dataset = json.load(f)
         return dataset

@@ -49,7 +49,7 @@ def string_check_metric():
         inputs: pd.Series,
         metrics: dict[str, MetricValue],
     ) -> MetricValue:
-        scores: list[int] = []
+        scores: list[float] = []
         memories = predictions.apply(lambda x: x["memories"])
         for expected, actual in zip(inputs, memories, strict=False):
             score = 1 if check_strings_in_retrieved_memories(expected, actual) else 0
