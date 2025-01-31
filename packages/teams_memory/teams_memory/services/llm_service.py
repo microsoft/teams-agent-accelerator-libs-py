@@ -3,7 +3,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
-from typing import Any, List, Optional, TypeVar, Union, cast, overload
+from typing import Any, Dict, List, Optional, TypeVar, Union, cast, overload
 
 import instructor
 import litellm
@@ -66,26 +66,29 @@ class LLMService:
     @overload
     async def completion(
         self,
-        messages: List,
+        messages: List[Dict[str, str]],
         response_model: None = None,
         override_model: Optional[str] = None,
+        stream: bool = False,
         **kwargs,
     ) -> ModelResponse: ...
 
     @overload
     async def completion(
         self,
-        messages: List,
+        messages: List[Dict[str, str]],
         response_model: type[T],
         override_model: Optional[str] = None,
+        stream: bool = False,
         **kwargs,
     ) -> T: ...
 
     async def completion(
         self,
-        messages: List,
+        messages: List[Dict[str, str]],
         response_model: Optional[type[T]] = None,
         override_model: Optional[str] = None,
+        stream: bool = False,
         **kwargs,
     ) -> Union[ModelResponse, T]:
         """Generate completion from the model."""
@@ -117,14 +120,14 @@ class LLMService:
         self,
         input: Union[str, List[str]],
         override_model: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> EmbeddingResponse:
         """Get embeddings from the model. This method is a wrapper around litellm's `aembedding` method."""
         model = override_model or self.embedding_model
         if not model:
             raise ValueError("No embedding model provided.")
 
-        return await litellm.aembedding(
+        result: EmbeddingResponse = await litellm.aembedding(
             model=model,
             input=input,
             api_key=self.api_key,
@@ -133,3 +136,4 @@ class LLMService:
             **self._litellm_params,
             **kwargs,
         )
+        return result
