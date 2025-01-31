@@ -6,7 +6,7 @@ Licensed under the MIT License.
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import aiosqlite
 import sqlite_vec
@@ -36,7 +36,7 @@ class SQLiteStorage:
         migration_manager.run_migrations()
 
     @asynccontextmanager
-    async def _get_connection(self):
+    async def _get_connection(self) -> AsyncGenerator[aiosqlite.Connection, None]:
         """Yield a configured SQLite connection with vector extensions loaded."""
         async with aiosqlite.connect(self.db_path) as conn:
             await conn.enable_load_extension(True)
@@ -88,7 +88,7 @@ class SQLiteStorage:
                 return await cursor.fetchone() is not None
 
     @asynccontextmanager
-    async def transaction(self):
+    async def transaction(self) -> AsyncGenerator[aiosqlite.Cursor, None]:
         """Provide a transaction context manager."""
         async with self._get_connection() as conn:
             async with conn.cursor() as cursor:
