@@ -790,3 +790,128 @@ async def test_get_memories_with_attributions(
 
     assert {msg.id for msg in memory_with_attributions.messages} == {message1_id}
     assert any("hiking" in msg.content for msg in memory_with_attributions.messages)
+
+
+@pytest.mark.asyncio
+async def test_answer_question(
+    scoped_memory_module, conversation_id, user_ids_in_conversation_scope
+):
+    """Test answering questions with a mix of relevant and irrelevant memories."""
+    # Setup messages with a mix of relevant and irrelevant information
+    messages = [
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I work as a software engineer at a tech company",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I love playing basketball on weekends",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="My favorite programming language is Python",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I have a golden retriever named Max",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I use VS Code for coding and prefer dark theme",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I enjoy hiking in the mountains",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now(),
+        ),
+    ]
+
+    # Add messages and process them
+    for message in messages:
+        await scoped_memory_module.memory_module.add_message(message)
+    await scoped_memory_module.process_messages()
+
+    # Test cases with expected relevant and irrelevant memories
+    test_cases = [
+        {
+            "question": "What programming languages does the user use?",
+            "expected_content": ["Python"],
+            "irrelevant_content": [
+                "basketball",
+                "golden retriever",
+                "hiking",
+                "software engineer",
+                "VS Code",
+            ],
+        },
+        {
+            "question": "What are the user's hobbies?",
+            "expected_content": ["basketball", "hiking"],
+            "irrelevant_content": [
+                "software engineer",
+                "VS Code",
+                "Python",
+            ],
+        },
+        {
+            "question": "Tell me about the user's pets",
+            "expected_content": ["golden retriever", "Max"],
+            "irrelevant_content": [
+                "software engineer",
+                "basketball",
+                "hiking",
+            ],
+        },
+    ]
+
+    for test_case in test_cases:
+        # Get answer from memory module
+        answer_tuple = await scoped_memory_module.answer_question(
+            question=test_case["question"]
+        )
+
+        assert (
+            answer_tuple is not None
+        ), f"Failed to get answer for: {test_case['question']}"
+        answer, memories = answer_tuple
+
+        # Check that answer contains expected content
+        for expected in test_case["expected_content"]:
+            assert expected.lower() in answer.lower(), (
+                f"Answer missing expected content '{expected}'. "
+                f"Answer was: '{answer}'"
+            )
+
+        # Check that relevant memories were used
+        memory_contents = [m.content.lower() for m in memories]
+
+        # Check that irrelevant memories were not used
+        for irrelevant in test_case["irrelevant_content"]:
+            assert not any(
+                irrelevant.lower() in content for content in memory_contents
+            ), f"Included irrelevant memory: {irrelevant}"
+
+    # Test question with no relevant information
+    unknown_answer = await scoped_memory_module.answer_question(
+        question="What is the user's favorite movie?"
+    )
+    assert (
+        unknown_answer is None
+    ), "Should return None for questions with no relevant information"

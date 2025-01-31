@@ -315,7 +315,7 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
     async def answer_question(
         self,
         *,
-        user_id: Optional[str],
+        user_id: Optional[str] = None,
         question: str,
         query: Optional[str] = None,
         topic: Optional[str] = None,

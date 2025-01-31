@@ -229,10 +229,13 @@ class MemoryCore(BaseMemoryCore):
         ]
         answer = await self.lm.completion(messages=messages, response_model=Answer)
         if answer.answer and answer.fact_ids:
+            logger.debug("Question: %s, Answer: %s", question, answer)
             return answer.answer, [
                 memory for memory in memories if memory.id in answer.fact_ids
             ]
-        return None
+        else:
+            logger.debug("No answer found for question: %s", question)
+            return None
 
     async def search_memories(
         self,
