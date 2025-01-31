@@ -7,7 +7,7 @@ import logging
 import os
 import sqlite3
 from contextlib import contextmanager
-from typing import List, Tuple
+from typing import Generator, List, Tuple
 
 import sqlite_vec
 
@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class MigrationManager:
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str) -> None:
         self.db_path = db_path
         # Initialize the database if needed
         with self.__get_connection() as conn:
             self.__create_vector_search_table(conn)
             self.__create_migrations_table(conn)
 
-    def run_migrations(self):
+    def run_migrations(self) -> None:
         logger.debug("Migrations: Running migrations")
         with self.__get_connection() as conn:
             applied_migrations = set(self.__get_applied_migrations(conn))
@@ -46,7 +46,7 @@ class MigrationManager:
 
     # Changed to double underscore for true private methods
     @contextmanager
-    def __get_connection(self):
+    def __get_connection(self) -> Generator[sqlite3.Connection, None, None]:
         conn = None
         try:
             with sqlite3.connect(self.db_path) as conn:
@@ -55,7 +55,7 @@ class MigrationManager:
             if conn is not None:
                 conn.close()
 
-    def __create_vector_search_table(self, conn):
+    def __create_vector_search_table(self, conn: sqlite3.Connection) -> None:
         logger.debug("Creating vector search table at %s", self.db_path)
         conn.enable_load_extension(True)
         sqlite_vec.load(conn)
@@ -70,7 +70,7 @@ class MigrationManager:
         """
         )
 
-    def __create_migrations_table(self, conn):
+    def __create_migrations_table(self, conn: sqlite3.Connection) -> None:
         conn.execute(
             """
                 CREATE TABLE IF NOT EXISTS migrations (
@@ -81,11 +81,13 @@ class MigrationManager:
             """
         )
 
-    def __get_applied_migrations(self, conn) -> List[str]:
+    def __get_applied_migrations(self, conn: sqlite3.Connection) -> List[str]:
         cursor = conn.execute("SELECT migration_name FROM migrations ORDER BY id")
         return [row[0] for row in cursor.fetchall()]
 
-    def __apply_migration(self, conn, migration_name: str, sql: str):
+    def __apply_migration(
+        self, conn: sqlite3.Connection, migration_name: str, sql: str
+    ) -> None:
         conn.executescript(sql)
         conn.execute(
             "INSERT INTO migrations (migration_name) VALUES (?)", (migration_name,)
@@ -99,6 +101,6 @@ class MigrationManager:
             result = cursor.fetchone()
             return result if result else (0, "No migrations applied")
 
-    def close(self):
+    def close(self) -> None:
         with self.__get_connection() as conn:
             conn.close()
