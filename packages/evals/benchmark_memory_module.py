@@ -9,7 +9,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import click
 import mlflow
@@ -40,12 +40,12 @@ setup_mlflow(experiment_name="memory_module")
 
 
 class MemoryModuleManager:
-    def __init__(self, buffer_size=5):
+    def __init__(self, buffer_size: int = 5):
         self._buffer_size = buffer_size
         self._memory_module: Optional[MemoryModule] = None
         self._db_path = Path(__file__).parent / "data" / f"memory_{uuid.uuid4().hex}.db"
 
-    def __enter__(self):
+    def __enter__(self) -> MemoryModule:
         # Create memory module
         llm = LLMConfig(
             model="gpt-4o-mini",
@@ -61,14 +61,14 @@ class MemoryModuleManager:
         self._memory_module = MemoryModule(config=config)
         return self._memory_module
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         # Destroy memory module and database
         del self._memory_module
         os.remove(self._db_path)
 
 
-async def add_messages(memory_module: MemoryModule, messages: List[SessionMessage]):
-    def create_message(**kwargs):
+async def add_messages(memory_module: MemoryModule, messages: List[SessionMessage]) -> None:
+    def create_message(**kwargs: Any) -> Union[AssistantMessage, UserMessage]:
         params = {
             "id": str(uuid.uuid4()),
             "content": kwargs["content"],
@@ -91,7 +91,7 @@ def run_benchmark(
     name: str,
     dataset: Dataset,
     run_one: bool,
-):
+) -> None:
     if not name:
         name = "memory module benchmark"
 
@@ -105,7 +105,7 @@ def run_benchmark(
     pd_dataset = mlflow.data.pandas_dataset.from_pandas(df, name=dataset_name)
 
     # benchmark function
-    async def benchmark_memory_module(input: DatasetItem):
+    async def benchmark_memory_module(input: DatasetItem) -> Dict[str, Any]:
         session: List[SessionMessage] = input["session"]
         query = input["query"]
         expected_strings_in_memories = input["expected_strings_in_memories"]
@@ -114,9 +114,7 @@ def run_benchmark(
         memory_module: MemoryModule
         with MemoryModuleManager(buffer_size=len(session)) as memory_module:
             await add_messages(memory_module, messages=session)
-            memories = await memory_module.search_memories(
-                user_id=None, query=query, limit=None
-            )
+            memories = await memory_module.search_memories(user_id=None, query=query, limit=None)
 
         return {
             "input": {
@@ -132,8 +130,8 @@ def run_benchmark(
         }
 
     # iterate over benchmark cases
-    def iterate_benchmark_cases(inputs: pd.Series):
-        results = []
+    def iterate_benchmark_cases(inputs: pd.Series[Any]) -> pd.DataFrame:
+        results: List[Dict[str, Any]] = []
         for row in tqdm(inputs.itertuples(), total=inputs.size):
             results.append(asyncio.run(benchmark_memory_module(row.inputs)))
 
@@ -147,15 +145,13 @@ def run_benchmark(
     mlflow_metric = string_check_metric()
     with mlflow.start_run(run_name=name):
         mlflow.log_params({"dataset": dataset_name})
-        mlflow.evaluate(
-            iterate_benchmark_cases, pd_dataset, extra_metrics=[mlflow_metric]
-        )
+        mlflow.evaluate(iterate_benchmark_cases, pd_dataset, extra_metrics=[mlflow_metric])
 
 
 @click.command()
 @click.option("--name", type=str, required=False, help="Name of the benchmark")
 @click.option("--run_one", type=bool, default=False, help="Run only one benchmark case")
-def main(name, run_one):
+def main(name: str, run_one: bool) -> None:
     dataset = load_dataset()
     run_benchmark(name, dataset, run_one)
 

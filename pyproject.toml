@@ -19,6 +19,8 @@ dev = [
     "mypy>=1.14.0",
     "azure-identity>=1.19.0",
     "black>=24.10.0",
+    "types-tqdm>=4.66.0",
+    "pandas-stubs>=2.1.0",
 ]
 
 [tool.uv.sources]
