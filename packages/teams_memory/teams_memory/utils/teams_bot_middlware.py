@@ -145,16 +145,20 @@ class MemoryMiddleware(Middleware):  # type: ignore
         users_in_conversation_scope = await self._get_roster(
             conversation_ref_dict, context
         )
+        if not (conversation_ref_dict and conversation_ref_dict.conversation):
+            logger.error(
+                "Missing conversation reference or conversation ID in TurnContext"
+            )
+            conversation_ref = ""
+        else:
+            conversation_ref = conversation_ref_dict.conversation.id
+
         context.set(
             "memory_module",
             ScopedMemoryModule(
                 self.memory_module,
                 users_in_conversation_scope,
-                (
-                    conversation_ref_dict.conversation.id
-                    if conversation_ref_dict and conversation_ref_dict.conversation
-                    else ""
-                ),
+                conversation_ref,
             ),
         )
 
