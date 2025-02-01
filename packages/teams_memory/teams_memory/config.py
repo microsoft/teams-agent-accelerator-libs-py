@@ -4,7 +4,7 @@ Licensed under the MIT License.
 """
 
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -41,7 +41,7 @@ class StorageConfig(BaseModel):
     )
 
     @model_validator(mode="before")
-    def set_storage_type(cls, values):
+    def set_storage_type(cls, values: dict[str, Any]) -> dict[str, Any]:
         if isinstance(values, dict):
             if values.get("db_path") and "storage_type" not in values:
                 values["storage_type"] = "sqlite"

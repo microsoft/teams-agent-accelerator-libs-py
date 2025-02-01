@@ -28,7 +28,7 @@ from teams_memory.interfaces.types import (
 logger = logging.getLogger(__name__)
 
 
-def build_deep_link(context: TurnContext, message_id: str):
+def build_deep_link(context: TurnContext, message_id: str) -> Optional[str]:
     conversation_ref = TurnContext.get_conversation_reference(context.activity)
     if conversation_ref.conversation and conversation_ref.conversation.is_group:
         deeplink_conversation_id = conversation_ref.conversation.id
@@ -41,7 +41,9 @@ def build_deep_link(context: TurnContext, message_id: str):
     return f"https://teams.microsoft.com/l/message/{deeplink_conversation_id}/{message_id}?context=%7B%22contextType%22%3A%22chat%22%7D"
 
 
-class MemoryMiddleware(Middleware):
+class MemoryMiddleware(Middleware):  # type: ignore
+    """Bot Framework middleware for memory module."""
+
     def __init__(
         self,
         *,
@@ -59,7 +61,7 @@ class MemoryMiddleware(Middleware):
         else:
             raise ValueError("Either config or memory_module must be provided")
 
-    async def _add_user_message(self, context: TurnContext):
+    async def _add_user_message(self, context: TurnContext) -> bool:
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
         content = context.activity.text
         if not content:
@@ -73,6 +75,9 @@ class MemoryMiddleware(Middleware):
             return False
         if conversation_ref_dict.conversation is None:
             logger.error("conversation_ref_dict.conversation is None")
+            return False
+        if not context.activity or not context.activity.id:
+            logger.error("activity or activity.id is None")
             return False
         user_aad_object_id = cast(
             ChannelAccount, conversation_ref_dict.user
@@ -99,7 +104,7 @@ class MemoryMiddleware(Middleware):
         context: TurnContext,
         activities: List[Activity],
         responses: List[ResourceResponse],
-    ):
+    ) -> bool:
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
         if conversation_ref_dict is None:
             logger.error("conversation_ref_dict is None")
@@ -135,21 +140,28 @@ class MemoryMiddleware(Middleware):
             await gather(*tasks)
         return True
 
-    async def _augment_context(self, context: TurnContext):
+    async def _augment_context(self, context: TurnContext) -> None:
         conversation_ref_dict = TurnContext.get_conversation_reference(context.activity)
         users_in_conversation_scope = await self._get_roster(
             conversation_ref_dict, context
         )
-        context.set(
-            "memory_module",
-            ScopedMemoryModule(
-                self.memory_module,
-                users_in_conversation_scope,
-                conversation_ref_dict.conversation.id,
-            ),
-        )
+        if conversation_ref_dict and conversation_ref_dict.conversation:
+            context.set(
+                "memory_module",
+                ScopedMemoryModule(
+                    self.memory_module,
+                    users_in_conversation_scope,
+                    conversation_ref_dict.conversation.id,
+                ),
+            )
+        else:
+            logger.error(
+                "Missing conversation reference or conversation ID in TurnContext"
+            )
 
-    async def on_turn(self, context: TurnContext, logic: Callable[[], Awaitable]):
+    async def on_turn(
+        self, context: TurnContext, logic: Callable[[], Awaitable[None]]
+    ) -> None:
         await self._augment_context(context)
         # Handle incoming message
         await self._add_user_message(context)
@@ -161,8 +173,12 @@ class MemoryMiddleware(Middleware):
         # We need to do this because bot-framework has a bug with how
         # _on_send_activities middleware is implemented
         # https://github.com/microsoft/botbuilder-python/issues/2197
-        async def wrapped_send_activities(activities: List[Activity]):
-            responses = await original_send_activities(activities)
+        async def wrapped_send_activities(
+            activities: List[Activity],
+        ) -> List[ResourceResponse]:
+            responses = cast(
+                List[ResourceResponse], await original_send_activities(activities)
+            )
             await self._add_agent_message(context, activities, responses)
             return responses
 

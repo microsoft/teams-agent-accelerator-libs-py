@@ -20,3 +20,16 @@ repos:
     rev: v1.13.0
     hooks:
       - id: mypy
+        args: [
+          --ignore-missing-imports,
+          --show-traceback,
+          --no-strict-optional,
+          --no-strict-equality
+        ]
+        additional_dependencies: [
+          "pydantic>=2.0",
+          "pydantic-core>=2.16.3",
+          "typing-extensions>=4.9.0"
+        ] # Needed for pre-commit's isolated environment
+        files: ^packages/.+\.py$
+

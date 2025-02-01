@@ -7,7 +7,7 @@ import datetime
 import logging
 import uuid
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import sqlite_vec
 from teams_memory.config import StorageConfig
@@ -358,7 +358,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
     ) -> List[Message]:
         """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
         query = "SELECT * FROM messages WHERE conversation_ref = ?"
-        params: tuple = (conversation_ref,)
+        params: tuple[Any, ...] = (conversation_ref,)
 
         if last_minutes is not None:
             cutoff_time = datetime.datetime.now(
@@ -432,7 +432,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         return [build_message_from_dict(row) for row in rows]
 
     def _build_memory(
-        self, memory_values: dict, message_attributions: set[str]
+        self, memory_values: dict[str, Any], message_attributions: set[str]
     ) -> Memory:
         memory_keys = [
             "id",

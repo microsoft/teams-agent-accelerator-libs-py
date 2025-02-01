@@ -3,7 +3,7 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
-from typing import Dict
+from typing import Any, Dict
 
 from teams_memory.interfaces.types import (
     AssistantMessage,
@@ -13,7 +13,7 @@ from teams_memory.interfaces.types import (
 )
 
 
-def build_message_from_dict(row: Dict) -> Message:
+def build_message_from_dict(row: Dict[str, Any]) -> Message:
     """Build a message object from a dictionary which contains the message data."""
 
     if row["type"] == "internal":
