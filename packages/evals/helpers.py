@@ -1,3 +1,5 @@
+# mypy: disable-error-code="misc"
+
 """
 Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
@@ -7,16 +9,17 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import List, TypedDict
+from typing import List
 
 import mlflow
 from dotenv import load_dotenv
 from mlflow.openai import autolog
+from typing_extensions import TypedDict
 
 load_dotenv()
 
 
-def setup_mlflow(experiment_name: str):
+def setup_mlflow(experiment_name: str) -> None:
     if not experiment_name.startswith("/"):
         experiment_name = f"/{experiment_name}"
 
@@ -50,6 +53,6 @@ class Dataset(TypedDict):
 
 
 def load_dataset() -> Dataset:
-    with open(Path(__file__) / ".." / "teams_memory_dataset.json") as f:
-        dataset = json.load(f)
+    with open(Path(__file__).parent / "teams_memory_dataset.json") as f:
+        dataset: Dataset = json.load(f)
         return dataset

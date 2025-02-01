@@ -9,7 +9,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from teams_memory.interfaces.types import AssistantMessage, Memory, UserMessage
+from teams_memory.interfaces.types import AssistantMessage, Memory, MemoryType, UserMessage
 from teams_memory.services.llm_service import LLMConfig
 
 
@@ -37,7 +37,7 @@ def create_test_memory(content: str):
     return Memory(
         content=content,
         created_at=datetime.now(),
-        memory_type="semantic",
+        memory_type=MemoryType.SEMANTIC,
         id="1",
     )
 

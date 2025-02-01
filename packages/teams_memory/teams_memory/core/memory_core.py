@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 import datetime
 import logging
-from typing import List, Literal, Optional, Set
+from typing import Any, List, Literal, Optional, Set
 
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field, create_model, field_validator
@@ -309,7 +309,7 @@ class MemoryCore(BaseMemoryCore):
         )
         messages = [{"role": "system", "content": system_message}]
 
-        decision = await self.lm.completion(
+        decision: ProcessSemanticMemoryDecision = await self.lm.completion(
             messages=messages, response_model=ProcessSemanticMemoryDecision
         )
         logger.debug("Decision: %s", decision)
@@ -335,7 +335,7 @@ class MemoryCore(BaseMemoryCore):
         else:
             topics_str = ""
 
-        return await self.lm.completion(
+        result: MessageDigest = await self.lm.completion(
             messages=[
                 {
                     "role": "system",
@@ -347,6 +347,7 @@ class MemoryCore(BaseMemoryCore):
             ],
             response_model=MessageDigest,
         )
+        return result
 
     async def _get_query_embedding(self, query: str) -> TextEmbedding:
         """Create embedding for memory content."""
@@ -427,7 +428,7 @@ class MemoryCore(BaseMemoryCore):
             {"role": "user", "content": user_message},
         ]
 
-        def topics_validator(cls, v):
+        def topics_validator(cls: Any, v: List[str]) -> List[str]:
             # Fix the casing if that's the only issue
             validated_topics = []
             for topic in v:
@@ -499,5 +500,5 @@ class MemoryCore(BaseMemoryCore):
     async def get_messages(self, memory_ids: List[str]) -> List[Message]:
         return await self.storage.get_messages(memory_ids)
 
-    async def get_memories_from_message(self, message_id):
+    async def get_memories_from_message(self, message_id: str) -> List[Memory]:
         return await self.storage.get_attributed_memories(message_ids=[message_id])
