@@ -142,13 +142,17 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
         """Search for relevant memories based on various criteria.
 
         This method allows searching memories using text queries or topics, optionally
-        filtered by user and limited in quantity. One of query or topic must be provided.
+        filtered by user and limited in quantity.
+
+        Note: If neither query or topic are provided, this function will return all the most
+        recent memories from the conversation scope until the limit is reached.
 
         Args:
             user_id (Optional[str]): Filter memories by specific user ID. If None, search across all users.
             query (Optional[str]): Search string to match against memory content. Required if topic is None.
             topic (Optional[str]): Filter memories by specific topic. Required if query is None.
             limit (Optional[int]): Maximum number of memories to return. If None, returns all matching memories.
+
 
         Returns:
             List[Memory]: List of memory objects matching the search criteria, ordered by relevance.
@@ -295,13 +299,17 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
         """Search memories within the scoped conversation context.
 
         Similar to BaseMemoryModule.search_memories but limited to memories
-        from users in the conversation scope. One of query or topic must be provided.
+        from users in the conversation scope.
+
+        Note: If neither query or topic are provided, this function will return all the most
+        recent memories from the conversation scope until the limit is reached.
 
         Args:
             user_id (Optional[str]): Filter memories by specific user ID (must be in conversation scope).
             query (Optional[str]): Search string to match against memory content.
             topic (Optional[str]): Filter memories by specific topic.
             limit (Optional[int]): Maximum number of memories to return.
+
 
         Returns:
             List[Memory]: List of memory objects matching the criteria.

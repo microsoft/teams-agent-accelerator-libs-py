@@ -5,6 +5,7 @@
 ### Features
 
 - Added method `BaseMemoryModule.get_memories_with_attributions` to easily get the messages associated to memories.
+- Added support for not requiring a query or topic to search memories. Previously, you had to provide one of these.
 
 ### Bug Fixes
 

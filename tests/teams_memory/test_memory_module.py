@@ -790,3 +790,50 @@ async def test_get_memories_with_attributions(
 
     assert {msg.id for msg in memory_with_attributions.messages} == {message1_id}
     assert any("hiking" in msg.content for msg in memory_with_attributions.messages)
+
+
+@pytest.mark.asyncio
+async def test_search_memories_without_filters(
+    scoped_memory_module, conversation_id, user_ids_in_conversation_scope
+):
+    """Test retrieving memories without specifying topic or query."""
+    messages = [
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I use Windows 11 on my gaming PC",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now() - timedelta(minutes=5),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="I have a MacBook Pro from 2023",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now() - timedelta(minutes=3),
+        ),
+        UserMessageInput(
+            id=str(uuid4()),
+            content="My MacBook runs macOS Sonoma",
+            author_id=user_ids_in_conversation_scope[0],
+            conversation_ref=conversation_id,
+            created_at=datetime.now() - timedelta(minutes=1),
+        ),
+    ]
+
+    for message in messages:
+        await scoped_memory_module.memory_module.add_message(message)
+    await scoped_memory_module.process_messages()
+
+    # Retrieve all memories without any filters
+    memories = await scoped_memory_module.search_memories()
+
+    # Verify we got all memories
+    assert len(memories) > 0
+    assert any("windows" in memory.content.lower() for memory in memories)
+    assert any("macbook" in memory.content.lower() for memory in memories)
+    assert any("sonoma" in memory.content.lower() for memory in memories)
+
+    # Test with just limit
+    limited_memories = await scoped_memory_module.search_memories(limit=1)
+    assert len(limited_memories) == 1
