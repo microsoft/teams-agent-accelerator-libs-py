@@ -131,7 +131,7 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
         pass
 
     @abstractmethod
-    async def answer_question(
+    async def ask(
         self,
         *,
         user_id: Optional[str],
@@ -312,7 +312,7 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
         pass
 
     @abstractmethod
-    async def answer_question(
+    async def ask(
         self,
         *,
         user_id: Optional[str] = None,

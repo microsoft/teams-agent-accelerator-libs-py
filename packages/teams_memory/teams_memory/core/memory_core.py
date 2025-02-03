@@ -198,7 +198,7 @@ class MemoryCore(BaseMemoryCore):
                 logger.info("Storing memory: %s", memory)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
 
-    async def answer_question(
+    async def ask(
         self,
         *,
         user_id: Optional[str],

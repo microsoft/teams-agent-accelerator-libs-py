@@ -95,7 +95,7 @@ class MemoryModule(BaseMemoryModule):
             return True
         return any(topic in t.name for t in self.config.topics)
 
-    async def answer_question(
+    async def ask(
         self,
         user_id: Optional[str],
         question: str,
@@ -103,7 +103,7 @@ class MemoryModule(BaseMemoryModule):
         topic: Optional[str] = None,
     ) -> Optional[Tuple[str, List[Memory]]]:
         """Answer a question based on the existing memories."""
-        return await self.memory_core.answer_question(
+        return await self.memory_core.ask(
             user_id=user_id, question=question, query=query, topic=topic
         )
 
@@ -287,7 +287,7 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
             return self.users_in_conversation_scope[0]
         return user_id
 
-    async def answer_question(
+    async def ask(
         self,
         *,
         user_id: Optional[str] = None,
@@ -296,7 +296,7 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         topic: Optional[str] = None,
     ) -> Optional[Tuple[str, List[Memory]]]:
         validated_user_id = self._validate_user(user_id)
-        return await self.memory_module.answer_question(
+        return await self.memory_module.ask(
             user_id=validated_user_id, question=question, query=query, topic=topic
         )
 

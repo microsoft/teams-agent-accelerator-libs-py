@@ -793,7 +793,7 @@ async def test_get_memories_with_attributions(
 
 
 @pytest.mark.asyncio
-async def test_answer_question(
+async def test_ask(
     scoped_memory_module, conversation_id, user_ids_in_conversation_scope
 ):
     """Test answering questions with a mix of relevant and irrelevant memories."""
@@ -883,9 +883,7 @@ async def test_answer_question(
 
     for test_case in test_cases:
         # Get answer from memory module
-        answer_tuple = await scoped_memory_module.answer_question(
-            question=test_case["question"]
-        )
+        answer_tuple = await scoped_memory_module.ask(question=test_case["question"])
 
         assert (
             answer_tuple is not None
@@ -909,7 +907,7 @@ async def test_answer_question(
             ), f"Included irrelevant memory: {irrelevant}"
 
     # Test question with no relevant information
-    unknown_answer = await scoped_memory_module.answer_question(
+    unknown_answer = await scoped_memory_module.ask(
         question="What is the user's favorite movie?"
     )
     assert (

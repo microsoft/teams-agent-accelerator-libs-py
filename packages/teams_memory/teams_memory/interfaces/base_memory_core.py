@@ -44,7 +44,7 @@ class BaseMemoryCore(ABC):
         pass
 
     @abstractmethod
-    async def answer_question(
+    async def ask(
         self,
         *,
         user_id: Optional[str],

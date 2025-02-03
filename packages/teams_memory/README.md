@@ -176,12 +176,12 @@ async def retrieve_device_type_memories(context: TurnContext):
 
 You can search for memories using a topic, a natural language query, or both. This method returns a list of relevant memories. Internally, it does an embeddings search, so it's possible that there could be some false positives.
 
-If you want use the memories to answer a question, you can use the `answer_question` method. Internally, it uses the `search_memories` method, but it also uses the LLM to answer the question.
+If you want use the memories to answer a question, you can use the `ask` method. Internally, it uses the `search_memories` method, but it also uses the LLM to answer the question.
 
 ```python
 async def retrieve_device_details(context: TurnContext):
     memory_module: ScopedMemoryModule = context.get('memory_module')
-    result = await memory_module.answer_question(
+    result = await memory_module.ask(
         question="Has the user owned multiple devices in the past?",
         topic="Device Type",
     )
