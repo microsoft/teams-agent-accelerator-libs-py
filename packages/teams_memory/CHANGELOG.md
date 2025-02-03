@@ -6,6 +6,7 @@
 
 - Added method `BaseMemoryModule.get_memories_with_attributions` to easily get the messages associated to memories.
 - Turn on mypy strict mode and fix mypy errors
+- Fix bug where calling `configure_logging` multiple times would add multiple handlers
 
 ### Bug Fixes
 
