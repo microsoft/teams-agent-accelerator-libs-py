@@ -3,11 +3,12 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
+from typing import Any, Dict, List
 from unittest import mock
 
 import pytest
 from teams_memory.config import LLMConfig, MemoryModuleConfig
-from teams_memory.core.memory_core import MemoryCore
+from teams_memory.core.memory_core import Answer, MemoryCore
 from teams_memory.interfaces.types import TextEmbedding
 from teams_memory.services.llm_service import LLMService
 
@@ -107,3 +108,30 @@ async def test_get_query_embedding_from_messages(config):
     assert (
         len(res.embedding_vector) >= 512
     )  # 512 is the smallest configurable embedding size for the text-embedding-3-small model
+
+
+def test_answer_validation():
+    """Test the Answer model validation for handling 'unknown' responses."""
+    test_cases: List[Dict[str, Any]] = [
+        {
+            "input": {"answer": "unknown", "fact_ids": ["1", "2"]},
+            "expected": {"answer": None, "fact_ids": None},
+        },
+        {
+            "input": {"answer": "UNKNOWN", "fact_ids": ["1"]},
+            "expected": {"answer": None, "fact_ids": None},
+        },
+        {
+            "input": {"answer": "The user likes Python", "fact_ids": ["1"]},
+            "expected": {"answer": "The user likes Python", "fact_ids": ["1"]},
+        },
+        {
+            "input": {"answer": None, "fact_ids": None},
+            "expected": {"answer": None, "fact_ids": None},
+        },
+    ]
+
+    for case in test_cases:
+        model = Answer(**case["input"])
+        assert model.answer == case["expected"]["answer"]
+        assert model.fact_ids == case["expected"]["fact_ids"]

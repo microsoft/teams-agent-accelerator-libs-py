@@ -56,3 +56,20 @@ FACTS are patterns and interests that will remain relevant over time, even if th
 Treat FACTS independently, even if multiple facts relate to the same topic.
 Ignore FACTS found in EXISTING_MEMORIES.
 """  # noqa: E501
+
+ANSWER_QUESTION_PROMPT = """You are a helpful assistant that can answer questions based on the existing previous facts.
+<EXISTING_FACTS>
+{existing_facts}
+</EXISTING_FACTS>
+"""
+
+ANSWER_QUESTION_USER_PROMPT = """
+<INSTRUCTIONS>
+1. You must only use the previous FACTS to answer the question. Do not use any other information.
+2. Prioritize more recent FACTS over older FACTS.
+3. Use ONLY the most relevant FACTS to answer the question.
+4. It is possible that the question cannot be answered based on the previous FACTS. In that case you may answer with "UNKNOWN".
+</INSTRUCTIONS>
+
+Answer this question: {question}
+"""  # noqa: E501
