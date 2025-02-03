@@ -8,6 +8,8 @@ This sample showcases a Tech support Assistant agent which can help users with t
 
 See [tech_assistant_agent](./tech_assistant_agent/README.md) for more details on the tech support assistant agent. Its [prompts](./tech_assistant_agent/prompts.py) are especially helpful to understand how this agent works.
 
+![An example interaction](./docs/images/example-interaction.png)
+
 ## How does it work?
 
 ### Topics
@@ -40,11 +42,16 @@ See [app.py](./app.py) for the initialization of the `MemoryMiddleware`. Note th
 > [!NOTE]
 > The alternative to automatic extraction is explicit extraction. This can be accomplished by calling `memory_module.process_messages` which will process all the messages that are in the message buffer.
 
+![An example of automatic extraction](./docs/images/example-extraction.png)
+
 ### Using working memory
 
 The agent can use the conversational messages as working memory to build up contexts for LLM calls for the agent. In addition to the incoming and outgoing messages, the agent can also add internal messages to the working memory.
 
 See [primary_agent.py](./tech_assistant_agent/primary_agent.py) for how working memory is used, and also how internal messages are added to the working memory.
+
+> [!NOTE]
+> To demonstrate long term memory, the working memory only takes the last 1 minute of messages. Feel free to configure this to be longer. See [primary_agent.py](./tech_assistant_agent/primary_agent.py) for the configuration.
 
 ### Using long term semantic memories
 
@@ -53,6 +60,8 @@ The tech support assistant can search for memories from a tool call (See [get_me
 ### Citing memories
 
 If the agent finds memories that are relevant to the task at-hand, the tech support assistant can ask for confirmations of the memories and cite the original sources of the memories.
+
+![An example of citing memories](./docs/images/example-second-interaction.png)
 
 See [confirm_memorized_fields](./tech_assistant_agent/tools.py) for the implementation of the tool call.
 
