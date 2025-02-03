@@ -209,7 +209,6 @@ For more information on how to build citations for Teams, see [Teams documentati
 Enable logging in the memory module configuration:
 
 ```python
-
 config = MemoryModuleConfig()
 config.enable_logging = True
 ```
