@@ -214,10 +214,11 @@ class MemoryCore(BaseMemoryCore):
     async def _answer_question_from_memories(
         self, memories: List[Memory], question: str
     ) -> Optional[Tuple[str, List[Memory]]]:
+        sorted_memories = sorted(memories, key=lambda x: x.created_at, reverse=False)
         facts_str = "\n".join(
             [
                 f"<FACT id={memory.id} created_at={memory.created_at}>{memory.content}</FACT>"
-                for memory in memories
+                for memory in sorted_memories
             ]
         )
         system_prompt = ANSWER_QUESTION_PROMPT.format(existing_facts=facts_str)

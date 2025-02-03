@@ -307,6 +307,45 @@ TEST_CASES: List[Dict[str, Any]] = [
             },
         ],
     },
+    {
+        "title": "Chronological Memory Processing",
+        "setup": {
+            "memories": [
+                {
+                    "content": "The user works at Microsoft",
+                    "topics": ["Work"],
+                    "created_at": "2021-01-01T10:00:00Z",
+                },
+                {
+                    "content": "The user works at Amazon",
+                    "topics": ["Work"],
+                    "created_at": "2022-01-02T10:00:00Z",
+                },
+                {
+                    "content": "The user works at Google",
+                    "topics": ["Work"],
+                    "created_at": "2023-01-03T10:00:00Z",
+                },
+                {
+                    "content": "The user enjoys programming",  # noise memory
+                    "topics": ["Work"],
+                    "created_at": "2024-03-02T10:00:00Z",
+                },
+            ],
+            "topics": [
+                Topic(name="Work", description="Work-related information"),
+            ],
+        },
+        "questions": [
+            {
+                "question": "Where does the user currently work?",
+                "expected_answer_contains": ["Google"],
+                "topic": "Work",
+                "required_memory_indices": [2],
+                "irrelevant_memory_indices": [3],
+            },
+        ],
+    },
 ]
 
 
@@ -343,7 +382,11 @@ class QuestionAnsweringEvaluator(BaseEvaluator):
                 memory_input = Memory(
                     id=str(uuid4()),
                     content=memory["content"],
-                    created_at=datetime.now(),
+                    created_at=(
+                        datetime.strptime(memory["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                        if "created_at" in memory
+                        else datetime.now()
+                    ),
                     user_id=user_id,
                     memory_type=MemoryType.SEMANTIC,
                     topics=memory["topics"],
