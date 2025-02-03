@@ -28,9 +28,12 @@ By setting up the middleware we also get access to a scoped version of the `memo
 
 See [bot.py](./bot.py) for the initialization of the `MemoryMiddleware`.
 
+> [!TIP]
+> You'll notice that for the sample, the `timeout_seconds` is 60 seconds. The extraction here is set to be a bit aggressive (extract every 1 minute if there is a message in a conversation) to demonstrate memory extraction, but a higher threshhold here is reasonable to set here.
+
 ### Automatic extraction
 
-The Memory Module can be set up to automatically extract long term memories from the working memory. When the application server starts up, by calling `memory_middleware.memory_module.listen()`, it will start to trigger extraction of memories in depending on the configuration passed when the `MemoryMiddleware` (or `MemoryModule`) was initialized. This work happens in in a background thread and is non-blocking.
+The Memory Module can be set up to automatically extract long term memories from the working memory. When the application server starts up, by calling `memory_middleware.memory_module.listen()`, it will start to trigger extraction of memories in depending on the configuration passed when the `MemoryMiddleware` (or `MemoryModule`) was initialized. This work happens in a background thread and is non-blocking.
 
 See [app.py](./app.py) for the initialization of the `MemoryMiddleware`. Note that when `listen` is called, you also should call `shutdown` when the application is shutting down.
 
