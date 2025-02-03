@@ -6,7 +6,7 @@ Licensed under the MIT License.
 import datetime
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from teams_memory.config import StorageConfig
 from teams_memory.interfaces.base_message_buffer_storage import (
@@ -95,7 +95,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
             DELETE FROM buffered_messages
             WHERE conversation_ref = ?
         """
-        params: tuple = (conversation_ref,)
+        params: tuple[Any, ...] = (conversation_ref,)
         if before:
             query += " AND created_at <= ?"
             params += (before.astimezone(datetime.timezone.utc),)
@@ -136,7 +136,7 @@ class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
         self, conversation_refs: Optional[List[str]] = None
     ) -> Dict[str, BufferedMessage]:
         """Get the earliest buffered message for a conversation or all conversations if None provided"""
-        params: tuple = ()
+        params: tuple[Any, ...] = ()
         query = """
             SELECT
                 message_id, conversation_ref, created_at

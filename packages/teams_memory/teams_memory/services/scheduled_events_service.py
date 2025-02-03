@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class TaskInfo(NamedTuple):
     event: Event
-    task: asyncio.Task
+    task: asyncio.Task[None]
 
 
 class ScheduledEventsService(BaseScheduledEventsService):

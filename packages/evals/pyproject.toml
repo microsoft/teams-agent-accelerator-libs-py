@@ -12,5 +12,11 @@ dependencies = [
     "databricks-sdk",
 ]
 
+[dependency-groups]
+dev = [
+    "types-tqdm>=4.66.0",
+    "pandas-stubs>=2.1.0",
+]
+
 [tool.uv]
 package = false

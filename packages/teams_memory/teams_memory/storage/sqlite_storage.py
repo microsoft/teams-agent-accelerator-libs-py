@@ -6,7 +6,7 @@ Licensed under the MIT License.
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, Iterable, List, Optional
 
 import aiosqlite
 import sqlite_vec
@@ -36,7 +36,7 @@ class SQLiteStorage:
         migration_manager.run_migrations()
 
     @asynccontextmanager
-    async def _get_connection(self):
+    async def _get_connection(self) -> AsyncGenerator[aiosqlite.Connection, None]:
         """Yield a configured SQLite connection with vector extensions loaded."""
         async with aiosqlite.connect(self.db_path) as conn:
             await conn.enable_load_extension(True)
@@ -44,20 +44,24 @@ class SQLiteStorage:
             await conn.enable_load_extension(False)
             yield conn
 
-    async def execute(self, query: str, parameters: tuple = ()) -> None:
+    async def execute(
+        self, query: str, parameters: Optional[Iterable[Any]] = None
+    ) -> None:
         """Execute a SQL query."""
         async with self._get_connection() as conn:
             await conn.execute(query, parameters)
             await conn.commit()
 
-    async def execute_many(self, query: str, parameters: List[tuple]) -> None:
+    async def execute_many(
+        self, query: str, parameters: Optional[Iterable[Iterable[Any]]] = None
+    ) -> None:
         """Execute a SQL query multiple times with different parameters."""
         async with self._get_connection() as conn:
             await conn.executemany(query, parameters)
             await conn.commit()
 
     async def fetch_one(
-        self, query: str, parameters: tuple = ()
+        self, query: str, parameters: Optional[Iterable[Any]] = None
     ) -> Optional[Dict[str, Any]]:
         """Fetch a single row from the database."""
         async with self._get_connection() as conn:
@@ -69,7 +73,7 @@ class SQLiteStorage:
                 return dict(zip(columns, row, strict=False))
 
     async def fetch_all(
-        self, query: str, parameters: tuple = ()
+        self, query: str, parameters: Optional[Iterable[Any]] = None
     ) -> List[Dict[str, Any]]:
         """Fetch all matching rows from the database."""
         async with self._get_connection() as conn:
@@ -88,7 +92,7 @@ class SQLiteStorage:
                 return await cursor.fetchone() is not None
 
     @asynccontextmanager
-    async def transaction(self):
+    async def transaction(self) -> AsyncGenerator[aiosqlite.Cursor, None]:
         """Provide a transaction context manager."""
         async with self._get_connection() as conn:
             async with conn.cursor() as cursor:

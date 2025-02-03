@@ -1,9 +1,68 @@
-# Overview of the Basic AI Chatbot template
+# What this sample is about
 
-This app template is built on top of [Teams AI library](https://aka.ms/teams-ai-library) and [Teams Memory](../packages/teams_memory/README.md).
-This template showcases a Tech Assistant agent which can help users with their device problems.
+This sample showcases a Tech support Assistant agent which can help users with their device problems. It demonstrates how an agent may use Semantic Memories to answer questions more efficiently.
 
-## Get started with the template
+See [tech_assistant_agent](./tech_assistant_agent/README.md) for more details on the tech support assistant agent. Its [prompts](./tech_assistant_agent/prompts.py) are especially helpful to understand how this agent works.
+
+![An example interaction](./docs/images/example-interaction.png)
+
+## How does it work?
+
+### Topics
+
+The sample is initialized with a list of topics that it cares about. These are topics that the agent wants to remember about the user. Specifically, they are:
+
+1. Device Type
+2. Operating System
+3. Device Year
+
+See [tools.py](./tech_assistant_agent/tools.py) for the definition of the topics.
+
+### Middleware
+
+When you initialize the `MemoryMiddleware`, it will start to record all the messages that are incoming or outgoing from the bot. These messages are then used by the agent as working memory and also for extraction for long term memory.
+
+By setting up the middleware we also get access to a scoped version of the `memory_module` from the TurnContext. This memory module is scoped to the conversation that the TurnContext is built for.
+
+See [bot.py](./bot.py) for the initialization of the `MemoryMiddleware`.
+
+> [!TIP]
+> You'll notice that for the sample, the `timeout_seconds` is 60 seconds. The extraction here is set to be a bit aggressive (extract every 1 minute if there is a message in a conversation) to demonstrate memory extraction, but a higher threshhold here is reasonable to set here.
+
+### Automatic extraction
+
+The Memory Module can be set up to automatically extract long term memories from the working memory. When the application server starts up, by calling `memory_middleware.memory_module.listen()`, it will start to trigger extraction of memories in depending on the configuration passed when the `MemoryMiddleware` (or `MemoryModule`) was initialized. This work happens in a background thread and is non-blocking.
+See [app.py](./app.py) for the initialization of the `MemoryMiddleware`. Note that when `listen` is called, you also should call `shutdown` when the application is shutting down.
+
+> [!NOTE]
+> The alternative to automatic extraction is explicit extraction. This can be accomplished by calling `memory_module.process_messages` which will process all the messages that are in the message buffer.
+
+![An example of automatic extraction](./docs/images/example-extraction.png)
+
+### Using working memory
+
+The agent can use the conversational messages as working memory to build up contexts for LLM calls for the agent. In addition to the incoming and outgoing messages, the agent can also add internal messages to the working memory.
+
+See [primary_agent.py](./tech_assistant_agent/primary_agent.py) for how working memory is used, and also how internal messages are added to the working memory.
+
+> [!NOTE]
+> To demonstrate long term memory, the working memory only takes the last 1 minute of messages. Feel free to configure this to be longer. See [primary_agent.py](./tech_assistant_agent/primary_agent.py) for the configuration.
+
+### Using long term semantic memories
+
+The tech support assistant can search for memories from a tool call (See [get_memorized_fields](./tech_assistant_agent/tools.py)). In this tool call, the agent searches memories for a given topic. Depending on if the memories are found or not, the agent can then continue to ask the user for the information or proceed with the flow (like confirming the memories).
+
+### Citing memories
+
+If the agent finds memories that are relevant to the task at-hand, the tech support assistant can ask for confirmations of the memories and cite the original sources of the memories.
+
+![An example of citing memories](./docs/images/example-second-interaction.png)
+
+See [confirm_memorized_fields](./tech_assistant_agent/tools.py) for the implementation of the tool call.
+
+# Running the sample
+
+## Get started with the sample
 
 > **Prerequisites**
 >

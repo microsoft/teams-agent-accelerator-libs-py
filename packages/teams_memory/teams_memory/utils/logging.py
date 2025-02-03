@@ -6,7 +6,7 @@ Licensed under the MIT License.
 import logging
 
 
-def configure_logging(logging_level: int = logging.DEBUG):
+def configure_logging(logging_level: int = logging.DEBUG) -> None:
     module_name = __name__.split(".")[0]  # == "teams_memory"
     logger = logging.getLogger(module_name)
     logger.setLevel(logging_level)
@@ -33,7 +33,7 @@ class DefaultFormatter(logging.Formatter):
     }
     RESET = "\033[0m"
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         log_color = self.COLORS.get(record.levelname, self.RESET)
         record.msg = f"{log_color}{record.msg}{self.RESET}"
         return super().format(record)

@@ -6,12 +6,12 @@ class Colors:
     RESET = "\x1b[0m"
 
 
-def get_logger(name: str, level: str = logging.INFO) -> logging.Logger:
+def get_logger(name: str, level: int = logging.INFO) -> logging.Logger:
     """Configure and return a logger instance.
 
     Args:
         name: Name of the logger (typically __name__ from the calling module)
-        level: Logging level (default: "INFO")
+        level: Logging level (default: logging.INFO)
     """
     logger = logging.getLogger(name)
     logger.setLevel(level)

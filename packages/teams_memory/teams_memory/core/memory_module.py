@@ -262,11 +262,11 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         self._conversation_ref = conversation_ref
 
     @property
-    def users_in_conversation_scope(self):
+    def users_in_conversation_scope(self) -> List[str]:
         return self._users_in_conversation_scope
 
     @property
-    def conversation_ref(self):
+    def conversation_ref(self) -> str:
         return self._conversation_ref
 
     def _validate_user(self, user_id: Optional[str]) -> str:
@@ -332,7 +332,7 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         *,
         memory_ids: Optional[List[str]] = None,
         user_id: Optional[str] = None,
-    ):
+    ) -> List[Memory]:
         validated_user_id = self._validate_user(user_id) if user_id else None
         return await self.memory_module.get_memories(
             memory_ids=memory_ids, user_id=validated_user_id
@@ -344,18 +344,18 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
     ) -> List[MemoryWithAttributions]:
         return await self.memory_module.get_memories_with_attributions(memory_ids)
 
-    async def add_message(self, message):
+    async def add_message(self, message: MessageInput) -> Message:
         return await self.memory_module.add_message(message)
 
-    async def get_messages(self, *args, **kwargs):
-        return await self.memory_module.get_messages(*args, **kwargs)
+    async def get_messages(self, message_ids: List[str]) -> List[Message]:
+        return await self.memory_module.get_messages(message_ids)
 
-    async def remove_messages(self, *args, **kwargs):
-        return await self.memory_module.remove_messages(*args, **kwargs)
+    async def remove_messages(self, message_ids: List[str]) -> None:
+        return await self.memory_module.remove_messages(message_ids)
 
     async def remove_memories(
         self, *, user_id: Optional[str] = None, memory_ids: Optional[List[str]] = None
-    ):
+    ) -> None:
         # If user_id is not provided, we still need to ensure that in a scoped setting,
         # we are only removing memories that belong to a user in this conversation scope.
         # So we are validating the user_id here.

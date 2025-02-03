@@ -175,3 +175,18 @@ async def test_add_user_message_invalid_content(middleware, turn_context):
     result = await middleware._add_user_message(turn_context)
     assert result is False
     assert not middleware.memory_module.add_message.called
+
+
+async def test_augment_context_missing_conversation(middleware, turn_context):
+    # Remove conversation to simulate missing data
+    turn_context.activity.conversation = None
+
+    # Call _augment_context
+    await middleware._augment_context(turn_context)
+
+    # Verify memory_module was not set in context
+    assert not turn_context.set.called
+
+    # Verify error was logged
+    with pytest.raises(AssertionError):
+        turn_context.set.assert_called_once()

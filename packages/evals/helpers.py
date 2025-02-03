@@ -1,3 +1,5 @@
+# mypy: disable-error-code="misc"
+
 """
 Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
@@ -17,7 +19,7 @@ from typing_extensions import TypedDict
 load_dotenv()
 
 
-def setup_mlflow(experiment_name: str):
+def setup_mlflow(experiment_name: str) -> None:
     if not experiment_name.startswith("/"):
         experiment_name = f"/{experiment_name}"
 
@@ -28,7 +30,7 @@ def setup_mlflow(experiment_name: str):
         logging.info("Using Remote Databricks")
         mlflow.set_tracking_uri("databricks://memorymodule-evals")
         mlflow.set_experiment(experiment_name)
-    autolog()  # type: ignore
+    autolog()
 
 
 class SessionMessage(TypedDict):
