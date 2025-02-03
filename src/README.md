@@ -1,7 +1,3 @@
-# Overview of the Basic AI Chatbot template
-
-This app template is built on top of [Teams AI library](https://aka.ms/teams-ai-library) and [Teams Memory](../packages/teams_memory/README.md).
-
 # What this sample is about
 
 This sample showcases a Tech support Assistant agent which can help users with their device problems. It demonstrates how an agent may use Semantic Memories to answer questions more efficiently.
