@@ -6,6 +6,8 @@ This app template is built on top of [Teams AI library](https://aka.ms/teams-ai-
 
 This sample showcases a Tech support Assistant agent which can help users with their device problems. It demonstrates how an agent may use Semantic Memories to answer questions more efficiently.
 
+See [tech_assistant_agent](./tech_assistant_agent/README.md) for more details on the tech support assistant agent. Its [prompts](./tech_assistant_agent/prompts.py) are especially helpful to understand how this agent works.
+
 ## How does it work?
 
 ### Topics
