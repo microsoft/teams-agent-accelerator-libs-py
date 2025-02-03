@@ -68,7 +68,7 @@ ANSWER_QUESTION_USER_PROMPT = """
 1. You must only use the previous FACTS to answer the question. Do not use any other information.
 2. Prioritize more recent FACTS over older FACTS.
 3. Use ONLY the most relevant FACTS to answer the question.
-3. It is possible that the question cannot be answered based on the previous FACTS. In that case you may answer with "UNKNOWN".
+4. It is possible that the question cannot be answered based on the previous FACTS. In that case you may answer with "UNKNOWN".
 </INSTRUCTIONS>
 
 Answer this question: {question}
