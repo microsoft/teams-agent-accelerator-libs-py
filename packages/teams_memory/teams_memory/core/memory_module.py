@@ -123,9 +123,6 @@ class MemoryModule(BaseMemoryModule):
             limit,
         )
 
-        if query is None and topic is None:
-            raise ValueError("Either query or topic must be provided")
-
         if not self._validate_topic(topic):
             raise ValueError(f"Topic {topic} is not in the config")
 
