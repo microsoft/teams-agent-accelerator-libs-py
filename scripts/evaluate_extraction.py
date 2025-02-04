@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import click
 
+sys.path.append(str(Path(__file__).parent))
 sys.path.append(str(Path(__file__).parent.parent))
 sys.path.append(str(Path(__file__).parent.parent / "packages/teams_memory"))
 from teams_memory import (
@@ -523,7 +524,7 @@ class SystemPromptEvaluator(BaseEvaluator):
             # Check must_contain criteria
             for phrase in criteria.get("must_contain", []):
                 # check if the phrase is in any of the extracted facts
-                if not any(
+                if response.facts is None or not any(
                     phrase.lower() in fact.text.lower() for fact in response.facts
                 ):
                     success = False
@@ -531,11 +532,18 @@ class SystemPromptEvaluator(BaseEvaluator):
 
             # Check must_not_contain criteria
             for phrase in criteria.get("must_not_contain", []):
-                if any(phrase.lower() in fact.text.lower() for fact in response.facts):
+                if response.facts is None or any(
+                    phrase.lower() in fact.text.lower() for fact in response.facts
+                ):
                     success = False
                     failures.append(f"Contains forbidden phrase: {phrase}")
 
             for topic_match in criteria.get("topics_match", []):
+                if response.facts is None:
+                    success = False
+                    failures.append(f"Missing topic: {topic_match['topic']}")
+                    continue
+
                 facts_with_phrase = [
                     fact
                     for fact in response.facts
@@ -547,7 +555,10 @@ class SystemPromptEvaluator(BaseEvaluator):
 
                 # topics containing phrase
                 topics_for_facts = [
-                    topic for fact in facts_with_phrase for topic in fact.topics
+                    topic
+                    for fact in facts_with_phrase
+                    if fact.topics is not None
+                    for topic in fact.topics
                 ]
                 if topic_match["topic"] not in topics_for_facts:
                     success = False

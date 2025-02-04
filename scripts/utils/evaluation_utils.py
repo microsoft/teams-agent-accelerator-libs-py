@@ -6,7 +6,7 @@ Licensed under the MIT License.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from tqdm import tqdm
 
@@ -33,7 +33,9 @@ class BaseEvaluator:
     def __init__(self, test_cases: List[Dict]):
         self.test_cases = test_cases
 
-    async def evaluate_single(self, test_case: Dict) -> EvaluationResult:
+    async def evaluate_single(
+        self, test_case: Dict
+    ) -> Union[EvaluationResult, List[EvaluationResult]]:
         raise NotImplementedError("Subclasses must implement evaluate_single")
 
 
@@ -55,16 +57,24 @@ async def run_evaluation(
         failures = 0
 
         for test_case in tqdm(evaluator.test_cases, desc=description):
-            result = await evaluator.evaluate_single(test_case)
-            run_results.append(result.to_dict())
-
-            if result.success:
-                successes += 1
+            results = await evaluator.evaluate_single(test_case)
+            # Handle both single result and list of results
+            if isinstance(results, list):
+                for result in results:
+                    run_results.append(result.to_dict())
+                    if result.success:
+                        successes += 1
+                    else:
+                        failures += 1
             else:
-                failures += 1
+                run_results.append(results.to_dict())
+                if results.success:
+                    successes += 1
+                else:
+                    failures += 1
 
         # Calculate statistics
-        total = len(evaluator.test_cases)
+        total = len(run_results)
         success_rate = (successes / total) * 100
 
         # Print summary for this run
@@ -148,7 +158,7 @@ def print_final_report(all_results: List[Dict]) -> None:
 
     # Most common failures if there are any failures
     if total_failures > 0:
-        failure_counts = {}
+        failure_counts: Dict[str, int] = {}
         for run in all_results:
             for result in run["results"]:
                 if not result["success"]:
