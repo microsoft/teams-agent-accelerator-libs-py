@@ -5,7 +5,7 @@ Licensed under the MIT License.
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from teams_memory.interfaces.types import (
     Memory,
@@ -127,6 +127,34 @@ class BaseMemoryModule(_CommonBaseMemoryModule, ABC):
 
         Returns:
             bool: True if the module is listening for messages, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    async def ask(
+        self,
+        *,
+        user_id: Optional[str],
+        question: str,
+        query: Optional[str] = None,
+        topic: Optional[str] = None,
+    ) -> Optional[Tuple[str, List[Memory]]]:
+        """Answer a question based on the existing memories.
+        Similar to search_memories, but returns the answer and the relevant memories.
+        One of query or topic must be provided.
+
+        Args:
+            question (str): The question to answer.
+            user_id (Optional[str]): The user ID to filter memories by.
+            query (Optional[str]): A natural language query to match against memories.
+            topic (Optional[str]): A topic to filter memories by.
+
+        Returns:
+            Tuple[str, List[Memory]]: The answer and the relevant memories.
+            If the question cannot be answered, returns None.
+
+        Raises:
+            ValueError: If neither query nor topic is provided.
         """
         pass
 
@@ -284,6 +312,35 @@ class BaseScopedMemoryModule(_CommonBaseMemoryModule, ABC):
 
         Raises:
             ValueError: If no filtering criteria is provided.
+        """
+        pass
+
+    @abstractmethod
+    async def ask(
+        self,
+        *,
+        user_id: Optional[str] = None,
+        question: str,
+        query: Optional[str] = None,
+        topic: Optional[str] = None,
+    ) -> Optional[Tuple[str, List[Memory]]]:
+        """Answer a question based on the existing memories.
+
+        Similar to search_memories, but returns the answer and the relevant memories.
+        One of query or topic must be provided. The memories are scoped to the conversation.
+
+        Args:
+            question (str): The question to answer.
+            user_id (Optional[str]): The user ID to filter memories by.
+            query (Optional[str]): A natural language query to match against memories.
+            topic (Optional[str]): A topic to filter memories by.
+
+        Returns:
+            Tuple[str, List[Memory]]: The answer and the relevant memories.
+            If the question cannot be answered, returns None.
+
+        Raises:
+            ValueError: If neither query nor topic is provided.
         """
         pass
 

@@ -5,11 +5,12 @@
 ### Features
 
 - Added method `BaseMemoryModule.get_memories_with_attributions` to easily get the messages associated to memories.
+- Turn on mypy strict mode and fix mypy errors
+- Added method `BaseMemoryModule.ask` to answer a question using memories.
 - Added support for not requiring a query or topic to search memories. Previously, you had to provide one of these.
 
 ### Bug Fixes
 
-- Tech assistant sample changes: fixed a bug, refactored citations, updated it to use python's logger library.
 - Improved documentation for sample and teams-memory integration.
 - Update the way we build the litellm client for better typings
 - Turn on mypy strict mode and fix mypy errors

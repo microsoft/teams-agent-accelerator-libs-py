@@ -5,13 +5,15 @@ Licensed under the MIT License.
 
 import datetime
 import logging
-from typing import Any, List, Literal, Optional, Set
+from typing import Any, List, Literal, Optional, Set, Tuple
 
 from litellm.types.utils import EmbeddingResponse
-from pydantic import BaseModel, Field, create_model, field_validator
+from pydantic import BaseModel, Field, create_model, field_validator, model_validator
 
 from teams_memory.config import MemoryModuleConfig
 from teams_memory.core.prompts import (
+    ANSWER_QUESTION_PROMPT,
+    ANSWER_QUESTION_USER_PROMPT,
     MEMORY_PROCESSING_DECISION_PROMPT,
     METADATA_EXTRACTION_PROMPT,
     SEMANTIC_FACT_EXTRACTION_PROMPT,
@@ -88,6 +90,20 @@ class ProcessSemanticMemoryDecision(BaseModel):
         ...,
         description="Reason for the action.",
     )
+
+
+class Answer(BaseModel):
+    answer: Optional[str] = Field(..., description="The answer to the question")
+    fact_ids: Optional[List[str]] = Field(
+        ..., description="The fact ids that were used to answer the question"
+    )
+
+    @model_validator(mode="after")
+    def validate_answer(self) -> "Answer":
+        if self.answer and self.answer.lower() == "unknown":
+            self.answer = None
+            self.fact_ids = None
+        return self
 
 
 class MemoryCore(BaseMemoryCore):
@@ -181,6 +197,45 @@ class MemoryCore(BaseMemoryCore):
                 )
                 logger.info("Storing memory: %s", memory)
                 await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
+
+    async def ask(
+        self,
+        *,
+        user_id: Optional[str],
+        question: str,
+        query: Optional[str] = None,
+        topic: Optional[str] = None,
+    ) -> Optional[Tuple[str, List[Memory]]]:
+        memories = await self.search_memories(user_id=user_id, query=query, topic=topic)
+        if not memories:
+            return None
+        return await self._answer_question_from_memories(memories, question)
+
+    async def _answer_question_from_memories(
+        self, memories: List[Memory], question: str
+    ) -> Optional[Tuple[str, List[Memory]]]:
+        sorted_memories = sorted(memories, key=lambda x: x.created_at, reverse=False)
+        facts_str = "\n".join(
+            [
+                f"<FACT id={memory.id} created_at={memory.created_at}>{memory.content}</FACT>"
+                for memory in sorted_memories
+            ]
+        )
+        system_prompt = ANSWER_QUESTION_PROMPT.format(existing_facts=facts_str)
+        user_prompt = ANSWER_QUESTION_USER_PROMPT.format(question=question)
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        answer = await self.lm.completion(messages=messages, response_model=Answer)
+        if answer.answer and answer.fact_ids:
+            logger.debug("Question: %s, Answer: %s", question, answer)
+            return answer.answer, [
+                memory for memory in memories if memory.id in answer.fact_ids
+            ]
+        else:
+            logger.debug("No answer found for question: %s", question)
+            return None
 
     async def search_memories(
         self,
