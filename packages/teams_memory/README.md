@@ -191,6 +191,34 @@ async def retrieve_device_details(context: TurnContext):
         print(memories) # List of memories that were used to answer the question
 ```
 
+### Memory Attributions
+The memory module stores attributions (citations) for its memories. Attributions are the original messages from which a memory was extracted. A single memory can have multiple attributions, as the same information may have been mentioned multiple times or combines information from multiple messages. Attributions are important because they allow users to verify the source and accuracy of memories by seeing the original messages where the information appeared.
+
+
+The `memory_module.get_memories_with_attributions` method returns a list of `MemoryWithAttributions` objects. Each object contains:
+
+- A `memory` field with the extracted memory
+- A `messages` field containing a list of the original messages that were used to create the memory
+
+Each message in the `messages` list includes a `deep_link` property that provides a direct link to view the original message in Teams.
+
+```python
+async def build_teams_citations(context: TurnContext, content: str, memory: Memory):
+    memory_module: ScopedMemoryModule = context.get('memory_module')
+    memories = await memory_module.get_memories_with_attributions(
+        memory_ids=[memory.id]
+    )
+
+    memory = memories[0].memory
+    message = memories[0].messages
+    message.deep_link # can be used to navigate to the message in Teams
+    
+    # build citations for Teams
+    ...
+```
+
+For more information on how to build citations for Teams, see [Teams documentation](https://learn.microsoft.com/en-us/microsoftteams/platform/bots/how-to/bot-messages-ai-generated-content?tabs=desktop%2Cbotmessage).
+
 ## Logging
 
 Enable logging in the memory module configuration:
