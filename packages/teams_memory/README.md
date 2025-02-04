@@ -177,7 +177,7 @@ async def retrieve_device_type_memories(context: TurnContext):
 You can search for memories using a topic, a natural language query, or both.
 
 ### Memory Attributions
-The memory module can retrieve attributions (citations) for any memory. Attributions are the original messages from which a memory was extracted. A single memory can have multiple attributions, as the same information may have been mentioned multiple times or combines information from multiple messages. Attributions are important because they allow users to verify the source and accuracy of memories by seeing the original messages where the information appeared.
+The memory module stores attributions (citations) for its memories. Attributions are the original messages from which a memory was extracted. A single memory can have multiple attributions, as the same information may have been mentioned multiple times or combines information from multiple messages. Attributions are important because they allow users to verify the source and accuracy of memories by seeing the original messages where the information appeared.
 
 
 The `memory_module.get_memories_with_attributions` method returns a list of `MemoryWithAttributions` objects. Each object contains:
