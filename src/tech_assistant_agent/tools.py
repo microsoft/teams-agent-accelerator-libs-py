@@ -170,7 +170,7 @@ async def confirm_memorized_fields(
     )
     activity_with_card_attachment = Activity(
         type="message",
-        text=f"Can you confirm the following fields?<br>{memory_details_str}",
+        text=f"Sure I would be happy to assist you. Can you confirm the following information?<br>{memory_details_str}",
         entities=[ai_entity] if ai_entity else None,
     )
     await context.send_activity(activity_with_card_attachment)

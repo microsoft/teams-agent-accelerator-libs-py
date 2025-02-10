@@ -4,6 +4,12 @@
 
 ### Features
 
+### Bug Fixes
+
+## 0.1.3-alpha
+
+### Features
+
 - Added method `BaseMemoryModule.get_memories_with_attributions` to easily get the messages associated to memories.
 - Turn on mypy strict mode and fix mypy errors
 - Added method `BaseMemoryModule.ask` to answer a question using memories.
