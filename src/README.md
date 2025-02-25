@@ -60,7 +60,7 @@ By setting up the middleware we also get access to a scoped version of the `memo
 See [bot.py](./bot.py) for the initialization of the `MemoryMiddleware`.
 
 > [!TIP]
-> You'll notice that for the sample, the `timeout_seconds` is 60 seconds. The extraction here is set to be a bit aggressive (extract every 1 minute if there is a message in a conversation) to demonstrate memory extraction, but a higher threshhold here is reasonable to set here.
+> You'll notice that for the sample, the `timeout_seconds` is 60 seconds. The extraction here is set to be a bit aggressive (extract every 1 minute if there is a message in a conversation) to demonstrate memory extraction, but a higher threshold here is reasonable to set here.
 
 #### 3️⃣ Automatic Extraction: Memory Formation
 
