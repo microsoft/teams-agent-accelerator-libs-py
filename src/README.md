@@ -1,14 +1,45 @@
-# What this sample is about
+# 🧠 Tech Support Assistant with Memory
 
-This sample showcases a Tech support Assistant agent which can help users with their device problems. It demonstrates how an agent may use Semantic Memories to answer questions more efficiently.
+This sample showcases a powerful Tech Support Assistant that remembers your device details and past issues, eliminating the frustration of repeating yourself. By leveraging Semantic Memories, this agent delivers a more personalized and efficient support experience.
+
+![An example interaction](./docs/images/Tech-Assistant-Starting.gif)
+_An initial example with the tech support assistant._
+
+![An example interaction](./docs/images/Tech-Assistant-With-Memory.gif)
+_A followup example with the tech support assistant using memory to answer questions more efficiently._
+
+## ✨ Key Features at a Glance
+
+- **Remembers your device details** - No more repeating your device type, OS, or year
+- **Personalized support experience** - Conversations that feel continuous, not disconnected
+- **Efficient problem-solving** - Faster resolutions by building on past interactions
+- **Seamless memory integration** - Demonstrates practical implementation of memory in AI assistants
 
 See [tech_assistant_agent](./tech_assistant_agent/README.md) for more details on the tech support assistant agent. Its [prompts](./tech_assistant_agent/prompts.py) are especially helpful to understand how this agent works.
 
-![An example interaction](./docs/images/example-interaction.png)
+## 🤔 Why is Memory a Game-Changer?
 
-## How does it work?
+Adding memory to an agent has a number of benefits:
 
-### Topics
+- **Contextual Understanding**: Memory allows agents to maintain a context of previous interactions, enabling them to make more informed decisions and provide more accurate responses. It reduces the need to supply and rehydrate the context from scratch as was necessary for traditional chatbots.
+- **Simpler interactions**: Memory allows agents to remember information about the user, such as their name, preferences, and history, leading to more personalized and engaging experiences.
+  In this sample, the agent can remember the user's device type, operating system, and device year so they don't have to ask for it every time.
+- **Enhanced User Experience**: Memory helps agents remember user preferences and history, leading to a more personalized and engaging experience.
+
+## 🔍 How Does It Work?
+
+### Basic Architecture
+
+![Basic Architecture](./docs/images/basic-architecture.png)
+
+In this sample, the agent is given access to the memory module as an explicit tool call to retrieve semantic memories if needed. The working memory on the other hand is fetched before the functional loop begins.
+
+> [!NOTE]
+> The memory extraction happens in the background whenever messages are received by the agent, or sent by the agent.
+
+### 🧩 Key Components Explained
+
+#### 1️⃣ Topics: What the Agent Remembers
 
 The sample is initialized with a list of topics that it cares about. These are topics that the agent wants to remember about the user. Specifically, they are:
 
@@ -18,7 +49,7 @@ The sample is initialized with a list of topics that it cares about. These are t
 
 See [tools.py](./tech_assistant_agent/tools.py) for the definition of the topics.
 
-### Middleware
+#### 2️⃣ Middleware: The Memory Recorder
 
 When you initialize the `MemoryMiddleware`, it will start to record all the messages that are incoming or outgoing from the bot. These messages are then used by the agent as working memory and also for extraction for long term memory.
 
@@ -27,19 +58,19 @@ By setting up the middleware we also get access to a scoped version of the `memo
 See [bot.py](./bot.py) for the initialization of the `MemoryMiddleware`.
 
 > [!TIP]
-> You'll notice that for the sample, the `timeout_seconds` is 60 seconds. The extraction here is set to be a bit aggressive (extract every 1 minute if there is a message in a conversation) to demonstrate memory extraction, but a higher threshhold here is reasonable to set here.
+> You'll notice that for the sample, the `timeout_seconds` is 60 seconds. The extraction here is set to be a bit aggressive (extract every 1 minute if there is a message in a conversation) to demonstrate memory extraction, but a higher threshold here is reasonable to set here.
 
-### Automatic extraction
+#### 3️⃣ Automatic Extraction: Memory Formation
 
 The Memory Module can be set up to automatically extract long term memories from the working memory. When the application server starts up, by calling `memory_middleware.memory_module.listen()`, it will start to trigger extraction of memories in depending on the configuration passed when the `MemoryMiddleware` (or `MemoryModule`) was initialized. This work happens in a background thread and is non-blocking.
 See [app.py](./app.py) for the initialization of the `MemoryMiddleware`. Note that when `listen` is called, you also should call `shutdown` when the application is shutting down.
 
 > [!NOTE]
-> The alternative to automatic extraction is explicit extraction. This can be accomplished by calling `memory_module.process_messages` which will process all the messages that are in the message buffer.
+> The alternative to automatic extraction is explicit extraction. This can be accomplished by calling `memory_module.process_messages` which will process all the messages that are in the message buffer. Check out the [Memory Module](../packages/teams_memory/README.md) for more details.
 
 ![An example of automatic extraction](./docs/images/example-extraction.png)
 
-### Using working memory
+#### 4️⃣ Working Memory: Short-term Recall
 
 The agent can use the conversational messages as working memory to build up contexts for LLM calls for the agent. In addition to the incoming and outgoing messages, the agent can also add internal messages to the working memory.
 
@@ -48,11 +79,13 @@ See [primary_agent.py](./tech_assistant_agent/primary_agent.py) for how working 
 > [!NOTE]
 > To demonstrate long term memory, the working memory only takes the last 1 minute of messages. Feel free to configure this to be longer. See [primary_agent.py](./tech_assistant_agent/primary_agent.py) for the configuration.
 
-### Using long term semantic memories
+#### 5️⃣ Long-term Semantic Memories: Deep Knowledge
 
 The tech support assistant can search for memories from a tool call (See [get_memorized_fields](./tech_assistant_agent/tools.py)). In this tool call, the agent searches memories for a given topic. Depending on if the memories are found or not, the agent can then continue to ask the user for the information or proceed with the flow (like confirming the memories).
 
-### Citing memories
+This usage of memory is _explicit_ as it requires the LLM to _explicitly_ seek memories via a tool call. Another approach is to use _implicit_ memory. In this case, similar to working memory, the application could automatically search for memories that it deems as always necessary to the task and include it in the system prompt. The search in this case could be done for a particular topic or query.
+
+#### 6️⃣ Citing Memories: Building Trust
 
 If the agent finds memories that are relevant to the task at-hand, the tech support assistant can ask for confirmations of the memories and cite the original sources of the memories.
 
@@ -60,9 +93,9 @@ If the agent finds memories that are relevant to the task at-hand, the tech supp
 
 See [confirm_memorized_fields](./tech_assistant_agent/tools.py) for the implementation of the tool call.
 
-# Running the sample
+## 🚀 Running the Sample
 
-## Get started with the sample
+### Get started with the sample
 
 > **Prerequisites**
 >
@@ -112,7 +145,7 @@ Fill out only one of Azure OpenAI and OpenAI configurations.
    - run `npm i @microsoft/teams-app-test-tool --prefix "src/devTools/teamsapptester"`
 1. run `node src/devTools/teamsapptester/node_modules/@microsoft/teams-app-test-tool/cli.js start`  
    If success, a test website will show up
-   ![alt text](image.png)
+   ![alt text](docs/images/teams-test-tool.png)
 
 ### Debug in Teams
 
@@ -138,57 +171,4 @@ Currently the scaffolding only supports Azure OpenAI related configurations but 
 1. If the above two steps completed successfully, then click `Publish`. This will create an app package in `./appPackage/build/appPackage.dev.zip`.
 1. Sideload the app package in Teams and start chatting with the bot.
 
-**Congratulations**! You are running an application that can now interact with users in Teams:
-
-> For local debugging using Teams Toolkit CLI, you need to do some extra steps described in [Set up your Teams Toolkit CLI for local debugging](https://aka.ms/teamsfx-cli-debugging).
-
-![ai chat bot](https://github.com/OfficeDev/TeamsFx/assets/9698542/9bd22201-8fda-4252-a0b3-79531c963e5e)
-
-## What's included in the template
-
-| Folder       | Contents                                     |
-| ------------ | -------------------------------------------- |
-| `.vscode`    | VSCode files for debugging                   |
-| `appPackage` | Templates for the Teams application manifest |
-| `infra`      | Templates for provisioning Azure resources   |
-| `src`        | The source code for the application          |
-
-The following files can be customized and demonstrate an example implementation to get you started.
-
-| File                            | Contents                                               |
-| ------------------------------- | ------------------------------------------------------ |
-| `src/app.py`                    | Hosts an aiohttp api server and exports an app module. |
-| `src/bot.py`                    | Handles business logics for the Basic AI Chatbot.      |
-| `src/config.py`                 | Defines the environment variables.                     |
-| `src/prompts/chat/skprompt.txt` | Defines the prompt.                                    |
-| `src/prompts/chat/config.json`  | Configures the prompt.                                 |
-
-The following are Teams Toolkit specific project files. You can [visit a complete guide on Github](https://github.com/OfficeDev/TeamsFx/wiki/Teams-Toolkit-Visual-Studio-Code-v5-Guide#overview) to understand how Teams Toolkit works.
-
-| File                    | Contents                                                                                                                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `teamsapp.yml`          | This is the main Teams Toolkit project file. The project file defines two primary things: Properties and configuration Stage definitions. |
-| `teamsapp.local.yml`    | This overrides `teamsapp.yml` with actions that enable local execution and debugging.                                                     |
-| `teamsapp.testtool.yml` | This overrides `teamsapp.yml` with actions that enable local execution and debugging in Teams App Test Tool.                              |
-
-## Extend the template
-
-You can follow [Build a Basic AI Chatbot in Teams](https://aka.ms/teamsfx-basic-ai-chatbot) to extend the Basic AI Chatbot template with more AI capabilities, like:
-
-- [Customize prompt](https://aka.ms/teamsfx-basic-ai-chatbot#customize-prompt)
-- [Customize user input](https://aka.ms/teamsfx-basic-ai-chatbot#customize-user-input)
-- [Customize conversation history](https://aka.ms/teamsfx-basic-ai-chatbot#customize-conversation-history)
-- [Customize model type](https://aka.ms/teamsfx-basic-ai-chatbot#customize-model-type)
-- [Customize model parameters](https://aka.ms/teamsfx-basic-ai-chatbot#customize-model-parameters)
-- [Handle messages with image](https://aka.ms/teamsfx-basic-ai-chatbot#handle-messages-with-image)
-
-## Additional information and references
-
-- [Teams Toolkit Documentations](https://docs.microsoft.com/microsoftteams/platform/toolkit/teams-toolkit-fundamentals)
-- [Teams Toolkit CLI](https://aka.ms/teamsfx-toolkit-cli)
-- [Teams Toolkit Samples](https://github.com/OfficeDev/TeamsFx-Samples)
-
-## Known issue
-
-- If you use `Debug in Test Tool` to local debug, you might get an error `InternalServiceError: connect ECONNREFUSED 127.0.0.1:3978` in Test Tool log. You can wait for Python launch console ready and then refresh the front end web page.
-- When you use `Launch Remote in Teams` to remote debug after deployment, you might loose interaction with your bot. This is because the remote service needs to restart. Please wait for several minutes to retry it.
+**Congratulations**! 🎉 You are running an application that can now interact with users in Teams:
