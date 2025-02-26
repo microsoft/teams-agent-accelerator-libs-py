@@ -1,7 +1,5 @@
 # 🧠 Tech Support Assistant with Memory
 
-> _"The assistant who never forgets your tech problems"_
-
 This sample showcases a powerful Tech Support Assistant that remembers your device details and past issues, eliminating the frustration of repeating yourself. By leveraging Semantic Memories, this agent delivers a more personalized and efficient support experience.
 
 ![An example interaction](./docs/images/Tech-Assistant-Starting.gif)
