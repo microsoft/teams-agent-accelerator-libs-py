@@ -11,7 +11,17 @@ def configure_logging(logging_level: int = logging.DEBUG) -> None:
     logger = logging.getLogger(module_name)
     logger.setLevel(logging_level)
 
+    handler_name = "teams-memory-console"
+    handler = next(
+        (handler for handler in logger.handlers if handler.name == handler_name), None
+    )
+    # If handler already added, update logging level
+    if handler:
+        handler.setLevel(logging_level)
+        return
+
     handler = logging.StreamHandler()
+    handler.name = handler_name
     handler.setLevel(logging_level)
 
     formatter = DefaultFormatter(
