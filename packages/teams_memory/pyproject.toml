@@ -18,6 +18,8 @@ dependencies = [
     "litellm==1.54.1",
     "botbuilder>=0.0.1",
     "botframework-connector>=4.16.2",
+    "azure-search-documents>=11.4.0",
+    "azure-identity>=1.15.0",
 ]
 
 [project.urls]

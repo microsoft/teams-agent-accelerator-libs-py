@@ -19,6 +19,11 @@ The Teams Memory Module is a simple yet powerful library designed to help manage
 - **Query-Based or Topic-Based Memory Retrieval**:  
   Search for existing memories using natural language queries or predefined topics.
 
+- **Multiple Storage Options**:
+  - In-memory storage for development and testing
+  - SQLite with vector extensions for small to medium deployments
+  - Azure AI Search for enterprise-scale deployments with advanced vector search capabilities
+
 # Integration
 
 Integrating the Memory Module into your Teams AI SDK application (or Bot Framework) is straightforward.
@@ -27,6 +32,10 @@ Integrating the Memory Module into your Teams AI SDK application (or Bot Framewo
 
 - **Azure OpenAI or OpenAI Keys**:  
   The LLM layer is built using [LiteLLM](https://docs.litellm.ai/), which supports multiple [providers](https://docs.litellm.ai/docs/providers). However, only Azure OpenAI (AOAI) and OpenAI (OAI) have been tested.
+
+- **For Azure AI Search Storage**:
+  - An Azure AI Search service instance
+  - Either an API key or Azure managed identity credentials
 
 ## Integrating into a Teams AI SDK Application
 
@@ -45,19 +54,20 @@ Memory extraction requires incoming and outgoing messages to your application. T
 After building your bot `Application`, create a `MemoryMiddleware` with the following configurations:
 
 - **`llm`**: Configuration for the LLM (required).
-- **`storage`**: Configuration for the storage layer. Defaults to `InMemoryStorage` if not provided.
+- **`storage`**: Configuration for the storage layer. Options include:
+  - **In-memory storage** (default): No configuration needed
+  - **SQLite storage**: Provide a `db_path`
+  - **Azure AI Search storage**: Provide Azure AI Search configuration
 - **`buffer_size`**: Minimum size of the message buffer before memory extraction is triggered.
 - **`timeout_seconds`**: Time elapsed after the buffer starts filling up before extraction occurs.
   - **Note**: Extraction occurs when either the `buffer_size` is reached or the `timeout_seconds` elapses, whichever happens first.
 - **`topics`**: Topics relevant to your application. These help the LLM focus on important information and avoid unnecessary extractions.
 
 ```python
+# Example with in-memory storage (default)
 memory_middleware = MemoryMiddleware(
     config=MemoryModuleConfig(
         llm=LLMConfig(**memory_llm_config),
-        storage=StorageConfig(
-            db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db")
-        ),  # Uses SQLite if `db_path` is provided
         timeout_seconds=60,  # Extraction occurs 60 seconds after the first message
         enable_logging=True,  # Helpful for debugging
         topics=[
@@ -67,6 +77,38 @@ memory_middleware = MemoryMiddleware(
         ],  # Example topics for a tech-assistant agent
     )
 )
+
+# Example with SQLite storage
+memory_middleware = MemoryMiddleware(
+    config=MemoryModuleConfig(
+        llm=LLMConfig(**memory_llm_config),
+        storage=StorageConfig(
+            db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db")
+        ),  # Uses SQLite if `db_path` is provided
+        timeout_seconds=60,
+        enable_logging=True,
+        topics=[...],
+    )
+)
+
+# Example with Azure AI Search storage
+memory_middleware = MemoryMiddleware(
+    config=MemoryModuleConfig(
+        llm=LLMConfig(**memory_llm_config),
+        storage=StorageConfig(
+            storage_type="azure-search",  # Explicitly set storage type
+            search_service_name="your-search-service-name",  # Required
+            search_index_name="teams-memories",  # Optional, defaults to "teams-memories"
+            search_api_key="your-api-key",  # Optional, uses DefaultAzureCredential if not provided
+            search_api_version="2023-07-01-Preview",  # Optional
+            search_endpoint=None,  # Optional, constructs default endpoint if not provided
+        ),
+        timeout_seconds=60,
+        enable_logging=True,
+        topics=[...],
+    )
+)
+
 bot_app.adapter.use(memory_middleware)
 ```
 

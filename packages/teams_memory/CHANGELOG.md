@@ -59,3 +59,21 @@
 - Added Tech Support Assistant sample and memory confirmation with citations.
 - Improved deduplication and similarity calculations (cosine distance).
 - Added evals for memory extraction and retrieval.
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- Azure AI Search storage option for enhanced memory retrieval
+  - Support for vector search with HNSW algorithm
+  - Hybrid search capabilities combining vector similarity with traditional keyword search
+  - Semantic ranking for improved relevance
+  - Managed service benefits with automatic scaling and high availability
+  - Support for both API key and Azure managed identity authentication

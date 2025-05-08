@@ -131,6 +131,17 @@ class MemoryCore(BaseMemoryCore):
             return InMemoryStorage()
         if config.storage.storage_type == "sqlite":
             return SQLiteMemoryStorage(config.storage)
+        if config.storage.storage_type == "azure-search":
+            from teams_memory.storage.azure_search_memory_storage import AzureSearchMemoryStorage
+            if not config.storage.search_service_name:
+                raise ValueError("search_service_name is required for Azure AI Search storage")
+            return AzureSearchMemoryStorage(
+                search_service_name=config.storage.search_service_name,
+                index_name=config.storage.search_index_name or "teams-memories",
+                api_key=config.storage.search_api_key,
+                api_version=config.storage.search_api_version or "2023-07-01-Preview",
+                endpoint=config.storage.search_endpoint,
+            )
 
         raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
 

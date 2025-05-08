@@ -28,7 +28,7 @@ class StorageConfig(BaseModel):
 
     model_config = ConfigDict(extra="allow")  # Allow arbitrary kwargs
 
-    storage_type: Literal["in-memory", "sqlite"] | str = Field(
+    storage_type: Literal["in-memory", "sqlite", "azure-search"] | str = Field(
         description="The type of storage to use", default="in-memory"
     )
 
@@ -40,11 +40,41 @@ class StorageConfig(BaseModel):
         description="The path to the database file",
     )
 
+    """
+    Azure AI Search configuration. Used when storage_type is "azure-search".
+    """
+    search_service_name: Optional[str] = Field(
+        default=None,
+        description="The name of the Azure AI Search service",
+    )
+
+    search_index_name: Optional[str] = Field(
+        default="teams-memories",
+        description="The name of the search index",
+    )
+
+    search_api_key: Optional[str] = Field(
+        default=None,
+        description="The API key for Azure AI Search. If not provided, will use DefaultAzureCredential",
+    )
+
+    search_api_version: Optional[str] = Field(
+        default="2023-07-01-Preview",
+        description="The API version for Azure AI Search",
+    )
+
+    search_endpoint: Optional[str] = Field(
+        default=None,
+        description="Custom endpoint URL for Azure AI Search. If not provided, will use default pattern",
+    )
+
     @model_validator(mode="before")
     def set_storage_type(cls, values: dict[str, Any]) -> dict[str, Any]:
         if isinstance(values, dict):
             if values.get("db_path") and "storage_type" not in values:
                 values["storage_type"] = "sqlite"
+            elif values.get("search_service_name") and "storage_type" not in values:
+                values["storage_type"] = "azure-search"
         return values
 
 
@@ -52,6 +82,24 @@ class InMemoryStorageConfig(StorageConfig):
     """Configuration for in-memory storage."""
 
     type: str = "in-memory"
+
+
+class SQLiteStorageConfig(StorageConfig):
+    """Configuration for SQLite storage."""
+
+    type: str = "sqlite"
+    db_path: Path | str
+
+
+class AzureSearchStorageConfig(StorageConfig):
+    """Configuration for Azure AI Search storage."""
+
+    type: str = "azure-search"
+    search_service_name: str
+    search_index_name: str = "teams-memories"
+    search_api_key: Optional[str] = None
+    search_api_version: str = "2023-07-01-Preview"
+    search_endpoint: Optional[str] = None
 
 
 DEFAULT_TOPICS = [
