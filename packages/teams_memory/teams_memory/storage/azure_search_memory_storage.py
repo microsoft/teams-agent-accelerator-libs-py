@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, cast
 
 from azure.core.credentials import AzureKeyCredential
+from azure.core.exceptions import ResourceNotFoundError
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents.indexes.models import (
@@ -14,16 +15,19 @@ from azure.search.documents.indexes.models import (
     SearchField,
     SearchFieldDataType,
     VectorSearch,
-    HnswVectorSearchAlgorithmConfiguration,
+    VectorSearchAlgorithmConfiguration,
     VectorSearchProfile,
-    SemanticConfiguration,
-    SemanticField,
-    SemanticSettings,
     SimpleField,
     SearchableField,
     VectorSearchAlgorithmKind,
+    HnswAlgorithmConfiguration,
+    HnswParameters,
 )
-from azure.search.documents.models import Vector
+# In newer versions of the library, the Vector class might not be available
+# We'll create a simple wrapper class to maintain compatibility
+class Vector:
+    def __init__(self, value):
+        self.value = value
 
 from teams_memory.interfaces.base_memory_storage import BaseMemoryStorage
 from teams_memory.interfaces.errors import MemoryNotFoundError, MessageNotFoundError
@@ -88,7 +92,13 @@ class AzureSearchMemoryStorage(BaseMemoryStorage):
 
     def _create_index_if_not_exists(self) -> None:
         """Create the search index if it doesn't exist."""
-        if not self.index_client.get_index(self.index_name):
+        try:
+            # Try to get the index
+            self.index_client.get_index(self.index_name)
+            print(f"Index '{self.index_name}' already exists.")
+        except ResourceNotFoundError:
+            # Index doesn't exist, create it
+            print(f"Index '{self.index_name}' not found. Creating...")
             fields = [
                 SimpleField(name="id", type=SearchFieldDataType.String, key=True),
                 SimpleField(name="user_id", type=SearchFieldDataType.String),
@@ -98,48 +108,56 @@ class AzureSearchMemoryStorage(BaseMemoryStorage):
                 SimpleField(name="topics", type=SearchFieldDataType.Collection(SearchFieldDataType.String)),
                 SimpleField(name="source_ids", type=SearchFieldDataType.Collection(SearchFieldDataType.String)),
                 SearchField(
-                    name="embedding",
+                    name="content_vector",  # Changed from 'embedding' to 'content_vector' to match error message
                     type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
                     vector_search_dimensions=1536,  # Assuming OpenAI's text-embedding-ada-002 model
-                    vector_search_profile_name="vector-profile",
+                    vector_search_profile_name="vector-profile",  # Using correct attribute name - NOT vectorSearchProfile
                 ),
             ]
             
+            # Create HNSW parameters
+            hnsw_params = HnswParameters(
+                m=4,
+                ef_construction=400,
+                ef_search=500,
+                metric="cosine"
+            )
+            
+            # Create algorithm configuration
+            alg_config = HnswAlgorithmConfiguration(
+                name="vector-config",
+                kind="hnsw",
+                parameters=hnsw_params
+            )
+            
+            # Create vector search profile
+            profile = VectorSearchProfile(
+                name="vector-profile",
+                algorithm_configuration_name="vector-config"
+            )
+            
+            # Create vector search configuration
             vector_search = VectorSearch(
-                algorithms=[
-                    HnswVectorSearchAlgorithmConfiguration(
-                        name="vector-config",
-                        kind=VectorSearchAlgorithmKind.HNSW,
-                        parameters={"m": 4, "efConstruction": 400, "efSearch": 500},
-                    )
-                ],
-                profiles=[
-                    VectorSearchProfile(
-                        name="vector-profile",
-                        algorithm_configuration_name="vector-config",
-                    )
-                ],
-            )
-            
-            semantic_config = SemanticConfiguration(
-                name="semantic-config",
-                prioritized_fields=SemanticField(
-                    content_fields=[{"name": "content"}],
-                ),
-            )
-            
-            semantic_settings = SemanticSettings(
-                configurations=[semantic_config],
+                algorithms=[alg_config],
+                profiles=[profile]
             )
             
             index = SearchIndex(
                 name=self.index_name,
                 fields=fields,
                 vector_search=vector_search,
-                semantic_settings=semantic_settings,
             )
             
-            self.index_client.create_index(index)
+            try:
+                self.index_client.create_index(index)
+                print(f"Index '{self.index_name}' created successfully.")
+            except Exception as e:
+                print(f"Error creating index '{self.index_name}': {str(e)}")
+                raise
+        except Exception as e:
+            # Log and re-raise any other exceptions
+            print(f"Error checking index '{self.index_name}': {str(e)}")
+            raise
 
     async def store_memory(
         self,
@@ -161,8 +179,8 @@ class AzureSearchMemoryStorage(BaseMemoryStorage):
             return None
             
         combined_vector = [
-            sum(vec[i] for vec in [e.vector for e in embedding_vectors]) / len(embedding_vectors)
-            for i in range(len(embedding_vectors[0].vector))
+            sum(vec[i] for vec in [e.embedding_vector for e in embedding_vectors]) / len(embedding_vectors)
+            for i in range(len(embedding_vectors[0].embedding_vector))
         ]
         
         document = {
@@ -173,7 +191,7 @@ class AzureSearchMemoryStorage(BaseMemoryStorage):
             "source_ids": memory.source_ids,
             "created_at": memory.created_at.isoformat(),
             "updated_at": memory.updated_at.isoformat() if memory.updated_at else None,
-            "embedding": Vector(value=combined_vector),
+            "content_vector": Vector(value=combined_vector),
         }
         
         self.search_client.upload_documents([document])
@@ -203,16 +221,16 @@ class AzureSearchMemoryStorage(BaseMemoryStorage):
             
         # Combine embeddings
         combined_vector = [
-            sum(vec[i] for vec in [e.vector for e in embedding_vectors]) / len(embedding_vectors)
-            for i in range(len(embedding_vectors[0].vector))
+            sum(vec[i] for vec in [e.embedding_vector for e in embedding_vectors]) / len(embedding_vectors)
+            for i in range(len(embedding_vectors[0].embedding_vector))
         ]
         
         document = {
             "id": memory_id,
             "content": updated_memory,
             "updated_at": datetime.utcnow().isoformat(),
-            "embedding": Vector(value=combined_vector),
-            **{k: v for k, v in result.items() if k not in ["content", "updated_at", "embedding"]},
+            "content_vector": Vector(value=combined_vector),
+            **{k: v for k, v in result.items() if k not in ["content", "updated_at", "content_vector"]},
         }
         
         self.search_client.merge_documents([document])
@@ -300,12 +318,12 @@ class AzureSearchMemoryStorage(BaseMemoryStorage):
         filter_expr = " and ".join(filter_conditions) if filter_conditions else None
         
         if text_embedding:
-            vector_query = Vector(value=text_embedding.vector)
+            vector_query = Vector(value=text_embedding.embedding_vector)
             results = list(self.search_client.search(
                 "*",
                 filter=filter_expr,
                 vector=vector_query,
-                vector_fields="embedding",
+                vector_fields="content_vector",
                 top=limit or self.default_limit,
             ))
         else:

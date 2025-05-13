@@ -9,6 +9,8 @@ dependencies = [
     "teams_memory",
     "litellm",
     "evals",
+    "azure-search-documents==11.6.0b11",
+    "azure-identity>=1.19.0",
 ]
 
 [dependency-groups]
