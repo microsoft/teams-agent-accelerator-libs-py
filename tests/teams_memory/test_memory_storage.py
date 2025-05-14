@@ -18,6 +18,7 @@ from teams_memory.interfaces.types import (
 )
 from teams_memory.storage.in_memory_storage import InMemoryStorage
 from teams_memory.storage.sqlite_memory_storage import SQLiteMemoryStorage
+from teams_memory.storage.sqlite_message_storage import SQLiteMessageStorage
 
 
 @pytest.fixture(params=["sqlite", "in_memory"])
@@ -25,6 +26,18 @@ def memory_storage(request):
     if request.param == "sqlite":
         db_path = f"memory_{uuid4().hex}.db"
         storage = SQLiteMemoryStorage(StorageConfig(db_path=db_path))
+        yield storage
+        os.remove(db_path)
+
+    else:
+        yield InMemoryStorage()
+
+
+@pytest.fixture(params=["sqlite", "in_memory"])
+def message_storage(request):
+    if request.param == "sqlite":
+        db_path = f"memory_{uuid4().hex}.db"
+        storage = SQLiteMessageStorage(StorageConfig(db_path=db_path))
         yield storage
         os.remove(db_path)
 
@@ -263,26 +276,26 @@ async def test_delete_memories_validation(memory_storage):
 
 
 @pytest.mark.asyncio
-async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
+async def test_store_and_retrieve_chat_history(message_storage, sample_message):
     # Store message
-    await memory_storage.upsert_message(sample_message)
+    await message_storage.upsert_message(sample_message)
 
     # Retrieve chat history with n_messages
-    messages = await memory_storage.retrieve_conversation_history(
+    messages = await message_storage.retrieve_conversation_history(
         sample_message.conversation_ref, n_messages=1
     )
     assert len(messages) == 1
     assert messages[0].content == sample_message.content
 
     # Retrieve chat history with last_minutes
-    messages = await memory_storage.retrieve_conversation_history(
+    messages = await message_storage.retrieve_conversation_history(
         sample_message.conversation_ref, last_minutes=5
     )
     assert len(messages) == 1
     assert messages[0].content == sample_message.content
 
     # Retrieve chat history with `before` parameter set to after the message's creation time
-    messages = await memory_storage.retrieve_conversation_history(
+    messages = await message_storage.retrieve_conversation_history(
         sample_message.conversation_ref,
         n_messages=1,
         before=sample_message.created_at + timedelta(seconds=1),
@@ -291,7 +304,7 @@ async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
     assert messages[0].content == sample_message.content
 
     # Retrieve chat history with `before` parameter set to before the message's creation time
-    messages = await memory_storage.retrieve_conversation_history(
+    messages = await message_storage.retrieve_conversation_history(
         sample_message.conversation_ref,
         n_messages=1,
         before=sample_message.created_at - timedelta(seconds=1),
@@ -301,11 +314,11 @@ async def test_store_and_retrieve_chat_history(memory_storage, sample_message):
 
 @pytest.mark.asyncio
 async def test_get_attributed_memories_by_message_id(
-    memory_storage, sample_memory_input, sample_message
+    memory_storage, message_storage, sample_memory_input, sample_message
 ):
     # Store single memory
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
-    await memory_storage.upsert_message(sample_message)
+    await message_storage.upsert_message(sample_message)
 
     # Get memories by message ID
     memories = await memory_storage.get_attributed_memories(
@@ -318,11 +331,11 @@ async def test_get_attributed_memories_by_message_id(
 
 @pytest.mark.asyncio
 async def test_get_attributed_memories_by_message_ids(
-    memory_storage, sample_memory_input, sample_message
+    memory_storage, message_storage, sample_memory_input, sample_message
 ):
     # Store three memories
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
-    await memory_storage.upsert_message(sample_message)
+    await message_storage.upsert_message(sample_message)
     second_memory = BaseMemoryInput(
         content="Second memory",
         created_at=datetime.now(),
@@ -338,7 +351,7 @@ async def test_get_attributed_memories_by_message_ids(
         created_at=datetime.now(),
     )
     await memory_storage.store_memory(second_memory, embedding_vectors=[])
-    await memory_storage.upsert_message(second_message)
+    await message_storage.upsert_message(second_message)
     third_memory = BaseMemoryInput(
         content="Third memory",
         created_at=datetime.now(),
@@ -354,7 +367,7 @@ async def test_get_attributed_memories_by_message_ids(
         created_at=datetime.now(),
     )
     await memory_storage.store_memory(third_memory, embedding_vectors=[])
-    await memory_storage.upsert_message(third_message)
+    await message_storage.upsert_message(third_message)
 
     # Get memories by message ID
     memories = await memory_storage.get_attributed_memories(
@@ -367,11 +380,11 @@ async def test_get_attributed_memories_by_message_ids(
 
 @pytest.mark.asyncio
 async def test_get_attributed_memories_by_message_id_empty(
-    memory_storage, sample_memory_input, sample_message
+    memory_storage, message_storage, sample_memory_input, sample_message
 ):
     # Store single memory
     await memory_storage.store_memory(sample_memory_input, embedding_vectors=[])
-    await memory_storage.upsert_message(sample_message)
+    await message_storage.upsert_message(sample_message)
 
     # Get memories by message ID
     memories = await memory_storage.get_attributed_memories(
@@ -383,7 +396,7 @@ async def test_get_attributed_memories_by_message_id_empty(
 
 @pytest.mark.asyncio
 async def test_get_memories_by_ids(
-    memory_storage, sample_memory_input, sample_embedding
+    memory_storage, message_storage, sample_memory_input, sample_embedding
 ):
     # Store memory
     memory_id = await memory_storage.store_memory(
@@ -397,7 +410,7 @@ async def test_get_memories_by_ids(
 
 
 @pytest.mark.asyncio
-async def test_get_messages(memory_storage):
+async def test_get_messages(message_storage):
     # Test data
     test_messages = [
         UserMessageInput(
@@ -420,10 +433,10 @@ async def test_get_messages(memory_storage):
 
     # Store test messages
     for message in test_messages:
-        await memory_storage.upsert_message(message)
+        await message_storage.upsert_message(message)
 
     # Test retrieving messages
-    result = await memory_storage.get_messages(["msg1", "msg2"])
+    result = await message_storage.get_messages(["msg1", "msg2"])
 
     # Assertions
     assert len(result) == 2
