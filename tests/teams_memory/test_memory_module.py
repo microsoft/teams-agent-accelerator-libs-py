@@ -181,10 +181,8 @@ async def test_simple_conversation(
         await scoped_memory_module.memory_module.add_message(message)
 
     await scoped_memory_module.process_messages()
-    stored_memories = (
-        await scoped_memory_module.memory_module.memory_core.storage.get_memories(
-            user_id=user_ids_in_conversation_scope[0]
-        )
+    stored_memories = await scoped_memory_module.memory_module.memory_core.memory_storage.get_memories(
+        user_id=user_ids_in_conversation_scope[0]
     )
     assert len(stored_memories) >= 1
     assert any("pie" in message.content for message in stored_memories)
@@ -265,10 +263,8 @@ async def test_update_memory(
         await scoped_memory_module.memory_module.add_message(message)
 
     await scoped_memory_module.process_messages()
-    stored_memories = (
-        await scoped_memory_module.memory_module.memory_core.storage.get_memories(
-            user_id=user_ids_in_conversation_scope[0]
-        )
+    stored_memories = await scoped_memory_module.memory_module.memory_core.memory_storage.get_memories(
+        user_id=user_ids_in_conversation_scope[0]
     )
     assert len(stored_memories) >= 1
 
@@ -279,7 +275,7 @@ async def test_update_memory(
         memory_id, "The user like San Diego city"
     )
     updated_message = (
-        await scoped_memory_module.memory_module.memory_core.storage.get_memory(
+        await scoped_memory_module.memory_module.memory_core.memory_storage.get_memory(
             memory_id
         )
     )
@@ -304,10 +300,8 @@ async def test_remove_memory(
     for message in messages:
         await scoped_memory_module.memory_module.add_message(message)
     await scoped_memory_module.process_messages()
-    stored_messages = (
-        await scoped_memory_module.memory_module.memory_core.storage.get_memories(
-            user_id=user_ids_in_conversation_scope[0]
-        )
+    stored_messages = await scoped_memory_module.memory_module.memory_core.memory_storage.get_memories(
+        user_id=user_ids_in_conversation_scope[0]
     )
     assert len(stored_messages) >= 0
 
@@ -315,10 +309,8 @@ async def test_remove_memory(
         user_id=user_ids_in_conversation_scope[0]
     )
 
-    stored_messages = (
-        await scoped_memory_module.memory_module.memory_core.storage.get_memories(
-            user_id=user_ids_in_conversation_scope[0]
-        )
+    stored_messages = await scoped_memory_module.memory_module.memory_core.memory_storage.get_memories(
+        user_id=user_ids_in_conversation_scope[0]
     )
     assert len(stored_messages) == 0
 
@@ -468,10 +460,8 @@ async def test_delete_messages(
         await scoped_memory_module.memory_module.add_message(message)
     await scoped_memory_module.process_messages()
 
-    stored_memories = (
-        await scoped_memory_module.memory_module.memory_core.storage.get_memories(
-            user_id=user_ids_in_conversation_scope[0]
-        )
+    stored_memories = await scoped_memory_module.memory_module.memory_core.memory_storage.get_memories(
+        user_id=user_ids_in_conversation_scope[0]
     )
     assert len(stored_memories) == 2
 
@@ -503,10 +493,8 @@ async def test_delete_messages(
 
     await scoped_memory_module.memory_module.remove_messages(delete_messages)
 
-    updated_memories = (
-        await scoped_memory_module.memory_module.memory_core.storage.get_memories(
-            user_id=user_ids_in_conversation_scope[0]
-        )
+    updated_memories = await scoped_memory_module.memory_module.memory_core.memory_storage.get_memories(
+        user_id=user_ids_in_conversation_scope[0]
     )
     assert len(updated_memories) == 1
     assert any("noodle" in memory.content for memory in updated_memories)
@@ -573,10 +561,8 @@ async def test_topic_extraction(
         await scoped_memory_module.memory_module.add_message(input)
 
     await scoped_memory_module.process_messages()
-    stored_memories = (
-        await scoped_memory_module.memory_module.memory_core.storage.get_memories(
-            user_id=user_ids_in_conversation_scope[0]
-        )
+    stored_memories = await scoped_memory_module.memory_module.memory_core.memory_storage.get_memories(
+        user_id=user_ids_in_conversation_scope[0]
     )
     assert any(
         "macbook" in message.content.lower() for message in stored_memories
@@ -708,10 +694,8 @@ async def test_retrieve_memories_by_topic_and_query(
     await scoped_memory_module.process_messages()
 
     # make sure we have memories
-    stored_memories = (
-        await scoped_memory_module.memory_module.memory_core.storage.get_memories(
-            user_id=user_ids_in_conversation_scope[0]
-        )
+    stored_memories = await scoped_memory_module.memory_module.memory_core.memory_storage.get_memories(
+        user_id=user_ids_in_conversation_scope[0]
     )
     assert any("macbook" in memory.content.lower() for memory in stored_memories)
     assert any("windows" in memory.content.lower() for memory in stored_memories)
@@ -820,7 +804,7 @@ async def test_search_memories_without_filters(
             created_at=datetime.now() - timedelta(minutes=1),
         ),
     ]
-    
+
     for message in messages:
         await scoped_memory_module.memory_module.add_message(message)
     await scoped_memory_module.process_messages()
@@ -836,7 +820,8 @@ async def test_search_memories_without_filters(
     # Test with just limit
     limited_memories = await scoped_memory_module.search_memories(limit=1)
     assert len(limited_memories) == 1
-    
+
+
 @pytest.mark.asyncio
 async def test_ask(
     scoped_memory_module, conversation_id, user_ids_in_conversation_scope

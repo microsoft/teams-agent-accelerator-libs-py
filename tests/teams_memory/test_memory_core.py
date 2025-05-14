@@ -38,7 +38,7 @@ async def test_extract_memory_from_messages(config):
 
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
-    memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
+    memory_core = MemoryCore(config=config, llm_service=lm, memory_storage=storage)
 
     message = create_test_user_message(content="Hey, I'm a software developer.")
     res = await memory_core._extract_semantic_fact_from_messages(messages=[message])
@@ -57,7 +57,7 @@ async def test_extract_memory_from_messages_with_existing_memories_included(conf
 
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
-    memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
+    memory_core = MemoryCore(config=config, llm_service=lm, memory_storage=storage)
 
     message = create_test_user_message(content="Hey, I'm a software developer.")
     existing_memory = create_test_memory(content="The user is a software developer.")
@@ -79,7 +79,7 @@ async def test_extract_metadata_from_fact(config):
 
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
-    memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
+    memory_core = MemoryCore(config=config, llm_service=lm, memory_storage=storage)
 
     res = await memory_core._extract_metadata_from_fact(
         fact="The user is a software developer."
@@ -100,7 +100,7 @@ async def test_get_query_embedding_from_messages(config):
 
     storage = mock.Mock()
     config = MemoryModuleConfig(llm=lm_config)
-    memory_core = MemoryCore(config=config, llm_service=lm, storage=storage)
+    memory_core = MemoryCore(config=config, llm_service=lm, memory_storage=storage)
 
     query = "Which country has a maple leaf in its flag?"
     res: TextEmbedding = await memory_core._get_query_embedding(query=query)

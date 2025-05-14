@@ -360,7 +360,7 @@ class RetrievalEvaluator(BaseEvaluator):
                 embed_vectors = await memory_core._get_semantic_fact_embeddings(
                     memory["content"], metadata
                 )
-                await memory_core.storage.store_memory(
+                await memory_core.memory_storage.store_memory(
                     memory_input, embedding_vectors=embed_vectors
                 )
 
