@@ -14,6 +14,7 @@ from teams_memory.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
     BufferedMessage,
 )
+from teams_memory.interfaces.base_message_storage import BaseMessageStorage
 from teams_memory.interfaces.base_scheduled_events_service import Event
 from teams_memory.interfaces.base_scheduled_events_storage import (
     BaseScheduledEventsStorage,
@@ -47,7 +48,10 @@ class _MemorySimilarity(NamedTuple):
 
 
 class InMemoryStorage(
-    BaseMemoryStorage, BaseMessageBufferStorage, BaseScheduledEventsStorage
+    BaseMemoryStorage,
+    BaseMessageBufferStorage,
+    BaseScheduledEventsStorage,
+    BaseMessageStorage,
 ):
     def __init__(self) -> None:
         self.storage: InMemoryInternalStore = {
