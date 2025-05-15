@@ -90,9 +90,9 @@ async def add_messages(
 
 
 def run_benchmark(
-    name: str,
+    name: Optional[str],
     dataset: Dataset,
-    run_one: bool,
+    run_one: Optional[bool],
 ) -> None:
     if not name:
         name = "memory module benchmark"
@@ -154,9 +154,9 @@ def run_benchmark(
         )
 
 
-@click.command()  # type: ignore
-@click.option("--name", type=str, required=False, help="Name of the benchmark")  # type: ignore
-@click.option("--run_one", type=bool, default=False, help="Run only one benchmark case")  # type: ignore
+@click.command()
+@click.option("--name", type=str, required=False, help="Name of the benchmark")
+@click.option("--run_one", type=bool, default=False, help="Run only one benchmark case")
 def main(name: Optional[str], run_one: Optional[bool]) -> None:
     """Run the benchmark for the memory module."""
     dataset = load_dataset()
