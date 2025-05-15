@@ -144,7 +144,7 @@ class MemoryCore(BaseMemoryCore):
 
     def _build_message_storage(self, config: MemoryModuleConfig) -> BaseMessageStorage:
         storage_config = config.get_storage_config("message")
-        if isinstance(config, InMemoryStorageConfig):
+        if isinstance(storage_config, InMemoryStorageConfig):
             return InMemoryStorage()
         if isinstance(storage_config, SQLiteStorageConfig):
             return SQLiteMessageStorage(storage_config)
