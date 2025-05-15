@@ -58,8 +58,8 @@ def string_check_metric() -> Any:
 
             scores.append(score)
 
-        aggregated_results = standard_aggregations(scores)  # type: ignore
+        aggregated_results = standard_aggregations(scores)
 
         return MetricValue(scores=scores, aggregate_results=aggregated_results)
 
-    return make_metric(eval_fn=ml_metric, greater_is_better=True, name="string check")  # type: ignore
+    return make_metric(eval_fn=ml_metric, greater_is_better=True, name="string check")

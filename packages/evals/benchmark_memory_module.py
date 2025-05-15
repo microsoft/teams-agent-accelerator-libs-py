@@ -20,7 +20,7 @@ from tqdm import tqdm
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(os.path.dirname(__file__), "../teams_memory"))
 
-from teams_memory.config import LLMConfig, MemoryModuleConfig, StorageConfig
+from teams_memory.config import LLMConfig, MemoryModuleConfig, SQLiteStorageConfig
 from teams_memory.core.memory_module import MemoryModule
 from teams_memory.interfaces.types import (
     AssistantMessage,
@@ -53,7 +53,7 @@ class MemoryModuleManager:
             api_key=os.getenv("OPENAI_API_KEY"),
         )
         config = MemoryModuleConfig(
-            storage=StorageConfig(db_path=self._db_path),
+            storage=SQLiteStorageConfig(db_path=self._db_path),
             buffer_size=self._buffer_size,
             llm=llm,
         )
@@ -149,13 +149,16 @@ def run_benchmark(
     mlflow_metric = string_check_metric()
     with mlflow.start_run(run_name=name):
         mlflow.log_params({"dataset": dataset_name})
-        mlflow.evaluate(iterate_benchmark_cases, pd_dataset, extra_metrics=[mlflow_metric])  # type: ignore
+        mlflow.evaluate(
+            iterate_benchmark_cases, pd_dataset, extra_metrics=[mlflow_metric]
+        )
 
 
-@click.command()
-@click.option("--name", type=str, required=False, help="Name of the benchmark")
-@click.option("--run_one", type=bool, default=False, help="Run only one benchmark case")
-def main(name: str, run_one: bool) -> None:
+@click.command()  # type: ignore
+@click.option("--name", type=str, required=False, help="Name of the benchmark")  # type: ignore
+@click.option("--run_one", type=bool, default=False, help="Run only one benchmark case")  # type: ignore
+def main(name: Optional[str], run_one: Optional[bool]) -> None:
+    """Run the benchmark for the memory module."""
     dataset = load_dataset()
     run_benchmark(name, dataset, run_one)
 

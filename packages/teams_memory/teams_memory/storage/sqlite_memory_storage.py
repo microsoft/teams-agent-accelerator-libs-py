@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 import sqlite_vec
-from teams_memory.config import StorageConfig
+from teams_memory.config import SQLiteStorageConfig
 from teams_memory.interfaces.base_memory_storage import BaseMemoryStorage
 from teams_memory.interfaces.types import (
     BaseMemoryInput,
@@ -27,7 +27,7 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteMemoryStorage(BaseMemoryStorage):
     """SQLite implementation of memory storage."""
 
-    def __init__(self, config: StorageConfig):
+    def __init__(self, config: SQLiteStorageConfig):
         self.storage = SQLiteStorage(config.db_path or DEFAULT_DB_PATH)
 
     async def store_memory(
@@ -259,7 +259,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         if memories_to_delete:
             await self._delete_memories(memories_to_delete)
 
-    async def get_memory(self, memory_id: int) -> Optional[Memory]:
+    async def get_memory(self, memory_id: str) -> Optional[Memory]:
         query = """
             SELECT
                 m.*,

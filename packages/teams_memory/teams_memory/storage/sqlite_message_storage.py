@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 from typing import Any, List, Optional
 
-from teams_memory.config import StorageConfig
+from teams_memory.config import SQLiteStorageConfig
 from teams_memory.interfaces.base_message_storage import BaseMessageStorage
 from teams_memory.interfaces.types import InternalMessageInput, Message, MessageInput
 from teams_memory.storage.sqlite_storage import SQLiteStorage
@@ -15,7 +15,7 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteMessageStorage(BaseMessageStorage):
     """SQLite implementation of message storage."""
 
-    def __init__(self, config: StorageConfig):
+    def __init__(self, config: SQLiteStorageConfig):
         self.storage = SQLiteStorage(config.db_path or DEFAULT_DB_PATH)
 
     async def upsert_message(self, message: MessageInput) -> Message:

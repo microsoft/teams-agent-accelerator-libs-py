@@ -8,7 +8,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 import pytest
-from teams_memory.config import StorageConfig
+from teams_memory.config import SQLiteStorageConfig
 from teams_memory.storage.in_memory_storage import InMemoryStorage
 from teams_memory.storage.sqlite_memory_storage import SQLiteMemoryStorage
 from teams_memory.storage.sqlite_message_buffer_storage import (
@@ -23,9 +23,9 @@ from tests.teams_memory.utils import create_test_user_message
 def storage(request):
     if request.param == "sqlite":
         db_path = f"storage_{uuid4().hex}.db"
-        buffer = SQLiteMessageBufferStorage(StorageConfig(db_path=db_path))
-        memory_storage = SQLiteMemoryStorage(StorageConfig(db_path=db_path))
-        message_storage = SQLiteMessageStorage(StorageConfig(db_path=db_path))
+        buffer = SQLiteMessageBufferStorage(SQLiteStorageConfig(db_path=db_path))
+        memory_storage = SQLiteMemoryStorage(SQLiteStorageConfig(db_path=db_path))
+        message_storage = SQLiteMessageStorage(SQLiteStorageConfig(db_path=db_path))
         yield buffer, memory_storage, message_storage
         os.remove(db_path)
     else:

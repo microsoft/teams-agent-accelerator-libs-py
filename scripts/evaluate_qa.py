@@ -19,7 +19,7 @@ import logging
 
 from teams_memory import (
     MemoryModuleConfig,
-    StorageConfig,
+    SQLiteStorageConfig,
     Topic,
 )
 from teams_memory.core.memory_core import MemoryCore
@@ -367,7 +367,7 @@ class QuestionAnsweringEvaluator(BaseEvaluator):
                 Path(__file__).parent / "data" / "evaluation" / f"qa_test_{uuid4()}.db"
             )
             config = MemoryModuleConfig(
-                storage=StorageConfig(db_path=db_path),
+                storage=SQLiteStorageConfig(db_path=db_path),
                 buffer_size=5,
                 timeout_seconds=60,
                 llm=self.llm_config,

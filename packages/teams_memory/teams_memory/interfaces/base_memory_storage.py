@@ -83,6 +83,18 @@ class BaseMemoryStorage(ABC):
         pass
 
     @abstractmethod
+    async def get_memory(self, memory_id: str) -> Optional[Memory]:
+        """Retrieve a memory by its ID.
+
+        Args:
+            memory_id (str): ID of the memory to retrieve
+
+        Returns:
+            Optional[Memory]: Memory object if found, None otherwise
+        """
+        pass
+
+    @abstractmethod
     async def get_attributed_memories(self, message_ids: List[str]) -> List[Memory]:
         """Retrieve all memories from storage that are attributed to the provided message IDs.
 

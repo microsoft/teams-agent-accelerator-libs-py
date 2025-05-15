@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-from teams_memory.config import StorageConfig
+from teams_memory.config import SQLiteStorageConfig
 from teams_memory.interfaces.base_scheduled_events_service import Event
 from teams_memory.interfaces.base_scheduled_events_storage import (
     BaseScheduledEventsStorage,
@@ -24,7 +24,7 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteScheduledEventsStorage(BaseScheduledEventsStorage):
     """SQLite implementation of scheduled events storage."""
 
-    def __init__(self, config: StorageConfig):
+    def __init__(self, config: SQLiteStorageConfig):
         """Initialize SQLite scheduled events storage.
 
         Args:

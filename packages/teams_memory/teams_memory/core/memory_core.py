@@ -10,7 +10,12 @@ from typing import Any, List, Literal, Optional, Set, Tuple
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field, create_model, field_validator, model_validator
 
-from teams_memory.config import MemoryModuleConfig
+from teams_memory.config import (
+    AzureAISearchStorageConfig,
+    InMemoryStorageConfig,
+    MemoryModuleConfig,
+    SQLiteStorageConfig,
+)
 from teams_memory.core.prompts import (
     ANSWER_QUESTION_PROMPT,
     ANSWER_QUESTION_USER_PROMPT,
@@ -33,6 +38,9 @@ from teams_memory.interfaces.types import (
     Topic,
 )
 from teams_memory.services.llm_service import LLMService
+from teams_memory.storage.azure_ai_search import (
+    AzureAISearchMemoryStorage,
+)
 from teams_memory.storage.in_memory_storage import InMemoryStorage
 from teams_memory.storage.sqlite_memory_storage import SQLiteMemoryStorage
 from teams_memory.storage.sqlite_message_storage import SQLiteMessageStorage
@@ -115,29 +123,33 @@ class MemoryCore(BaseMemoryCore):
             storage: Optional storage implementation for memory persistence
         """
         self.lm = llm_service
-        self.memory_storage: BaseMemoryStorage = memory_storage or self._build_storage(
-            config
+        self.memory_storage: BaseMemoryStorage = (
+            memory_storage or self._build_memory_storage(config)
         )
         self.message_storage: BaseMessageStorage = (
             message_storage or self._build_message_storage(config)
         )
         self.topics = config.topics
 
-    def _build_storage(self, config: MemoryModuleConfig) -> BaseMemoryStorage:
-        if not config.storage or config.storage.storage_type == "in-memory":
+    def _build_memory_storage(self, config: MemoryModuleConfig) -> BaseMemoryStorage:
+        storage_config = config.get_storage_config("memory")
+        if isinstance(storage_config, InMemoryStorageConfig):
             return InMemoryStorage()
-        if config.storage.storage_type == "sqlite":
-            return SQLiteMemoryStorage(config.storage)
+        if isinstance(storage_config, SQLiteStorageConfig):
+            return SQLiteMemoryStorage(storage_config)
+        if isinstance(storage_config, AzureAISearchStorageConfig):
+            return AzureAISearchMemoryStorage(storage_config)
 
-        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
+        raise ValueError(f"Invalid storage type: {config}")
 
     def _build_message_storage(self, config: MemoryModuleConfig) -> BaseMessageStorage:
-        if not config.storage or config.storage.storage_type == "in-memory":
+        storage_config = config.get_storage_config("message")
+        if isinstance(config, InMemoryStorageConfig):
             return InMemoryStorage()
-        if config.storage.storage_type == "sqlite":
-            return SQLiteMessageStorage(config.storage)
+        if isinstance(storage_config, SQLiteStorageConfig):
+            return SQLiteMessageStorage(storage_config)
 
-        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
+        raise ValueError(f"Invalid storage type: {storage_config}")
 
     async def process_semantic_messages(
         self,
@@ -200,7 +212,7 @@ class MemoryCore(BaseMemoryCore):
                 embed_vectors = await self._get_semantic_fact_embeddings(
                     fact.text, metadata
                 )
-                logger.info("Storing memory: %s", memory)
+                logger.info("Storing memory: %s", memory.model_dump_json())
                 await self.memory_storage.store_memory(
                     memory, embedding_vectors=embed_vectors
                 )

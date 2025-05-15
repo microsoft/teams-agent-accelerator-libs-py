@@ -55,7 +55,7 @@ After building your bot `Application`, create a `MemoryMiddleware` with the foll
 memory_middleware = MemoryMiddleware(
     config=MemoryModuleConfig(
         llm=LLMConfig(**memory_llm_config),
-        storage=StorageConfig(
+        storage=SQLiteStorageConfig(
             db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db")
         ),  # Uses SQLite if `db_path` is provided
         timeout_seconds=60,  # Extraction occurs 60 seconds after the first message
@@ -192,8 +192,8 @@ async def retrieve_device_details(context: TurnContext):
 ```
 
 ### Memory Attributions
-The memory module stores attributions (citations) for its memories. Attributions are the original messages from which a memory was extracted. A single memory can have multiple attributions, as the same information may have been mentioned multiple times or combines information from multiple messages. Attributions are important because they allow users to verify the source and accuracy of memories by seeing the original messages where the information appeared.
 
+The memory module stores attributions (citations) for its memories. Attributions are the original messages from which a memory was extracted. A single memory can have multiple attributions, as the same information may have been mentioned multiple times or combines information from multiple messages. Attributions are important because they allow users to verify the source and accuracy of memories by seeing the original messages where the information appeared.
 
 The `memory_module.get_memories_with_attributions` method returns a list of `MemoryWithAttributions` objects. Each object contains:
 
@@ -212,7 +212,7 @@ async def build_teams_citations(context: TurnContext, content: str, memory: Memo
     memory = memories[0].memory
     message = memories[0].messages
     message.deep_link # can be used to navigate to the message in Teams
-    
+
     # build citations for Teams
     ...
 ```

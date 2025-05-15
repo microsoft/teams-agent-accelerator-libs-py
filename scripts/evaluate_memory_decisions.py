@@ -18,7 +18,7 @@ sys.path.append(Path(__file__).parent.parent / "packages")
 from teams_memory import (
     MemoryModule,
     MemoryModuleConfig,
-    StorageConfig,
+    SQLiteStorageConfig,
     UserMessageInput,
 )
 
@@ -167,7 +167,7 @@ class MemoryDecisionEvaluator(BaseEvaluator):
                 db_path.unlink()
 
             config = MemoryModuleConfig(
-                storage=StorageConfig(db_path=db_path),
+                storage=SQLiteStorageConfig(db_path=db_path),
                 buffer_size=5,
                 timeout_seconds=60,
                 llm=self.llm_config,
