@@ -18,7 +18,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from teams_memory.config import (
     DEFAULT_TOPICS,
     MemoryModuleConfig,
-    StorageConfig,
+    SQLiteStorageConfig,
     Topic,
 )  # noqa: I001
 from teams_memory.core.memory_core import (
@@ -49,7 +49,7 @@ def config(request):
     if not llm_config.api_key:
         pytest.skip("OpenAI API key not provided")
     return MemoryModuleConfig(
-        storage=StorageConfig(
+        storage=SQLiteStorageConfig(
             db_path=Path(__file__).parent / "data" / "tests" / "teams_memory.db",
         ),
         buffer_size=buffer_size,
