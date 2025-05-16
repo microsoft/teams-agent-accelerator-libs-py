@@ -13,7 +13,7 @@ try:
         VectorSearchProfile,
     )
     from azure.search.documents.models import VectorizedQuery
-except ImportError as e:
+except ModuleNotFoundError as e:
     raise ImportError(
         "The 'azure-search-documents' package is required for this feature. "
         "Install it with: pip install '.[azure-search]'"

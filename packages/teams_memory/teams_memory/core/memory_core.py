@@ -38,9 +38,6 @@ from teams_memory.interfaces.types import (
     Topic,
 )
 from teams_memory.services.llm_service import LLMService
-from teams_memory.storage.azure_ai_search import (
-    AzureAISearchMemoryStorage,
-)
 from teams_memory.storage.in_memory_storage import InMemoryStorage
 from teams_memory.storage.sqlite_memory_storage import SQLiteMemoryStorage
 from teams_memory.storage.sqlite_message_storage import SQLiteMessageStorage
@@ -138,6 +135,11 @@ class MemoryCore(BaseMemoryCore):
         if isinstance(storage_config, SQLiteStorageConfig):
             return SQLiteMemoryStorage(storage_config)
         if isinstance(storage_config, AzureAISearchStorageConfig):
+            # Importing it conditionally because it's an optional dependency
+            from teams_memory.storage.azure_ai_search import (
+                AzureAISearchMemoryStorage,
+            )
+
             return AzureAISearchMemoryStorage(storage_config)
 
         raise ValueError(f"Invalid storage type: {config}")
