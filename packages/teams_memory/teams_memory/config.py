@@ -118,11 +118,11 @@ class MemoryModuleConfig(BaseModel):
     """
     Global storage configuration. Used as a fallback if a per-type storage config is not provided.
 
-    This must be provided if a per-type storage config is not provided.
+    By default, it uses an in-memory storage.
     If Azure AI Search is used as the default storage, all other storages must be provided.
     """
     storage: Optional[StorageConfig] = Field(
-        default=None,
+        default=InMemoryStorageConfig(),
         description="Global storage config (used if per-type not set)",
     )
 
