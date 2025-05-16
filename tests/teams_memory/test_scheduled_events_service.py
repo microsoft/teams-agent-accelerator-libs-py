@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
-from teams_memory.config import LLMConfig, MemoryModuleConfig, StorageConfig
+from teams_memory.config import LLMConfig, MemoryModuleConfig, SQLiteStorageConfig
 from teams_memory.services.scheduled_events_service import ScheduledEventsService
 
 
@@ -18,7 +18,7 @@ from teams_memory.services.scheduled_events_service import ScheduledEventsServic
 def config():
     """Fixture that provides a MemoryModuleConfig instance."""
     return MemoryModuleConfig(
-        storage=StorageConfig(
+        storage=SQLiteStorageConfig(
             db_path=Path(__file__).parent / "data" / "tests" / "teams_memory.db"
         ),
         timeout_seconds=1,

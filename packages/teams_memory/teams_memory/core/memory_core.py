@@ -10,7 +10,12 @@ from typing import Any, List, Literal, Optional, Set, Tuple
 from litellm.types.utils import EmbeddingResponse
 from pydantic import BaseModel, Field, create_model, field_validator, model_validator
 
-from teams_memory.config import MemoryModuleConfig
+from teams_memory.config import (
+    AzureAISearchStorageConfig,
+    InMemoryStorageConfig,
+    MemoryModuleConfig,
+    SQLiteStorageConfig,
+)
 from teams_memory.core.prompts import (
     ANSWER_QUESTION_PROMPT,
     ANSWER_QUESTION_USER_PROMPT,
@@ -21,6 +26,7 @@ from teams_memory.core.prompts import (
 )
 from teams_memory.interfaces.base_memory_core import BaseMemoryCore
 from teams_memory.interfaces.base_memory_storage import BaseMemoryStorage
+from teams_memory.interfaces.base_message_storage import BaseMessageStorage
 from teams_memory.interfaces.errors import MemoryNotFoundError
 from teams_memory.interfaces.types import (
     BaseMemoryInput,
@@ -34,25 +40,15 @@ from teams_memory.interfaces.types import (
 from teams_memory.services.llm_service import LLMService
 from teams_memory.storage.in_memory_storage import InMemoryStorage
 from teams_memory.storage.sqlite_memory_storage import SQLiteMemoryStorage
+from teams_memory.storage.sqlite_message_storage import SQLiteMessageStorage
 
 logger = logging.getLogger(__name__)
 
 
 class MessageDigest(BaseModel):
-    topic: str = Field(..., description="The general category of the message(s).")
-    summary: str = Field(..., description="A summary of the message(s).")
-    keywords: list[str] = Field(
+    reworded_facts: list[str] = Field(
         default_factory=list,
-        min_length=2,
-        max_length=5,
-        description="Keywords that the message(s) is about. These can range from very specific to very general.",
-    )
-    hypothetical_questions: list[str] = Field(
-        default_factory=list,
-        min_length=2,
-        max_length=5,
-        description="Hypothetical questions about this memory that someone might ask to query for it. "
-        "These can range from very specific to very general.",
+        description="A list of reworded facts that are similar to the original fact. These should be in the same language as the original fact.",  # noqa: E501
     )
 
 
@@ -113,7 +109,8 @@ class MemoryCore(BaseMemoryCore):
         self,
         config: MemoryModuleConfig,
         llm_service: LLMService,
-        storage: Optional[BaseMemoryStorage] = None,
+        memory_storage: Optional[BaseMemoryStorage] = None,
+        message_storage: Optional[BaseMessageStorage] = None,
     ):
         """Initialize the memory core.
 
@@ -123,16 +120,38 @@ class MemoryCore(BaseMemoryCore):
             storage: Optional storage implementation for memory persistence
         """
         self.lm = llm_service
-        self.storage: BaseMemoryStorage = storage or self._build_storage(config)
+        self.memory_storage: BaseMemoryStorage = (
+            memory_storage or self._build_memory_storage(config)
+        )
+        self.message_storage: BaseMessageStorage = (
+            message_storage or self._build_message_storage(config)
+        )
         self.topics = config.topics
 
-    def _build_storage(self, config: MemoryModuleConfig) -> BaseMemoryStorage:
-        if not config.storage or config.storage.storage_type == "in-memory":
+    def _build_memory_storage(self, config: MemoryModuleConfig) -> BaseMemoryStorage:
+        storage_config = config.get_storage_config("memory")
+        if isinstance(storage_config, InMemoryStorageConfig):
             return InMemoryStorage()
-        if config.storage.storage_type == "sqlite":
-            return SQLiteMemoryStorage(config.storage)
+        if isinstance(storage_config, SQLiteStorageConfig):
+            return SQLiteMemoryStorage(storage_config)
+        if isinstance(storage_config, AzureAISearchStorageConfig):
+            # Importing it conditionally because it's an optional dependency
+            from teams_memory.storage.azure_ai_search import (
+                AzureAISearchMemoryStorage,
+            )
 
-        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
+            return AzureAISearchMemoryStorage(storage_config)
+
+        raise ValueError(f"Invalid storage type: {config}")
+
+    def _build_message_storage(self, config: MemoryModuleConfig) -> BaseMessageStorage:
+        storage_config = config.get_storage_config("message")
+        if isinstance(storage_config, InMemoryStorageConfig):
+            return InMemoryStorage()
+        if isinstance(storage_config, SQLiteStorageConfig):
+            return SQLiteMessageStorage(storage_config)
+
+        raise ValueError(f"Invalid storage type: {storage_config}")
 
     async def process_semantic_messages(
         self,
@@ -195,8 +214,10 @@ class MemoryCore(BaseMemoryCore):
                 embed_vectors = await self._get_semantic_fact_embeddings(
                     fact.text, metadata
                 )
-                logger.info("Storing memory: %s", memory)
-                await self.storage.store_memory(memory, embedding_vectors=embed_vectors)
+                logger.info("Storing memory: %s", memory.model_dump_json())
+                await self.memory_storage.store_memory(
+                    memory, embedding_vectors=embed_vectors
+                )
 
     async def ask(
         self,
@@ -271,7 +292,7 @@ class MemoryCore(BaseMemoryCore):
         else:
             text_embedding = None
 
-        return await self.storage.search_memories(
+        return await self.memory_storage.search_memories(
             user_id=user_id, text_embedding=text_embedding, topics=topics, limit=limit
         )
 
@@ -285,7 +306,7 @@ class MemoryCore(BaseMemoryCore):
         embed_vectors = await self._get_semantic_fact_embeddings(
             updated_memory, metadata
         )
-        await self.storage.update_memory(
+        await self.memory_storage.update_memory(
             memory_id, updated_memory, embedding_vectors=embed_vectors
         )
 
@@ -294,11 +315,13 @@ class MemoryCore(BaseMemoryCore):
     ) -> None:
         if not memory_ids and not user_id:
             raise ValueError("Either memory_ids or user_id must be provided")
-        await self.storage.delete_memories(user_id=user_id, memory_ids=memory_ids)
+        await self.memory_storage.delete_memories(
+            user_id=user_id, memory_ids=memory_ids
+        )
 
     async def remove_messages(self, message_ids: List[str]) -> None:
         # Get list of memories that need to be updated/removed with removed messages
-        remove_memories_list = await self.storage.get_attributed_memories(
+        remove_memories_list = await self.memory_storage.get_attributed_memories(
             message_ids=message_ids
         )
 
@@ -320,8 +343,8 @@ class MemoryCore(BaseMemoryCore):
                 )
 
         # Remove selected messages and related old memories
-        await self.storage.delete_memories(memory_ids=removed_memory_ids)
-        await self.storage.delete_messages(message_ids)
+        await self.memory_storage.delete_memories(memory_ids=removed_memory_ids)
+        await self.message_storage.delete_messages(message_ids)
         logger.info("messages %s are removed", ",".join(message_ids))
 
     async def _get_add_memory_processing_decision(
@@ -415,12 +438,8 @@ class MemoryCore(BaseMemoryCore):
         """Create embedding for semantic fact and metadata."""
         embedding_input = [fact]  # fact is always included
 
-        if metadata.topic:
-            embedding_input.append(metadata.topic)
-        if metadata.summary:
-            embedding_input.append(metadata.summary)
-        embedding_input.extend(kw for kw in metadata.keywords if kw)
-        embedding_input.extend(q for q in metadata.hypothetical_questions if q)
+        if metadata.reworded_facts:
+            embedding_input.extend(metadata.reworded_facts)
 
         res: EmbeddingResponse = await self.lm.embedding(input=embedding_input)
 
@@ -519,7 +538,7 @@ class MemoryCore(BaseMemoryCore):
         return res
 
     async def add_message(self, message: MessageInput) -> Message:
-        return await self.storage.upsert_message(message)
+        return await self.message_storage.upsert_message(message)
 
     async def retrieve_conversation_history(
         self,
@@ -534,7 +553,7 @@ class MemoryCore(BaseMemoryCore):
             raise ValueError(
                 "At least one of n_messages, last_minutes, or before must be provided"
             )
-        return await self.storage.retrieve_conversation_history(
+        return await self.message_storage.retrieve_conversation_history(
             conversation_ref,
             n_messages=n_messages,
             last_minutes=last_minutes,
@@ -550,10 +569,14 @@ class MemoryCore(BaseMemoryCore):
         """Get memories based on memory ids or user id."""
         if memory_ids is None and user_id is None:
             raise ValueError("Either memory_ids or user_id must be provided")
-        return await self.storage.get_memories(memory_ids=memory_ids, user_id=user_id)
+        return await self.memory_storage.get_memories(
+            memory_ids=memory_ids, user_id=user_id
+        )
 
     async def get_messages(self, memory_ids: List[str]) -> List[Message]:
-        return await self.storage.get_messages(memory_ids)
+        return await self.message_storage.get_messages(memory_ids)
 
     async def get_memories_from_message(self, message_id: str) -> List[Memory]:
-        return await self.storage.get_attributed_memories(message_ids=[message_id])
+        return await self.memory_storage.get_attributed_memories(
+            message_ids=[message_id]
+        )

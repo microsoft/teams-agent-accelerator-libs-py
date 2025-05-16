@@ -8,7 +8,11 @@ import logging
 from datetime import datetime
 from typing import Any, Awaitable, Callable, Dict, List, NamedTuple, Optional
 
-from teams_memory.config import MemoryModuleConfig
+from teams_memory.config import (
+    InMemoryStorageConfig,
+    MemoryModuleConfig,
+    SQLiteStorageConfig,
+)
 from teams_memory.interfaces.base_scheduled_events_service import (
     BaseScheduledEventsService,
     Event,
@@ -50,12 +54,13 @@ class ScheduledEventsService(BaseScheduledEventsService):
         self.storage = storage or self._build_storage(config)
 
     def _build_storage(self, config: MemoryModuleConfig) -> BaseScheduledEventsStorage:
-        if not config.storage or config.storage.storage_type == "in-memory":
+        scheduled_events_storage = config.get_storage_config("scheduled_events")
+        if isinstance(scheduled_events_storage, InMemoryStorageConfig):
             return InMemoryStorage()
-        if config.storage.storage_type == "sqlite":
-            return SQLiteScheduledEventsStorage(config.storage)
+        if isinstance(scheduled_events_storage, SQLiteStorageConfig):
+            return SQLiteScheduledEventsStorage(scheduled_events_storage)
 
-        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
+        raise ValueError(f"Invalid storage type: {scheduled_events_storage}")
 
     async def _initialize_tasks(self) -> None:
         """Asynchronously initialize tasks from storage."""

@@ -7,7 +7,11 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Awaitable, Callable, List, Optional, Set
 
-from teams_memory.config import MemoryModuleConfig
+from teams_memory.config import (
+    InMemoryStorageConfig,
+    MemoryModuleConfig,
+    SQLiteStorageConfig,
+)
 from teams_memory.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
 )
@@ -48,12 +52,13 @@ class MessageBuffer:
         self._processing: Set[str] = set()
 
     def _build_storage(self, config: MemoryModuleConfig) -> BaseMessageBufferStorage:
-        if not config.storage or config.storage.storage_type == "in-memory":
+        storage_config = config.get_storage_config("message_buffer")
+        if isinstance(storage_config, InMemoryStorageConfig):
             return InMemoryStorage()
-        if config.storage.storage_type == "sqlite":
-            return SQLiteMessageBufferStorage(config.storage)
+        if isinstance(storage_config, SQLiteStorageConfig):
+            return SQLiteMessageBufferStorage(storage_config)
 
-        raise ValueError(f"Invalid storage type: {config.storage.storage_type}")
+        raise ValueError(f"Invalid storage type: {storage_config}")
 
     async def _process_conversation_messages(self, conversation_ref: str) -> None:
         """Process all messages for a conversation and clear its buffer.

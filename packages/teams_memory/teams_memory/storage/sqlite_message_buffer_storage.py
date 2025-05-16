@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from teams_memory.config import StorageConfig
+from teams_memory.config import SQLiteStorageConfig
 from teams_memory.interfaces.base_message_buffer_storage import (
     BaseMessageBufferStorage,
     BufferedMessage,
@@ -25,7 +25,7 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteMessageBufferStorage(BaseMessageBufferStorage):
     """SQLite implementation of message buffer storage."""
 
-    def __init__(self, config: StorageConfig):
+    def __init__(self, config: SQLiteStorageConfig):
         """Initialize SQLite message buffer storage.
 
         Args:

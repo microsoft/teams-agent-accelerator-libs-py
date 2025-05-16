@@ -17,7 +17,7 @@ sys.path.append(str(Path(__file__).parent.parent / "packages"))
 
 from teams_memory import (
     MemoryModuleConfig,
-    StorageConfig,
+    SQLiteStorageConfig,
     Topic,
     UserMessageInput,
 )
@@ -454,7 +454,7 @@ class SystemPromptEvaluator(BaseEvaluator):
         try:
             db_path = Path(__file__).parent / "data" / "evaluation" / "teams_memory.db"
             config = MemoryModuleConfig(
-                storage=StorageConfig(db_path=db_path),
+                storage=SQLiteStorageConfig(db_path=db_path),
                 buffer_size=5,
                 timeout_seconds=60,
                 llm=self.llm_config,

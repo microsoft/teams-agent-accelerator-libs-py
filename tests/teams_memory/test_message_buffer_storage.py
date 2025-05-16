@@ -8,12 +8,13 @@ from datetime import timedelta
 from uuid import uuid4
 
 import pytest
-from teams_memory.config import StorageConfig
+from teams_memory.config import SQLiteStorageConfig
 from teams_memory.storage.in_memory_storage import InMemoryStorage
 from teams_memory.storage.sqlite_memory_storage import SQLiteMemoryStorage
 from teams_memory.storage.sqlite_message_buffer_storage import (
     SQLiteMessageBufferStorage,
 )
+from teams_memory.storage.sqlite_message_storage import SQLiteMessageStorage
 
 from tests.teams_memory.utils import create_test_user_message
 
@@ -22,14 +23,16 @@ from tests.teams_memory.utils import create_test_user_message
 def storage(request):
     if request.param == "sqlite":
         db_path = f"storage_{uuid4().hex}.db"
-        buffer = SQLiteMessageBufferStorage(StorageConfig(db_path=db_path))
-        memory_storage = SQLiteMemoryStorage(StorageConfig(db_path=db_path))
-        yield buffer, memory_storage
+        buffer = SQLiteMessageBufferStorage(SQLiteStorageConfig(db_path=db_path))
+        memory_storage = SQLiteMemoryStorage(SQLiteStorageConfig(db_path=db_path))
+        message_storage = SQLiteMessageStorage(SQLiteStorageConfig(db_path=db_path))
+        yield buffer, memory_storage, message_storage
         os.remove(db_path)
     else:
         buffer = InMemoryStorage()  # type: ignore
         memory_storage = buffer  # type: ignore
-        yield buffer, memory_storage
+        message_storage = buffer  # type: ignore
+        yield buffer, memory_storage, message_storage
 
 
 @pytest.mark.asyncio
@@ -38,8 +41,8 @@ async def test_store_and_get_buffered_message(storage):
     message.id = "msg1"
     message.conversation_ref = "conv1"
 
-    buffer, memory_storage = storage
-    await memory_storage.upsert_message(message=message)
+    buffer, memory_storage, message_storage = storage
+    await message_storage.upsert_message(message=message)
     await buffer.store_buffered_message(message=message)
     messages = await buffer.get_buffered_messages(
         conversation_ref=message.conversation_ref
@@ -55,8 +58,8 @@ async def test_clear_buffered_messages(storage):
     message.id = "msg1"
     message.conversation_ref = "conv1"
 
-    buffer, memory_storage = storage
-    await memory_storage.upsert_message(message=message)
+    buffer, memory_storage, message_storage = storage
+    await message_storage.upsert_message(message=message)
     await buffer.store_buffered_message(message=message)
 
     # Test clear the buffer
@@ -74,8 +77,8 @@ async def test_clear_buffered_messages_before_time(storage):
     message.id = "msg1"
     message.conversation_ref = "conv1"
 
-    buffer, memory_storage = storage
-    await memory_storage.upsert_message(message=message)
+    buffer, memory_storage, message_storage = storage
+    await message_storage.upsert_message(message=message)
     await buffer.store_buffered_message(message=message)
 
     # Clear all messages before the message created time, shouldn't clear the message
@@ -105,8 +108,8 @@ async def test_count_buffered_messages(storage):
     message.id = "msg1"
     message.conversation_ref = "conv1"
 
-    buffer, memory_storage = storage
-    await memory_storage.upsert_message(message=message)
+    buffer, memory_storage, message_storage = storage
+    await message_storage.upsert_message(message=message)
     await buffer.store_buffered_message(message=message)
 
     count_ref = await buffer.count_buffered_messages(
@@ -121,8 +124,8 @@ async def test_get_conversations_from_buffered_messages(storage):
     message1.id = "msg1"
     message1.conversation_ref = "conv1"
 
-    buffer, memory_storage = storage
-    await memory_storage.upsert_message(message=message1)
+    buffer, memory_storage, message_storage = storage
+    await message_storage.upsert_message(message=message1)
     await buffer.store_buffered_message(message=message1)
 
     conversation_refs = await buffer.get_conversations_from_buffered_messages(["msg1"])
@@ -147,10 +150,10 @@ async def test_get_earliest_buffered_message(storage):
     message3.id = "msg3"
     message3.conversation_ref = "conv2"
 
-    buffer, memory_storage = storage
+    buffer, memory_storage, message_storage = storage
     # Store messages
     for msg in [message1, message2, message3]:
-        await memory_storage.upsert_message(message=msg)
+        await message_storage.upsert_message(message=msg)
         await buffer.store_buffered_message(message=msg)
 
     # Test getting earliest message from specific conversation

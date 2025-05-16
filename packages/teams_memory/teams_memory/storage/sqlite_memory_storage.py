@@ -10,18 +10,14 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 import sqlite_vec
-from teams_memory.config import StorageConfig
+from teams_memory.config import SQLiteStorageConfig
 from teams_memory.interfaces.base_memory_storage import BaseMemoryStorage
 from teams_memory.interfaces.types import (
     BaseMemoryInput,
-    InternalMessageInput,
     Memory,
-    Message,
-    MessageInput,
     TextEmbedding,
 )
 from teams_memory.storage.sqlite_storage import SQLiteStorage
-from teams_memory.storage.utils import build_message_from_dict
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +27,7 @@ DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
 class SQLiteMemoryStorage(BaseMemoryStorage):
     """SQLite implementation of memory storage."""
 
-    def __init__(self, config: StorageConfig):
+    def __init__(self, config: SQLiteStorageConfig):
         self.storage = SQLiteStorage(config.db_path or DEFAULT_DB_PATH)
 
     async def store_memory(
@@ -263,7 +259,7 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
         if memories_to_delete:
             await self._delete_memories(memories_to_delete)
 
-    async def get_memory(self, memory_id: int) -> Optional[Memory]:
+    async def get_memory(self, memory_id: str) -> Optional[Memory]:
         query = """
             SELECT
                 m.*,
@@ -304,80 +300,56 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             for row in rows
         ]
 
-    async def upsert_message(self, message: MessageInput) -> Message:
-        """Store a short-term memory entry."""
-        if isinstance(message, InternalMessageInput):
-            id = str(uuid.uuid4())
-        else:
-            id = message.id
+    async def _delete_memories(self, memory_ids: List[str]) -> None:
+        async with self.storage.transaction() as cursor:
+            await cursor.execute(
+                """DELETE FROM vec_items WHERE memory_embedding_id in (
+                    SELECT id FROM embeddings WHERE memory_id in ({})
+                )""".format(
+                    ",".join(["?"] * len(memory_ids))
+                ),
+                tuple(memory_ids),
+            )
 
-        if message.created_at:
-            created_at = message.created_at
-        else:
-            created_at = datetime.datetime.now()
+            await cursor.execute(
+                "DELETE FROM embeddings WHERE memory_id in ({})".format(
+                    ",".join(["?"] * len(memory_ids))
+                ),
+                tuple(memory_ids),
+            )
 
-        created_at = created_at.astimezone(datetime.timezone.utc)
+            await cursor.execute(
+                "DELETE FROM memory_attributions WHERE memory_id in ({})".format(
+                    ",".join(["?"] * len(memory_ids))
+                ),
+                tuple(memory_ids),
+            )
 
-        if isinstance(message, InternalMessageInput):
-            deep_link = None
-        else:
-            deep_link = message.deep_link
-        await self.storage.execute(
-            """INSERT OR REPLACE INTO messages (
-                id,
-                content,
-                author_id,
-                conversation_ref,
-                created_at,
-                type,
-                deep_link
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (
-                id,
-                message.content,
-                message.author_id,
-                message.conversation_ref,
-                created_at,
-                message.type,
-                deep_link,
-            ),
+            await cursor.execute(
+                "DELETE FROM memories WHERE id in ({})".format(
+                    ",".join(["?"] * len(memory_ids))
+                ),
+                tuple(memory_ids),
+            )
+
+    def _build_memory(
+        self, memory_values: dict[str, Any], message_attributions: set[str]
+    ) -> Memory:
+        memory_keys = [
+            "id",
+            "content",
+            "created_at",
+            "user_id",
+            "memory_type",
+            "topics",
+        ]
+        # Convert topics string back to list if it exists
+        if memory_values.get("topics"):
+            memory_values["topics"] = memory_values["topics"].split(",")
+        return Memory(
+            **{k: v for k, v in memory_values.items() if k in memory_keys},
+            message_attributions=message_attributions,
         )
-
-        row = await self.storage.fetch_one("SELECT * FROM messages WHERE id = ?", (id,))
-        if not row:
-            raise ValueError(f"Message with id {id} not found in storage")
-        return build_message_from_dict(row)
-
-    async def retrieve_conversation_history(
-        self,
-        conversation_ref: str,
-        *,
-        n_messages: Optional[int] = None,
-        last_minutes: Optional[float] = None,
-        before: Optional[datetime.datetime] = None,
-    ) -> List[Message]:
-        """Retrieve short-term memories based on configuration (N messages or last_minutes)."""
-        query = "SELECT * FROM messages WHERE conversation_ref = ?"
-        params: tuple[Any, ...] = (conversation_ref,)
-
-        if last_minutes is not None:
-            cutoff_time = datetime.datetime.now(
-                datetime.timezone.utc
-            ) - datetime.timedelta(minutes=last_minutes)
-            query += " AND created_at >= ?"
-            params += (cutoff_time,)
-
-        if before is not None:
-            query += " AND created_at < ?"
-            params += (before.astimezone(datetime.timezone.utc),)
-
-        query += " ORDER BY created_at DESC"
-        if n_messages is not None:
-            query += " LIMIT ?"
-            params += (str(n_messages),)
-
-        rows = await self.storage.fetch_all(query, params)
-        return [build_message_from_dict(row) for row in rows][::-1]
 
     async def get_memories(
         self,
@@ -417,74 +389,3 @@ class SQLiteMemoryStorage(BaseMemoryStorage):
             self._build_memory(row, set((row["message_attributions"] or "").split(",")))
             for row in rows
         ]
-
-    async def get_messages(self, message_ids: List[str]) -> List[Message]:
-        if not message_ids:
-            return []
-
-        query = f"""
-            SELECT *
-            FROM messages
-            WHERE id IN ({",".join(["?"] * len(message_ids))})
-        """
-
-        rows = await self.storage.fetch_all(query, tuple(message_ids))
-        return [build_message_from_dict(row) for row in rows]
-
-    def _build_memory(
-        self, memory_values: dict[str, Any], message_attributions: set[str]
-    ) -> Memory:
-        memory_keys = [
-            "id",
-            "content",
-            "created_at",
-            "user_id",
-            "memory_type",
-            "topics",
-        ]
-        # Convert topics string back to list if it exists
-        if memory_values.get("topics"):
-            memory_values["topics"] = memory_values["topics"].split(",")
-        return Memory(
-            **{k: v for k, v in memory_values.items() if k in memory_keys},
-            message_attributions=message_attributions,
-        )
-
-    async def delete_messages(self, message_ids: List[str]) -> None:
-        async with self.storage.transaction() as cursor:
-            await cursor.execute(
-                f"DELETE FROM messages WHERE id in ({','.join(['?'] * len(message_ids))})",
-                tuple(message_ids),
-            )
-
-    async def _delete_memories(self, memory_ids: List[str]) -> None:
-        async with self.storage.transaction() as cursor:
-            await cursor.execute(
-                """DELETE FROM vec_items WHERE memory_embedding_id in (
-                    SELECT id FROM embeddings WHERE memory_id in ({})
-                )""".format(
-                    ",".join(["?"] * len(memory_ids))
-                ),
-                tuple(memory_ids),
-            )
-
-            await cursor.execute(
-                "DELETE FROM embeddings WHERE memory_id in ({})".format(
-                    ",".join(["?"] * len(memory_ids))
-                ),
-                tuple(memory_ids),
-            )
-
-            await cursor.execute(
-                "DELETE FROM memory_attributions WHERE memory_id in ({})".format(
-                    ",".join(["?"] * len(memory_ids))
-                ),
-                tuple(memory_ids),
-            )
-
-            await cursor.execute(
-                "DELETE FROM memories WHERE id in ({})".format(
-                    ",".join(["?"] * len(memory_ids))
-                ),
-                tuple(memory_ids),
-            )

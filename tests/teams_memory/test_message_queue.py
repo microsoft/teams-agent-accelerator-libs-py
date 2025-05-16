@@ -6,7 +6,7 @@ Licensed under the MIT License.
 from unittest.mock import Mock
 
 import pytest
-from teams_memory.config import LLMConfig, MemoryModuleConfig, StorageConfig
+from teams_memory.config import InMemoryStorageConfig, LLMConfig, MemoryModuleConfig
 from teams_memory.core.memory_core import MemoryCore
 from teams_memory.core.message_queue import MessageQueue
 from teams_memory.interfaces.base_message_buffer_storage import (
@@ -24,7 +24,7 @@ from tests.teams_memory.utils import (
 async def test_process_for_semantic_messages_enough_messages():
     config = MemoryModuleConfig(
         buffer_size=4,
-        storage=StorageConfig(type="in_memory"),  # use in memory storage
+        storage=InMemoryStorageConfig(type="in_memory"),  # use in memory storage
         timeout_seconds=60,
         llm=Mock(spec=LLMConfig),
     )
@@ -57,7 +57,7 @@ async def test_process_for_semantic_messages_enough_messages():
 async def test_process_for_semantic_messages_less_messages():
     config = MemoryModuleConfig(
         buffer_size=5,
-        storage=StorageConfig(type="in_memory"),  # use in-memory storage
+        storage=InMemoryStorageConfig(type="in_memory"),  # use in-memory storage
         timeout_seconds=60,
         llm=Mock(spec=LLMConfig),
     )

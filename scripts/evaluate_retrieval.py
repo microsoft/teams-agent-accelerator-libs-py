@@ -17,7 +17,7 @@ sys.path.append(str(Path(__file__).parent.parent / "packages/teams_memory"))
 
 from teams_memory import (
     MemoryModuleConfig,
-    StorageConfig,
+    SQLiteStorageConfig,
     Topic,
 )
 from teams_memory.core.memory_core import MemoryCore
@@ -331,7 +331,7 @@ class RetrievalEvaluator(BaseEvaluator):
                 / f"retrieval_test_{uuid4()}.db"
             )
             config = MemoryModuleConfig(
-                storage=StorageConfig(db_path=db_path),
+                storage=SQLiteStorageConfig(db_path=db_path),
                 buffer_size=5,
                 timeout_seconds=60,
                 llm=self.llm_config,
@@ -360,7 +360,7 @@ class RetrievalEvaluator(BaseEvaluator):
                 embed_vectors = await memory_core._get_semantic_fact_embeddings(
                     memory["content"], metadata
                 )
-                await memory_core.storage.store_memory(
+                await memory_core.memory_storage.store_memory(
                     memory_input, embedding_vectors=embed_vectors
                 )
 
