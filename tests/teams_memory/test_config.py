@@ -47,19 +47,6 @@ def test_memory_module_config_global_storage():
     assert config.get_storage_config("message").storage_type == "sqlite"
 
 
-# Test MemoryModuleConfig with per-type storage
-def test_memory_module_config_per_type_storage_missing_some():
-    with pytest.raises(
-        ValueError,
-        match="Please set either the per-type config or the global 'storage' config",
-    ):
-        MemoryModuleConfig(
-            memory_storage=InMemoryStorageConfig(),
-            message_storage=SQLiteStorageConfig(db_path=Path("test.db")),
-            llm=minimal_llm_config(),
-        )
-
-
 def test_memory_module_config_per_type_storage():
     config = MemoryModuleConfig(
         memory_storage=InMemoryStorageConfig(),
@@ -77,9 +64,11 @@ def test_memory_module_config_per_type_storage():
 
 
 # Test get_storage_config error if missing
-def test_memory_module_config_missing_storage():
-    with pytest.raises(ValueError, match="No storage config provided for memory"):
-        MemoryModuleConfig(llm=minimal_llm_config()).get_storage_config("memory")
+def test_memory_module_config_default_storage():
+    memory_storage = MemoryModuleConfig(llm=minimal_llm_config()).get_storage_config(
+        "memory"
+    )
+    assert isinstance(memory_storage, InMemoryStorageConfig)
 
 
 # Test validation error if Azure AI Search is global and others missing
@@ -100,18 +89,16 @@ def test_memory_module_config_azure_global_missing_others():
 
 # Test validation error if memory_storage is Azure AI Search and others missing
 def test_memory_module_config_azure_memory_missing_others():
-    with pytest.raises(
-        ValueError,
-        match="Please set either the per-type config or the global 'storage' config",
-    ):
-        MemoryModuleConfig(
-            memory_storage=AzureAISearchStorageConfig(
-                endpoint="https://example.search.windows.net",
-                api_key="test-key",
-                index_name="test-index",
-            ),
-            llm=minimal_llm_config(),
-        )
+    memory_module_config = MemoryModuleConfig(
+        memory_storage=AzureAISearchStorageConfig(
+            endpoint="https://example.search.windows.net",
+            api_key="test-key",
+            index_name="test-index",
+        ),
+        llm=minimal_llm_config(),
+    )
+    message_storage = memory_module_config.get_storage_config("message")
+    assert isinstance(message_storage, InMemoryStorageConfig)
 
 
 # Test validation passes if memory_storage is Azure AI Search but global is non-Azure
