@@ -4,6 +4,9 @@
 
 ### Features
 
+- Allowed granular control over storage configs for each type of memory.
+- Added support for Azure AI Search Storage
+
 ### Bug Fixes
 
 ## 0.1.3-alpha

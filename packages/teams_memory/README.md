@@ -254,6 +254,14 @@ config = MemoryModuleConfig(
 
 [Azure AI Search storage](https://learn.microsoft.com/en-us/azure/search/search-what-is-azure-search) is a great option for storing memories in a production environment. You will need to create an [Azure AI Search resource](https://learn.microsoft.com/en-us/azure/search/search-create-service-portal) before using this storage. Once you have this, the memory module will automatically construct an index for you, and start using it to store and retrieve memories.
 
+First install the `azure-search` extra:
+
+```bash
+pip install teams-memory[azure-search]
+```
+
+Then, configure the memory module to use Azure AI Search storage and installs necessary dependencies.
+
 ```python
 # Assumes you have set the following environment variables:
 # AZURE_SEARCH_ENDPOINT
