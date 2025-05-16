@@ -24,8 +24,6 @@ repos:
           [
             --ignore-missing-imports,
             --show-traceback,
-            --disable-error-code=import-untyped,
-            --disable-error-code=no-untyped-call,
             --no-strict-optional,
             --no-strict-equality,
           ]
