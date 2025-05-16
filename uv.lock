@@ -2154,7 +2154,7 @@ dependencies = [
     { name = "agent-runtime" },
     { name = "evals" },
     { name = "litellm" },
-    { name = "teams-memory" },
+    { name = "teams-memory", extra = ["azure-search"] },
 ]
 
 [package.dev-dependencies]
@@ -2177,7 +2177,7 @@ requires-dist = [
     { name = "agent-runtime", editable = "packages/agent-runtime" },
     { name = "evals", virtual = "packages/evals" },
     { name = "litellm" },
-    { name = "teams-memory", editable = "packages/teams_memory" },
+    { name = "teams-memory", extras = ["azure-search"], editable = "packages/teams_memory" },
 ]
 
 [package.metadata.requires-dev]

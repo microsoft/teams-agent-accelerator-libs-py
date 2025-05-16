@@ -57,7 +57,7 @@ memory_middleware = MemoryMiddleware(
         llm=LLMConfig(**memory_llm_config),
         storage=SQLiteStorageConfig(
             db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db")
-        ),  # Uses SQLite if `db_path` is provided
+        ),
         timeout_seconds=60,  # Extraction occurs 60 seconds after the first message
         enable_logging=True,  # Helpful for debugging
         topics=[
@@ -218,6 +218,57 @@ async def build_teams_citations(context: TurnContext, content: str, memory: Memo
 ```
 
 For more information on how to build citations for Teams, see [Teams documentation](https://learn.microsoft.com/en-us/microsoftteams/platform/bots/how-to/bot-messages-ai-generated-content?tabs=desktop%2Cbotmessage).
+
+## Storage
+
+The memory module architecture is designed with reasonable storage abstractions that allow you to change the storage layer. There are 4 main parts to storage:
+
+1. **Memory Storage**: Storage for semantic memories.
+2. **Message Storage**: Storage for messages.
+3. **Message Buffer Storage**: Storage for the message buffer.
+4. **Scheduled Events Storage**: Storage for scheduled events.
+
+You can change out the storage layer for each of these components, or use the same storage for all of them. By default, if no storage options are provided, the memory module will use an in-memory storage layer for each of these components. When constructing the `MemoryModuleConfig`, you can provide a custom storage config for each of these components or a global storage config, which will be used for all components. Below are some of the storage options available:
+
+| Storage Type                 | Type of possible storage                          | Description                                                                                                  |
+| ---------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `InMemoryStorageConfig`      | memory, message_buffer, scheduled_events          | Uses an in-memory storage layer.                                                                             |
+| `SQLiteStorageConfig`        | memory, message, message_buffer, scheduled_events | Uses a SQLite database.                                                                                      |
+| `AzureAISearchStorageConfig` | memory                                            | Uses an [Azure AI Search index](https://learn.microsoft.com/en-us/azure/search/search-what-is-azure-search). |
+
+### In-Memory Storage
+
+In-memory storage is the default storage layer for the memory module. It uses an in-memory storage layer for all components. It's best for testing and development. By default, if no storage options are provided, the memory module will use an in-memory storage layer for all components.
+
+### SQLite Storage
+
+SQLite storage is a good option for small applications. It uses a SQLite database to store values in a single file.
+
+```python
+config = MemoryModuleConfig(
+    storage=SQLiteStorageConfig(db_path="path/to/db.sqlite")
+)
+```
+
+### Azure AI Search Storage
+
+[Azure AI Search storage](https://learn.microsoft.com/en-us/azure/search/search-what-is-azure-search) is a great option for storing memories in a production environment. You will need to create an [Azure AI Search resource](https://learn.microsoft.com/en-us/azure/search/search-create-service-portal) before using this storage. Once you have this, the memory module will automatically construct an index for you, and start using it to store and retrieve memories.
+
+```python
+# Assumes you have set the following environment variables:
+# AZURE_SEARCH_ENDPOINT
+# AZURE_SEARCH_KEY
+# AZURE_SEARCH_INDEX_NAME
+# They can be found in the Azure AI Search resource in the Azure portal
+config = MemoryModuleConfig(
+    memory_storage=AzureAISearchStorageConfig(
+        endpoint=os.getenv("AZURE_SEARCH_ENDPOINT"),
+        key=os.getenv("AZURE_SEARCH_KEY"),
+        index_name=os.getenv("AZURE_SEARCH_INDEX_NAME"),
+    ),
+    storage=InMemoryStorageConfig(), # you need to provide a storage config for other storage components
+)
+```
 
 ## Logging
 

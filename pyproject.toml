@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [
     "agent-runtime",
-    "teams_memory",
+    "teams-memory[azure-search]",
     "litellm",
     "evals",
 ]
@@ -28,9 +28,9 @@ dev = [
 
 [tool.uv.sources]
 agent-runtime = { workspace = true }
-teams_memory = { workspace = true }
 customer-service-agent-sample = { workspace = true }
 evals = { workspace = true }
+teams-memory = { workspace = true }
 
 [tool.uv.workspace]
 members = ["packages/*", "src"]

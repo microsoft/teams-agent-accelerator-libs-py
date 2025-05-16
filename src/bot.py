@@ -70,6 +70,9 @@ memory_middleware = MemoryMiddleware(
         storage=SQLiteStorageConfig(
             db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db")
         ),
+        memory_storage=SQLiteStorageConfig(
+            db_path=os.path.join(os.path.dirname(__file__), "data", "memory.db")
+        ),
         timeout_seconds=60,
         buffer_size=20,
         topics=topics,
