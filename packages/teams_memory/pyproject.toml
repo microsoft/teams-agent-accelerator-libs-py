@@ -15,7 +15,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "numpy",
     "sqlite-vec>=0.1.6",
-    "litellm==1.69.2",
+    "litellm==1.83.0",
     "botbuilder>=0.0.1",
     "botframework-connector>=4.16.2",
 ]
