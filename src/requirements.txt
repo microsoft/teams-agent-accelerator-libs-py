@@ -3,5 +3,5 @@ python-dotenv
 aiohttp
 teams-ai
 botbuilder
-pydantic>=2.10.3
-litellm==1.83.0
+pydantic>=2.13.3
+litellm==1.83.14
