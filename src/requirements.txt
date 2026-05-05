@@ -4,4 +4,4 @@ aiohttp
 teams-ai
 botbuilder
 pydantic>=2.13.3
-litellm==1.83.7
+litellm==1.83.14
