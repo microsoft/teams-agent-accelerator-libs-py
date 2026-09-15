@@ -153,6 +153,22 @@ class MemoryCore(BaseMemoryCore):
 
         raise ValueError(f"Invalid storage type: {storage_config}")
 
+    async def add_memory(self, memory: BaseMemoryInput) -> Memory:
+        """Store an explicit memory and create its search embeddings."""
+        topics = (
+            [topic for topic in self.topics if topic.name in memory.topics]
+            if memory.topics
+            else None
+        )
+        metadata = await self._extract_metadata_from_fact(memory.content, topics)
+        embedding_vectors = await self._get_semantic_fact_embeddings(
+            memory.content, metadata
+        )
+        memory_id = await self.memory_storage.store_memory(
+            memory, embedding_vectors=embedding_vectors
+        )
+        return Memory(id=memory_id, **memory.model_dump())
+
     async def process_semantic_messages(
         self,
         messages: List[Message],
