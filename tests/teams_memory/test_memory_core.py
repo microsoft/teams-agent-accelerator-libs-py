@@ -3,13 +3,15 @@ Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the MIT License.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List
 from unittest import mock
 
 import pytest
 from teams_memory.config import LLMConfig, MemoryModuleConfig
-from teams_memory.core.memory_core import Answer, MemoryCore
-from teams_memory.interfaces.types import TextEmbedding
+from teams_memory.core.memory_core import Answer, MemoryCore, MessageDigest
+from teams_memory.core.memory_module import MemoryModule
+from teams_memory.interfaces.types import BaseMemoryInput, MemoryType, TextEmbedding
 from teams_memory.services.llm_service import LLMService
 
 from tests.teams_memory.utils import (
@@ -21,6 +23,49 @@ from tests.teams_memory.utils import (
 
 def includes(text: str, phrase):
     return text.find(phrase) != -1
+
+
+@pytest.mark.asyncio()
+async def test_add_memory_directly_without_message_attributions():
+    llm_config = LLMConfig()
+    storage = mock.Mock()
+    storage.store_memory = mock.AsyncMock(return_value="memory-1")
+    memory_core = MemoryCore(
+        config=MemoryModuleConfig(llm=llm_config),
+        llm_service=mock.Mock(spec=LLMService),
+        memory_storage=storage,
+    )
+    embeddings = [TextEmbedding(text="The user likes Python", embedding_vector=[0.1])]
+    memory = BaseMemoryInput(
+        content="The user likes Python",
+        created_at=datetime.now(),
+        memory_type=MemoryType.SEMANTIC,
+        user_id="user-1",
+    )
+
+    with (
+        mock.patch.object(
+            memory_core,
+            "_extract_metadata_from_fact",
+            new=mock.AsyncMock(return_value=MessageDigest()),
+        ),
+        mock.patch.object(
+            memory_core,
+            "_get_semantic_fact_embeddings",
+            new=mock.AsyncMock(return_value=embeddings),
+        ),
+    ):
+        memory_module = MemoryModule(
+            config=MemoryModuleConfig(llm=llm_config),
+            llm_service=mock.Mock(spec=LLMService),
+            memory_core=memory_core,
+            message_queue=mock.Mock(),
+        )
+        result = await memory_module.add_memory(memory)
+
+    storage.store_memory.assert_awaited_once_with(memory, embedding_vectors=embeddings)
+    assert result.id == "memory-1"
+    assert result.message_attributions == set()
 
 
 @pytest.fixture()
