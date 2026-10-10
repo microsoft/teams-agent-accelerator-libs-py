@@ -4,6 +4,8 @@
 
 ### Features
 
+- Added `add_memory` for storing memories directly without message attributions.
+
 ### Bug Fixes
 
 ### 0.1.4-alpha

@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import List, Optional, Tuple
 
 from teams_memory.interfaces.types import (
+    BaseMemoryInput,
     Memory,
     Message,
     MessageInput,
@@ -21,6 +22,18 @@ class BaseMemoryCore(ABC):
     of messages into memories and managing the retrieval and manipulation of both
     messages and memories.
     """
+
+    @abstractmethod
+    async def add_memory(self, memory: BaseMemoryInput) -> Memory:
+        """Store an explicit memory without requiring source messages.
+
+        Args:
+            memory (BaseMemoryInput): Memory content and metadata to store.
+
+        Returns:
+            Memory: The stored memory with its assigned ID.
+        """
+        pass
 
     @abstractmethod
     async def process_semantic_messages(

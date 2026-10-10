@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import List, Optional, Tuple
 
 from teams_memory.interfaces.types import (
+    BaseMemoryInput,
     Memory,
     MemoryWithAttributions,
     Message,
@@ -21,6 +22,18 @@ class _CommonBaseMemoryModule(ABC):
     This class provides the core functionality shared between different memory module implementations.
     It handles basic memory and message operations that are common across all memory module types.
     """
+
+    @abstractmethod
+    async def add_memory(self, memory: BaseMemoryInput) -> Memory:
+        """Store an explicit memory without requiring source messages.
+
+        Args:
+            memory (BaseMemoryInput): Memory content and metadata to store.
+
+        Returns:
+            Memory: The stored memory with its assigned ID.
+        """
+        pass
 
     @abstractmethod
     async def get_memories(
