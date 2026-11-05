@@ -97,6 +97,25 @@ async def add_internal_message(self, context: TurnContext, tool_call_name: str, 
     return True
 ```
 
+### Adding Memories Directly
+
+Use `add_memory` to store a memory without first attributing it to a message:
+
+```python
+from datetime import datetime
+
+from teams_memory import BaseMemoryInput, MemoryType
+
+memory = await memory_module.add_memory(
+    BaseMemoryInput(
+        content="The user prefers dark mode",
+        created_at=datetime.now(),
+        memory_type=MemoryType.SEMANTIC,
+        user_id="user-123",
+    )
+)
+```
+
 ### Extracting Memories
 
 > [!NOTE]  

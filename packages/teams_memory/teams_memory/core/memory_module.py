@@ -18,6 +18,7 @@ from teams_memory.interfaces.base_memory_module import (
 from teams_memory.interfaces.base_message_queue import BaseMessageQueue
 from teams_memory.interfaces.errors import InvalidUserError
 from teams_memory.interfaces.types import (
+    BaseMemoryInput,
     Memory,
     MemoryWithAttributions,
     Message,
@@ -79,6 +80,10 @@ class MemoryModule(BaseMemoryModule):
 
     async def process_messages(self, conversation_ref: str) -> None:
         return await self.message_queue.process_messages(conversation_ref)
+
+    async def add_memory(self, memory: BaseMemoryInput) -> Memory:
+        """Store an explicit memory without requiring source messages."""
+        return await self.memory_core.add_memory(memory)
 
     async def add_message(self, message: MessageInput) -> Message:
         """Add a message to be processed into memory."""
@@ -156,7 +161,6 @@ class MemoryModule(BaseMemoryModule):
             List of MemoryWithAttributions objects containing memories and their messages
         """
         if not memory_ids:
-
             return []
 
         memories = await self.get_memories(memory_ids=memory_ids)
@@ -336,6 +340,12 @@ class ScopedMemoryModule(BaseScopedMemoryModule):
         )
 
     # Implement abstract methods by forwarding to memory_module
+    async def add_memory(self, memory: BaseMemoryInput) -> Memory:
+        validated_user_id = self._validate_user(memory.user_id)
+        return await self.memory_module.add_memory(
+            memory.model_copy(update={"user_id": validated_user_id})
+        )
+
     async def get_memories_with_attributions(
         self, memory_ids: List[str]
     ) -> List[MemoryWithAttributions]:
